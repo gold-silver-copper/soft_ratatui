@@ -1,0 +1,8 @@
+[package]
+name = "soft_ratatui"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cosmic-text = "0.14.2"
+image = "0.25.6"
