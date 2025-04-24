@@ -1,32 +1,39 @@
 //! This module provides the `SoftBackend` implementation for the [`Backend`] trait.
 //! It is used in the integration tests to verify the correctness of the library.
 
-use core::fmt::{self, Write};
-use core::iter;
 use std::io;
-use unicode_width::UnicodeWidthStr;
 
 use ratatui::backend::{Backend, ClearType, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
+use ratatui::style::Color as RatColor;
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+use cosmic_text::{
+    Attrs, Buffer as CosmicBuffer, Color as CosmicColor, FontSystem, Metrics, Shaping, SwashCache,
+};
+use tiny_skia::{ColorU8 as SkiaColor, Paint, Pixmap, Rect as SkiaRect};
+
+#[derive(Debug)]
 pub struct SoftBackend {
     buffer: Buffer,
-
     cursor: bool,
     pos: (u16, u16),
+    font_system: FontSystem,
+    metrics: Metrics,
 }
 
 impl SoftBackend {
     /// Creates a new `SoftBackend` with the specified width and height.
     pub fn new(width: u16, height: u16) -> Self {
+        let font_system = FontSystem::new();
+
+        let metrics = Metrics::new(14.0, 20.0);
         Self {
             buffer: Buffer::empty(Rect::new(0, 0, width, height)),
-
             cursor: false,
             pos: (0, 0),
+            font_system,
+            metrics,
         }
     }
 
@@ -56,6 +63,7 @@ impl Backend for SoftBackend {
 
     fn hide_cursor(&mut self) -> io::Result<()> {
         self.cursor = false;
+
         Ok(())
     }
 
@@ -96,5 +104,44 @@ impl Backend for SoftBackend {
 
     fn flush(&mut self) -> io::Result<()> {
         Ok(())
+    }
+}
+
+pub fn cell_to_skia(cell: &Cell) -> i64 {
+    5
+}
+
+/// Convert a ratatui color to a tiny-skia SkiaColor
+pub fn rat_to_skia_color(rat_col: &RatColor, is_a_fg: bool) -> SkiaColor {
+    match rat_col {
+        RatColor::Reset => {
+            if is_a_fg {
+                SkiaColor::from_rgba(204, 204, 255, 255)
+            } else {
+                SkiaColor::from_rgba(15, 15, 112, 255)
+            }
+        }
+        RatColor::Black => SkiaColor::from_rgba(0, 0, 0, 255),
+        RatColor::Red => SkiaColor::from_rgba(139, 0, 0, 255),
+        RatColor::Green => SkiaColor::from_rgba(0, 100, 0, 255),
+        RatColor::Yellow => SkiaColor::from_rgba(255, 215, 0, 255),
+        RatColor::Blue => SkiaColor::from_rgba(0, 0, 139, 255),
+        RatColor::Magenta => SkiaColor::from_rgba(99, 9, 99, 255),
+        RatColor::Cyan => SkiaColor::from_rgba(0, 0, 255, 255),
+        RatColor::Gray => SkiaColor::from_rgba(128, 128, 128, 255),
+        RatColor::DarkGray => SkiaColor::from_rgba(64, 64, 64, 255),
+        RatColor::LightRed => SkiaColor::from_rgba(255, 0, 0, 255),
+        RatColor::LightGreen => SkiaColor::from_rgba(0, 255, 0, 255),
+        RatColor::LightBlue => SkiaColor::from_rgba(173, 216, 230, 255),
+        RatColor::LightYellow => SkiaColor::from_rgba(255, 255, 224, 255),
+        RatColor::LightMagenta => SkiaColor::from_rgba(139, 0, 139, 255),
+        RatColor::LightCyan => SkiaColor::from_rgba(224, 255, 255, 255),
+        RatColor::White => SkiaColor::from_rgba(255, 255, 255, 255),
+        RatColor::Indexed(i) => {
+            // You can customize this mapping, or use a fixed 256-color palette lookup
+            let i = *i as u8;
+            SkiaColor::from_rgba(i.wrapping_mul(i), i.wrapping_add(i), i, 255)
+        }
+        RatColor::Rgb(r, g, b) => SkiaColor::from_rgba(*r, *g, *b, 255),
     }
 }
