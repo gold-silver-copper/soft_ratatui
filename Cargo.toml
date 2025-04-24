@@ -5,4 +5,4 @@ edition = "2021"
 
 [dependencies]
 cosmic-text = "0.14.2"
-image = "0.25.6"
+tiny-skia = "0.11.4"
