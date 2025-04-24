@@ -2,7 +2,20 @@
 name = "soft_ratatui"
 version = "0.1.0"
 edition = "2021"
+authors = ["gold-silver-copper"]
+
+include = ["LICENSE-APACHE", "LICENSE-MIT", "**/*.rs", "Cargo.toml"]
+
+description = "Software rendering for ratatui. TUI everywhere."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/gold-silver-copper/soft_ratatui"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 cosmic-text = "0.14.2"
+ratatui = "0.29.0"
+
 tiny-skia = "0.11.4"
+unicode-width = "0.2.0"

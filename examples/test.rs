@@ -14,7 +14,7 @@ fn main() {
     buffer.set_size(Some(width as f32), Some(height as f32));
 
     // Set and shape text
-    buffer.set_text("Hello, Rust! 🦀\n", &Attrs::new(), Shaping::Advanced);
+    buffer.set_text("Hello, Rust! 🦀\n🦀\n", &Attrs::new(), Shaping::Advanced);
     buffer.shape_until_scroll(true);
 
     // Prepare Pixmap to draw into
