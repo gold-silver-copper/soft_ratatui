@@ -653,7 +653,6 @@ dependencies = [
  "cosmic-text",
  "ratatui",
  "tiny-skia",
- "unicode-width 0.2.0",
 ]
 
 [[package]]

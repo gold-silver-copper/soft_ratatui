@@ -18,4 +18,3 @@ cosmic-text = "0.14.2"
 ratatui = "0.29.0"
 
 tiny-skia = "0.11.4"
-unicode-width = "0.2.0"
