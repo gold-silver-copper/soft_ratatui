@@ -27,6 +27,7 @@ pub struct SoftBackend {
     pixmapik: Pixmap,
     glyph_width: f32,
     glyph_height: f32,
+    line_height: u32,
 }
 
 impl SoftBackend {
@@ -35,8 +36,8 @@ impl SoftBackend {
         let mut buffer = buffer.borrow_with(&mut self.font_system);
 
         // Set a size for the text buffer, in pixels
-        let width = 30;
-        let height = 30;
+        let width = self.glyph_width as u32 + 1;
+        let height = self.line_height + 1;
         buffer.set_size(Some(width as f32), Some(height as f32));
 
         // Set and shape text
@@ -55,9 +56,9 @@ impl SoftBackend {
 
         // Draw using tiny-skia
         let mut swash_cache = SwashCache::new();
+        let mut paint = Paint::default();
         buffer.draw(&mut swash_cache, text_color, |x, y, w, h, color| {
             if let Some(rect) = SkiaRect::from_xywh(x as f32, y as f32, w as f32, h as f32) {
-                let mut paint = Paint::default();
                 let [r, g, b, a] = color.as_rgba();
                 paint.set_color(SkiaColor::from_rgba8(r, g, b, a));
                 pixmap.fill_rect(rect, &paint, tiny_skia::Transform::identity(), None);
@@ -78,8 +79,9 @@ impl SoftBackend {
 
     /// Creates a new `SoftBackend` with the specified width and height.
     pub fn new(width: u16, height: u16) -> Self {
+        let line_height = 16;
         let mut font_system = FontSystem::new();
-        let metrics = Metrics::new(13.0, 13.0);
+        let metrics = Metrics::new(line_height as f32, line_height as f32);
         let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
         let mut buffer = buffer.borrow_with(&mut font_system);
 
@@ -115,6 +117,7 @@ impl SoftBackend {
             pixmapik,
             glyph_width,
             glyph_height,
+            line_height,
         };
         return_struct.clear();
         return_struct
