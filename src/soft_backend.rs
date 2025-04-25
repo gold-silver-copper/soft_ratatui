@@ -100,14 +100,13 @@ impl SoftBackend {
 
         let mut mut_buffer = self.character_buffer.borrow_with(&mut self.font_system);
 
-        mut_buffer.set_size(Some(self.char_width as f32), Some(self.char_height as f32));
         // Set and shape text
         mut_buffer.set_text(
             &text_symbol,
             &attrs,
             Shaping::Advanced, // Basic for better performance
         );
-        mut_buffer.shape_until_scroll(true);
+        //mut_buffer.shape_until_scroll(true);
 
         mut_buffer.draw(&mut self.swash_cache, text_color, |x, y, w, h, color| {
             // println!("{x}{y}{w}{h}");
@@ -166,14 +165,20 @@ impl SoftBackend {
 
         let mut pixmap_paint = PixmapPaint::default();
         let mut character_buffer = CosmicBuffer::new(&mut font_system, metrics);
+
         // let mut character_buffer = character_buffer.borrow_with(&mut font_system);
 
         pixmap_paint.quality = FilterQuality::Nearest;
 
         //  println!("Glyph height (bbox): {:#?}", boop);
         //      // Set a size for the text buffer, in pixels
-        let char_width = wa.width + 2;
+        let char_width = wa.width;
         let char_height = wa.height;
+        character_buffer.set_size(
+            &mut font_system,
+            Some(char_width as f32),
+            Some(char_height as f32),
+        );
         let mut pixmap = Pixmap::new(char_width as u32, char_height).unwrap();
 
         let mut screen_pixmap = Pixmap::new(
