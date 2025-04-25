@@ -111,31 +111,36 @@ impl SoftBackend {
         self.character_buffer
             .shape_until_scroll(&mut self.font_system, true);
 
-        let pixmap_width = self.pixmapik.width() as i32;
-        let pixmap_height = self.pixmapik.height() as i32;
-
         self.character_buffer.draw(
             &mut self.font_system,
             &mut self.swash_cache,
             text_color,
             |x, y, w, h, color| {
-                let draw_x = x + (xik as i32 * self.char_width as i32);
-                let draw_y = y + (yik as i32 * self.char_height as i32);
-
-                // Safety bounds check
-                if draw_x < 0 || draw_y < 0 || draw_x >= pixmap_width || draw_y >= pixmap_height {
-                    return;
+                // println!("{x}{y}{w}{h}");
+                if let Some(rect) = SkiaRect::from_xywh(x as f32, y as f32, 1.0, 1.0) {
+                    let [r, g, b, a] = color.as_rgba();
+                    self.skia_paint.set_color(SkiaColor::from_rgba8(r, g, b, a));
+                    /*
+                    if let Some(pixel) = self.pixmap.pixel_mut(x, y) {
+                        *pixel = PremultipliedColorU8::from_color(color);
+                    } */
+                    self.pixmap.fill_rect(
+                        rect,
+                        &self.skia_paint,
+                        tiny_skia::Transform::identity(),
+                        None,
+                    );
                 }
-
-                let index = (draw_y * pixmap_width + draw_x) as usize;
-
-                let [r, g, b, a] = color.as_rgba();
-                let kolorok = SkiaColorU8::from_rgba(r, g, b, a).premultiply();
-
-                let pixeliki = self.pixmapik.pixels_mut();
-
-                pixeliki[index] = kolorok;
             },
+        );
+
+        self.pixmapik.draw_pixmap(
+            (xik as u32 * self.char_width) as i32,
+            (yik as u32 * self.char_height) as i32,
+            self.pixmap.as_ref(),
+            &self.pixmap_paint,
+            Transform::identity(),
+            None,
         );
     }
 
@@ -144,6 +149,7 @@ impl SoftBackend {
         let mut swash_cache = SwashCache::new();
         let mut skia_paint = Paint::default();
         skia_paint.anti_alias = false;
+        // skia_paint.blend_mode = BlendMode::Difference;
         let line_height = 16;
         let mut font_system = FontSystem::new();
         let metrics = Metrics::new(line_height as f32 - 1.0, line_height as f32);
