@@ -25,7 +25,7 @@ pub struct SoftBackend {
     pos: (u16, u16),
     font_system: FontSystem,
 
-    pixmapik: Pixmap,
+    screen_pixmap: Pixmap,
 
     pixmap_paint: PixmapPaint,
     character_buffer: CosmicBuffer,
@@ -69,12 +69,14 @@ impl SoftBackend {
             rat_fg = rat_bg.clone();
         }
 
+        let mut mut_pixmap = self.pixmap.as_mut();
+
         let mut text_color = if is_reversed {
-            self.pixmap.fill(rat_to_skia_color(&rat_fg, true));
+            mut_pixmap.fill(rat_to_skia_color(&rat_fg, true));
 
             rat_to_cosmic_color(&rat_bg, false)
         } else {
-            self.pixmap.fill(rat_to_skia_color(&rat_bg, false));
+            mut_pixmap.fill(rat_to_skia_color(&rat_bg, false));
 
             rat_to_cosmic_color(&rat_fg, true)
         };
@@ -116,7 +118,7 @@ impl SoftBackend {
                 if let Some(pixel) = self.pixmap.pixel_mut(x, y) {
                     *pixel = PremultipliedColorU8::from_color(color);
                 } */
-                self.pixmap.fill_rect(
+                mut_pixmap.fill_rect(
                     rect,
                     &self.skia_paint,
                     tiny_skia::Transform::identity(),
@@ -125,10 +127,10 @@ impl SoftBackend {
             }
         });
 
-        self.pixmapik.draw_pixmap(
+        self.screen_pixmap.draw_pixmap(
             (xik as u32 * self.char_width) as i32,
             (yik as u32 * self.char_height) as i32,
-            self.pixmap.as_ref(),
+            mut_pixmap.as_ref(),
             &self.pixmap_paint,
             Transform::identity(),
             None,
@@ -174,7 +176,7 @@ impl SoftBackend {
         let char_height = wa.height;
         let mut pixmap = Pixmap::new(char_width as u32, char_height).unwrap();
 
-        let mut pixmapik = Pixmap::new(
+        let mut screen_pixmap = Pixmap::new(
             (char_width * width as u32),
             (char_height * height as u32) as u32,
         )
@@ -186,7 +188,7 @@ impl SoftBackend {
             pos: (0, 0),
             font_system,
 
-            pixmapik,
+            screen_pixmap,
 
             pixmap_paint,
             character_buffer,
@@ -222,7 +224,7 @@ impl Backend for SoftBackend {
             //   println!("{c:#?}");
         }
         // Save to PNG file
-        self.pixmapik.save_png("output_tiny_skia.png").unwrap();
+        self.screen_pixmap.save_png("output_tiny_skia.png").unwrap();
 
         Ok(())
     }
@@ -250,7 +252,8 @@ impl Backend for SoftBackend {
     fn clear(&mut self) -> io::Result<()> {
         self.buffer.reset();
         let clear_cell = Cell::EMPTY;
-        self.pixmapik.fill(rat_to_skia_color(&clear_cell.bg, false));
+        self.screen_pixmap
+            .fill(rat_to_skia_color(&clear_cell.bg, false));
         Ok(())
     }
 
