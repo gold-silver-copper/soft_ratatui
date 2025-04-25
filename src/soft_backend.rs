@@ -119,7 +119,7 @@ impl SoftBackend {
                 // let x = x + 3;
                 // let y = y + 3;
 
-                //  println!("{x} {y} {w} {h} {color:#?}");
+                println!("{x} {y} {w} {h} {color:#?}");
                 // if y > -1 && x > -1 {
                 let index = (x) + ((self.char_width as i32) * (y));
                 let [r, g, b, a] = color.as_rgba();
@@ -140,9 +140,6 @@ impl SoftBackend {
                 //   }
             },
         );
-
-        let start_index =
-            (xik as u32 * self.char_height as u32) + ((self.char_width as u32) * (yik as u32));
 
         self.pixmapik.draw_pixmap(
             (xik as u32 * self.char_width) as i32,
@@ -268,11 +265,7 @@ impl Backend for SoftBackend {
     fn clear(&mut self) -> io::Result<()> {
         self.buffer.reset();
         let clear_cell = Cell::EMPTY;
-        for x in (0..self.buffer.area.width) {
-            for y in (0..self.buffer.area.height) {
-                self.draw_cell(&clear_cell, x, y);
-            }
-        }
+        self.pixmapik.fill(rat_to_skia_color(&clear_cell.bg, false));
         Ok(())
     }
 
