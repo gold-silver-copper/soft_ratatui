@@ -30,6 +30,17 @@ pub struct SoftBackend {
     line_height: u32,
 }
 
+fn add_strikeout(text: &String) -> String {
+    // Unicode combining long stroke overlay
+    let strike = '\u{0336}';
+    text.chars().flat_map(|c| [c, strike]).collect()
+}
+fn add_underline(text: &String) -> String {
+    // Unicode combining long stroke overlay
+    let strike = '\u{0332}';
+    text.chars().flat_map(|c| [c, strike]).collect()
+}
+
 impl SoftBackend {
     pub fn draw_cell(&mut self, rat_cell: &Cell, xik: u16, yik: u16) {
         let mut buffer = CosmicBuffer::new(&mut self.font_system, self.metrics);
@@ -39,14 +50,6 @@ impl SoftBackend {
         let width = self.glyph_width + 1.00;
         let height = self.line_height;
         buffer.set_size(Some(width as f32), Some(height as f32));
-
-        // Set and shape text
-        buffer.set_text(
-            rat_cell.symbol(),
-            &Attrs::new().family(Family::Monospace),
-            Shaping::Advanced,
-        );
-        buffer.shape_until_scroll(true);
 
         // Prepare Pixmap to draw into
 
@@ -65,30 +68,38 @@ impl SoftBackend {
         let is_hidden = rat_cell.modifier.contains(Modifier::HIDDEN);
         let is_crossed_out = rat_cell.modifier.contains(Modifier::CROSSED_OUT);
 
-        let text_color = if is_reversed {
-            pixmap.fill(rat_to_skia_color(&rat_cell.fg, false));
-
-            rat_to_cosmic_color(&rat_cell.bg, true)
-        } else {
-            pixmap.fill(rat_to_skia_color(&rat_cell.bg, false));
-
-            rat_to_cosmic_color(&rat_cell.fg, true)
-        };
-        /*   if is_hidden {
-            tf_fg_color = tf_bg_color.clone();
+        let mut rat_fg = rat_cell.fg.clone();
+        let rat_bg = rat_cell.bg.clone();
+        if is_hidden {
+            rat_fg = rat_bg.clone();
         }
 
-        let tf_stroke = if is_crossed_out {
-            Stroke::new(char_height / 8.0, tf_fg_color)
+        let mut text_color = if is_reversed {
+            pixmap.fill(rat_to_skia_color(&rat_fg, true));
+
+            rat_to_cosmic_color(&rat_bg, false)
         } else {
-            Stroke::NONE
+            pixmap.fill(rat_to_skia_color(&rat_bg, false));
+
+            rat_to_cosmic_color(&rat_fg, true)
         };
 
-        let tf_underline = if is_underlined {
-            Stroke::new(char_height / 3.0, tf_fg_color)
-        } else {
-            Stroke::NONE
-        }; */
+        let mut text_symbol: String = rat_cell.symbol().to_string();
+
+        if is_crossed_out {
+            text_symbol = add_strikeout(&text_symbol);
+        }
+        if is_underlined {
+            text_symbol = add_underline(&text_symbol);
+        }
+
+        // Set and shape text
+        buffer.set_text(
+            &text_symbol,
+            &Attrs::new().family(Family::Monospace),
+            Shaping::Advanced,
+        );
+        buffer.shape_until_scroll(true);
         buffer.draw(&mut swash_cache, text_color, |x, y, w, h, color| {
             if let Some(rect) = SkiaRect::from_xywh(x as f32, y as f32, w as f32, h as f32) {
                 let [r, g, b, a] = color.as_rgba();
