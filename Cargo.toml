@@ -18,3 +18,7 @@ cosmic-text = "0.14.2"
 ratatui = "0.29.0"
 
 tiny-skia = "0.11.4"
+
+[dev-dependencies]
+color-eyre = "0.6.3"
+palette = "0.7.6"

@@ -191,10 +191,6 @@ impl Backend for SoftBackend {
     }
 }
 
-pub fn cell_to_skia(cell: &Cell) -> i64 {
-    5
-}
-
 /// Convert a ratatui color to a tiny-skia SkiaColor
 pub fn rat_to_skia_color(rat_col: &RatColor, is_a_fg: bool) -> SkiaColor {
     match rat_col {

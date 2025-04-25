@@ -7,6 +7,7 @@ use soft_ratatui::SoftBackend;
 fn main() {
     let backend = SoftBackend::new(100, 50);
     let mut terminal = Terminal::new(backend).unwrap();
+    terminal.clear();
 
     // terminal.draw(draw).expect("failed to draw frame");
     terminal.draw(|frame| {
