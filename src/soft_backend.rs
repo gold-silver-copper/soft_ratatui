@@ -70,7 +70,7 @@ pub fn draw_cell(
         (yik * 15) as i32,
         pixmap.as_ref(),
         &paint,
-        Transform::from_row(1.2, 0.5, 0.5, 1.2, 0.0, 0.0),
+        Transform::identity(),
         None,
     );
 }
