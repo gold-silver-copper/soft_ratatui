@@ -67,8 +67,8 @@ impl SoftBackend {
 
         paint.quality = FilterQuality::Bicubic;
         self.pixmapik.draw_pixmap(
-            (xik * self.glyph_width as u16) as i32,
-            (yik * self.metrics.line_height as u16) as i32,
+            (xik as f32 * self.glyph_width) as i32,
+            (yik as f32 * self.metrics.line_height) as i32,
             pixmap.as_ref(),
             &paint,
             Transform::identity(),
@@ -79,7 +79,7 @@ impl SoftBackend {
     /// Creates a new `SoftBackend` with the specified width and height.
     pub fn new(width: u16, height: u16) -> Self {
         let mut font_system = FontSystem::new();
-        let metrics = Metrics::new(16.0, 16.0);
+        let metrics = Metrics::new(13.0, 13.0);
         let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
         let mut buffer = buffer.borrow_with(&mut font_system);
 
@@ -101,12 +101,12 @@ impl SoftBackend {
         println!("Glyph height (bbox): {:#?}", boop);
 
         let mut pixmapik = Pixmap::new(
-            (glyph_width as i32 * width as i32) as u32,
-            (metrics.line_height as i32 * height as i32) as u32,
+            (glyph_width * width as f32) as u32,
+            (metrics.line_height * height as f32) as u32,
         )
         .unwrap();
 
-        Self {
+        let mut return_struct = Self {
             buffer: Buffer::empty(Rect::new(0, 0, width, height)),
             cursor: false,
             pos: (0, 0),
@@ -115,7 +115,9 @@ impl SoftBackend {
             pixmapik,
             glyph_width,
             glyph_height,
-        }
+        };
+        return_struct.clear();
+        return_struct
     }
 
     /// Returns a reference to the internal buffer of the `SoftBackend`.
@@ -167,6 +169,12 @@ impl Backend for SoftBackend {
 
     fn clear(&mut self) -> io::Result<()> {
         self.buffer.reset();
+        let clear_cell = Cell::EMPTY;
+        for x in (0..self.buffer.area.width) {
+            for y in (0..self.buffer.area.height) {
+                self.draw_cell(&clear_cell, x, y);
+            }
+        }
         Ok(())
     }
 
