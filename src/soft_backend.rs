@@ -33,6 +33,7 @@ pub struct SoftBackend {
     character_buffer: CosmicBuffer,
     char_width: f32,
     char_height: u32,
+    pixmap: Pixmap,
 }
 
 fn add_strikeout(text: &String) -> String {
@@ -53,7 +54,6 @@ impl SoftBackend {
         // Draw using tiny-skia
         let mut swash_cache = SwashCache::new();
         let mut paint = Paint::default();
-        let mut pixmap = Pixmap::new(self.char_width as u32, self.char_height).unwrap();
 
         let is_bold = rat_cell.modifier.contains(Modifier::BOLD);
         let is_italic = rat_cell.modifier.contains(Modifier::ITALIC);
@@ -72,11 +72,11 @@ impl SoftBackend {
         }
 
         let mut text_color = if is_reversed {
-            pixmap.fill(rat_to_skia_color(&rat_fg, true));
+            self.pixmap.fill(rat_to_skia_color(&rat_fg, true));
 
             rat_to_cosmic_color(&rat_bg, false)
         } else {
-            pixmap.fill(rat_to_skia_color(&rat_bg, false));
+            self.pixmap.fill(rat_to_skia_color(&rat_bg, false));
 
             rat_to_cosmic_color(&rat_fg, true)
         };
@@ -120,7 +120,8 @@ impl SoftBackend {
                 if let Some(rect) = SkiaRect::from_xywh(x as f32, y as f32, w as f32, h as f32) {
                     let [r, g, b, a] = color.as_rgba();
                     paint.set_color(SkiaColor::from_rgba8(r, g, b, a));
-                    pixmap.fill_rect(rect, &paint, tiny_skia::Transform::identity(), None);
+                    self.pixmap
+                        .fill_rect(rect, &paint, tiny_skia::Transform::identity(), None);
                 }
             },
         );
@@ -128,7 +129,7 @@ impl SoftBackend {
         self.pixmapik.draw_pixmap(
             (xik as f32 * self.glyph_width) as i32,
             (yik as u32 * self.line_height) as i32,
-            pixmap.as_ref(),
+            self.pixmap.as_ref(),
             &self.pixmap_paint,
             Transform::identity(),
             None,
@@ -162,6 +163,7 @@ impl SoftBackend {
         //      // Set a size for the text buffer, in pixels
         let char_width = glyph_width + 1.00;
         let char_height = line_height;
+        let mut pixmap = Pixmap::new(char_width as u32, char_height).unwrap();
 
         let mut pixmapik = Pixmap::new(
             (glyph_width * width as f32) as u32,
@@ -183,6 +185,7 @@ impl SoftBackend {
             character_buffer,
             char_width,
             char_height,
+            pixmap,
         };
         return_struct.clear();
         return_struct
