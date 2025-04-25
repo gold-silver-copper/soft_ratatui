@@ -14,8 +14,8 @@ use cosmic_text::{
     SwashCache, Weight,
 };
 use tiny_skia::{
-    Color as SkiaColor, FilterQuality, Paint, Pixmap, PixmapMut, PixmapPaint, Rect as SkiaRect,
-    Transform,
+    BlendMode, Color as SkiaColor, FilterQuality, Paint, Pixmap, PixmapMut, PixmapPaint,
+    PremultipliedColorU8, Rect as SkiaRect, Transform,
 };
 
 #[derive(Debug)]
@@ -24,7 +24,7 @@ pub struct SoftBackend {
     cursor: bool,
     pos: (u16, u16),
     font_system: FontSystem,
-    metrics: Metrics,
+
     pixmapik: Pixmap,
     glyph_width: f32,
     glyph_height: f32,
@@ -34,6 +34,8 @@ pub struct SoftBackend {
     char_width: f32,
     char_height: u32,
     pixmap: Pixmap,
+    skia_paint: Paint<'static>,
+    swash_cache: SwashCache,
 }
 
 fn add_strikeout(text: &String) -> String {
@@ -52,8 +54,6 @@ impl SoftBackend {
         // Prepare Pixmap to draw into
 
         // Draw using tiny-skia
-        let mut swash_cache = SwashCache::new();
-        let mut paint = Paint::default();
 
         let is_bold = rat_cell.modifier.contains(Modifier::BOLD);
         let is_italic = rat_cell.modifier.contains(Modifier::ITALIC);
@@ -104,24 +104,29 @@ impl SoftBackend {
             Some(self.char_height as f32),
         );
         // Set and shape text
-        self.character_buffer.set_text(
-            &mut self.font_system,
-            &text_symbol,
-            &attrs,
-            Shaping::Advanced,
-        );
+        self.character_buffer
+            .set_text(&mut self.font_system, &text_symbol, &attrs, Shaping::Basic);
         self.character_buffer
             .shape_until_scroll(&mut self.font_system, true);
         self.character_buffer.draw(
             &mut self.font_system,
-            &mut swash_cache,
+            &mut self.swash_cache,
             text_color,
             |x, y, w, h, color| {
-                if let Some(rect) = SkiaRect::from_xywh(x as f32, y as f32, w as f32, h as f32) {
+                // println!("{x}{y}{w}{h}");
+                if let Some(rect) = SkiaRect::from_xywh(x as f32, y as f32, 1.0, 1.0) {
                     let [r, g, b, a] = color.as_rgba();
-                    paint.set_color(SkiaColor::from_rgba8(r, g, b, a));
-                    self.pixmap
-                        .fill_rect(rect, &paint, tiny_skia::Transform::identity(), None);
+                    self.skia_paint.set_color(SkiaColor::from_rgba8(r, g, b, a));
+                    /*
+                    if let Some(pixel) = self.pixmap.pixel_mut(x, y) {
+                        *pixel = PremultipliedColorU8::from_color(color);
+                    } */
+                    self.pixmap.fill_rect(
+                        rect,
+                        &self.skia_paint,
+                        tiny_skia::Transform::identity(),
+                        None,
+                    );
                 }
             },
         );
@@ -138,7 +143,10 @@ impl SoftBackend {
 
     /// Creates a new `SoftBackend` with the specified width and height.
     pub fn new(width: u16, height: u16) -> Self {
-        let line_height = 16;
+        let mut swash_cache = SwashCache::new();
+        let mut skia_paint = Paint::default();
+        skia_paint.anti_alias = false;
+        let line_height = 8;
         let mut font_system = FontSystem::new();
         let metrics = Metrics::new(line_height as f32, line_height as f32);
         let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
@@ -176,7 +184,7 @@ impl SoftBackend {
             cursor: false,
             pos: (0, 0),
             font_system,
-            metrics,
+
             pixmapik,
             glyph_width,
             glyph_height,
@@ -186,6 +194,8 @@ impl SoftBackend {
             char_width,
             char_height,
             pixmap,
+            skia_paint,
+            swash_cache,
         };
         return_struct.clear();
         return_struct
