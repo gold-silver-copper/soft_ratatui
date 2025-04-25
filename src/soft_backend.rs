@@ -98,8 +98,8 @@ impl SoftBackend {
 
         self.character_buffer.set_size(
             &mut self.font_system,
-            Some(self.char_width as f32 + 10.0),
-            Some(self.char_height as f32 + 10.0),
+            Some(self.char_width as f32),
+            Some(self.char_height as f32),
         );
         // Set and shape text
         self.character_buffer.set_text(
@@ -111,43 +111,31 @@ impl SoftBackend {
         self.character_buffer
             .shape_until_scroll(&mut self.font_system, true);
 
+        let pixmap_width = self.pixmapik.width() as i32;
+        let pixmap_height = self.pixmapik.height() as i32;
+
         self.character_buffer.draw(
             &mut self.font_system,
             &mut self.swash_cache,
             text_color,
             |x, y, w, h, color| {
-                // let x = x + 3;
-                // let y = y + 3;
+                let draw_x = x + (xik as i32 * self.char_width as i32);
+                let draw_y = y + (yik as i32 * self.char_height as i32);
 
-                println!("{x} {y} {w} {h} {color:#?}");
-                // if y > -1 && x > -1 {
-                let index = (x) + ((self.char_width as i32) * (y));
+                // Safety bounds check
+                if draw_x < 0 || draw_y < 0 || draw_x >= pixmap_width || draw_y >= pixmap_height {
+                    return;
+                }
+
+                let index = (draw_y * pixmap_width + draw_x) as usize;
+
                 let [r, g, b, a] = color.as_rgba();
                 let kolorok = SkiaColorU8::from_rgba(r, g, b, a).premultiply();
 
-                /* self.pixmap.fill_rect(
-                    rect,
-                    &self.skia_paint,
-                    tiny_skia::Transform::identity(),
-                    None,
-                ); */
+                let pixeliki = self.pixmapik.pixels_mut();
 
-                let pixeliki = self.pixmap.pixels_mut();
-                if (index as usize) < pixeliki.len() {
-                    pixeliki[index as usize] = kolorok;
-                }
-
-                //   }
+                pixeliki[index] = kolorok;
             },
-        );
-
-        self.pixmapik.draw_pixmap(
-            (xik as u32 * self.char_width) as i32,
-            (yik as u32 * self.char_height) as i32,
-            self.pixmap.as_ref(),
-            &self.pixmap_paint,
-            Transform::identity(),
-            None,
         );
     }
 
