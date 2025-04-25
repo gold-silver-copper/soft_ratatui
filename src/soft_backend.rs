@@ -108,6 +108,8 @@ impl SoftBackend {
             .set_text(&mut self.font_system, &text_symbol, &attrs, Shaping::Basic);
         self.character_buffer
             .shape_until_scroll(&mut self.font_system, true);
+
+        let color_vec: Vec<u8> = Vec::new();
         self.character_buffer.draw(
             &mut self.font_system,
             &mut self.swash_cache,
