@@ -96,43 +96,34 @@ impl SoftBackend {
             attrs = attrs.style(Style::Italic);
         }
 
-        self.character_buffer.set_size(
-            &mut self.font_system,
-            Some(self.char_width as f32),
-            Some(self.char_height as f32),
-        );
+        let mut mut_buffer = self.character_buffer.borrow_with(&mut self.font_system);
+
+        mut_buffer.set_size(Some(self.char_width as f32), Some(self.char_height as f32));
         // Set and shape text
-        self.character_buffer.set_text(
-            &mut self.font_system,
+        mut_buffer.set_text(
             &text_symbol,
             &attrs,
             Shaping::Advanced, // Basic for better performance
         );
-        self.character_buffer
-            .shape_until_scroll(&mut self.font_system, true);
+        mut_buffer.shape_until_scroll(true);
 
-        self.character_buffer.draw(
-            &mut self.font_system,
-            &mut self.swash_cache,
-            text_color,
-            |x, y, w, h, color| {
-                // println!("{x}{y}{w}{h}");
-                if let Some(rect) = SkiaRect::from_xywh(x as f32, y as f32, 1.0, 1.0) {
-                    let [r, g, b, a] = color.as_rgba();
-                    self.skia_paint.set_color(SkiaColor::from_rgba8(r, g, b, a));
-                    /*
-                    if let Some(pixel) = self.pixmap.pixel_mut(x, y) {
-                        *pixel = PremultipliedColorU8::from_color(color);
-                    } */
-                    self.pixmap.fill_rect(
-                        rect,
-                        &self.skia_paint,
-                        tiny_skia::Transform::identity(),
-                        None,
-                    );
-                }
-            },
-        );
+        mut_buffer.draw(&mut self.swash_cache, text_color, |x, y, w, h, color| {
+            // println!("{x}{y}{w}{h}");
+            if let Some(rect) = SkiaRect::from_xywh(x as f32, y as f32, 1.0, 1.0) {
+                let [r, g, b, a] = color.as_rgba();
+                self.skia_paint.set_color(SkiaColor::from_rgba8(r, g, b, a));
+                /*
+                if let Some(pixel) = self.pixmap.pixel_mut(x, y) {
+                    *pixel = PremultipliedColorU8::from_color(color);
+                } */
+                self.pixmap.fill_rect(
+                    rect,
+                    &self.skia_paint,
+                    tiny_skia::Transform::identity(),
+                    None,
+                );
+            }
+        });
 
         self.pixmapik.draw_pixmap(
             (xik as u32 * self.char_width) as i32,
