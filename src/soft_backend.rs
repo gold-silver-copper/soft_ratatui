@@ -113,26 +113,11 @@ impl SoftBackend {
         self.character_buffer
             .shape_until_scroll(&mut self.font_system, true);
 
-        let mut color_vec: Vec<u8> = Vec::new(); //figure out how to use color_vec instead of fill_rect
-                                                 //create color vec filled with background color
-                                                 //manually set each pixel thru vector rgba x + y
-        let mut max_x = 0;
-        let mut max_y = 0;
         self.character_buffer.draw(
             &mut self.font_system,
             &mut self.swash_cache,
             text_color,
             |x, y, w, h, color| {
-                //   println!("{x}{y}{w}{h}");
-                let colores = color.as_rgba();
-                color_vec.append(&mut colores.to_vec());
-                if x > max_x {
-                    max_x = x;
-                }
-                if y > max_y {
-                    max_y = y;
-                }
-
                 if let Some(rect) = SkiaRect::from_xywh(x as f32, y as f32, 1.0, 1.0) {
                     let [r, g, b, a] = color.as_rgba();
                     self.skia_paint.set_color(SkiaColor::from_rgba8(r, g, b, a));
@@ -149,12 +134,6 @@ impl SoftBackend {
                 }
             },
         );
-        println!("stats {} {} {}", color_vec.len(), max_x, max_y);
-        if let Some(int_size) = IntSize::from_wh(max_x as u32 - 1, max_y as u32 - 1) {
-            if let Some(test_pixmap) = Pixmap::from_vec(color_vec, int_size) {
-                println!("WOOOOOOOOOO");
-            }
-        }
 
         self.pixmapik.draw_pixmap(
             (xik as f32 * self.glyph_width) as i32,
