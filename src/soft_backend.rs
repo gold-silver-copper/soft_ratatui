@@ -24,6 +24,8 @@ pub struct SoftBackend {
     font_system: FontSystem,
     metrics: Metrics,
     pixmapik: Pixmap,
+    glyph_width: f32,
+    glyph_height: f32,
 }
 
 pub fn draw_cell(
@@ -78,9 +80,29 @@ pub fn draw_cell(
 impl SoftBackend {
     /// Creates a new `SoftBackend` with the specified width and height.
     pub fn new(width: u16, height: u16) -> Self {
-        let font_system = FontSystem::new();
-        let metrics = Metrics::new(14.0, 20.0);
-        let mut pixmapik = Pixmap::new(160, 50).unwrap();
+        let mut font_system = FontSystem::new();
+        let metrics = Metrics::new(16.0, 16.0);
+        let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
+        let mut buffer = buffer.borrow_with(&mut font_system);
+
+        buffer.set_text("█\n█", &Attrs::new(), Shaping::Advanced);
+        buffer.shape_until_scroll(true);
+        /* for runik in buffer.layout_runs() {
+            println!("Glyph height (bbox): {:#?}", runik);
+            let glyph_width = runik.line_w;
+            let glyph_height = runik.line_y;
+        } */
+
+        let boop = buffer.layout_runs().next().unwrap();
+        let glyph_width = boop.line_w;
+        let glyph_height = boop.line_y;
+        println!("Glyph height (bbox): {:#?}", boop);
+
+        let mut pixmapik = Pixmap::new(
+            (glyph_width as i32 * width as i32) as u32,
+            (glyph_height as i32 * height as i32) as u32,
+        )
+        .unwrap();
 
         Self {
             buffer: Buffer::empty(Rect::new(0, 0, width, height)),
@@ -89,6 +111,8 @@ impl SoftBackend {
             font_system,
             metrics,
             pixmapik,
+            glyph_width,
+            glyph_height,
         }
     }
 
@@ -118,7 +142,7 @@ impl Backend for SoftBackend {
                 x,
                 y,
             );
-            println!("{c:#?}");
+            //   println!("{c:#?}");
         }
         // Save to PNG file
         self.pixmapik.save_png("output_tiny_skia.png").unwrap();
