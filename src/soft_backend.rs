@@ -38,8 +38,8 @@ pub fn draw_cell(
     let mut buffer = buffer.borrow_with(font_system);
 
     // Set a size for the text buffer, in pixels
-    let width = 160;
-    let height = 50;
+    let width = 30;
+    let height = 30;
     buffer.set_size(Some(width as f32), Some(height as f32));
 
     // Set and shape text
@@ -48,17 +48,17 @@ pub fn draw_cell(
 
     // Prepare Pixmap to draw into
     let mut pixmap = Pixmap::new(width, height).unwrap();
-    pixmap.fill(rat_to_skia_color(&rat_cell.bg, false)); // black background
+    pixmap.fill(rat_to_skia_color(&rat_cell.bg, false));
 
-    let text_color = CosmicColor::rgb(0b1111, 0xFF, 0xFF); // white
+    let text_color = rat_to_cosmic_color(&rat_cell.fg, true);
 
     // Draw using tiny-skia
     let mut swash_cache = SwashCache::new();
-    buffer.draw(&mut swash_cache, text_color, |x, y, w, h, _color| {
+    buffer.draw(&mut swash_cache, text_color, |x, y, w, h, color| {
         if let Some(rect) = SkiaRect::from_xywh(x as f32, y as f32, w as f32, h as f32) {
             let mut paint = Paint::default();
-
-            paint.set_color(rat_to_skia_color(&rat_cell.fg, true));
+            let [r, g, b, a] = color.as_rgba();
+            paint.set_color(SkiaColor::from_rgba8(r, g, b, a));
             pixmap.fill_rect(rect, &paint, tiny_skia::Transform::identity(), None);
         }
     });
@@ -208,5 +208,38 @@ pub fn rat_to_skia_color(rat_col: &RatColor, is_a_fg: bool) -> SkiaColor {
             SkiaColor::from_rgba8(i.wrapping_mul(i), i.wrapping_add(i), i, 255)
         }
         RatColor::Rgb(r, g, b) => SkiaColor::from_rgba8(*r, *g, *b, 255),
+    }
+}
+
+pub fn rat_to_cosmic_color(rat_col: &RatColor, is_a_fg: bool) -> CosmicColor {
+    match rat_col {
+        RatColor::Reset => {
+            if is_a_fg {
+                CosmicColor::rgba(204, 204, 255, 255)
+            } else {
+                CosmicColor::rgba(15, 15, 112, 255)
+            }
+        }
+        RatColor::Black => CosmicColor::rgba(0, 0, 0, 255),
+        RatColor::Red => CosmicColor::rgba(139, 0, 0, 255),
+        RatColor::Green => CosmicColor::rgba(0, 100, 0, 255),
+        RatColor::Yellow => CosmicColor::rgba(255, 215, 0, 255),
+        RatColor::Blue => CosmicColor::rgba(0, 0, 139, 255),
+        RatColor::Magenta => CosmicColor::rgba(99, 9, 99, 255),
+        RatColor::Cyan => CosmicColor::rgba(0, 0, 255, 255),
+        RatColor::Gray => CosmicColor::rgba(128, 128, 128, 255),
+        RatColor::DarkGray => CosmicColor::rgba(64, 64, 64, 255),
+        RatColor::LightRed => CosmicColor::rgba(255, 0, 0, 255),
+        RatColor::LightGreen => CosmicColor::rgba(0, 255, 0, 255),
+        RatColor::LightBlue => CosmicColor::rgba(173, 216, 230, 255),
+        RatColor::LightYellow => CosmicColor::rgba(255, 255, 224, 255),
+        RatColor::LightMagenta => CosmicColor::rgba(139, 0, 139, 255),
+        RatColor::LightCyan => CosmicColor::rgba(224, 255, 255, 255),
+        RatColor::White => CosmicColor::rgba(255, 255, 255, 255),
+        RatColor::Indexed(i) => {
+            let i = *i as u8;
+            CosmicColor::rgba(i.wrapping_mul(i), i.wrapping_add(i), i, 255)
+        }
+        RatColor::Rgb(r, g, b) => CosmicColor::rgba(*r, *g, *b, 255),
     }
 }
