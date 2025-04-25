@@ -26,12 +26,11 @@ pub struct SoftBackend {
     font_system: FontSystem,
 
     pixmapik: Pixmap,
-    glyph_width: f32,
-    glyph_height: f32,
+
     line_height: u32,
     pixmap_paint: PixmapPaint,
     character_buffer: CosmicBuffer,
-    char_width: f32,
+    char_width: u32,
     char_height: u32,
     pixmap: Pixmap,
     skia_paint: Paint<'static>,
@@ -100,7 +99,7 @@ impl SoftBackend {
 
         self.character_buffer.set_size(
             &mut self.font_system,
-            Some(self.char_width),
+            Some(self.char_width as f32),
             Some(self.char_height as f32),
         );
         // Set and shape text
@@ -125,19 +124,24 @@ impl SoftBackend {
                     if let Some(pixel) = self.pixmap.pixel_mut(x, y) {
                         *pixel = PremultipliedColorU8::from_color(color);
                     } */
+
                     self.pixmap.fill_rect(
                         rect,
                         &self.skia_paint,
                         tiny_skia::Transform::identity(),
                         None,
                     );
+
+                    //    let pixeliki = self.pixmap.pixels_mut();
+                    //    pixeliki[0] = PremultipliedColorU8::from_rgba(100, 100, 100, 255).unwrap();
+                    //   pixeliki[10] = PremultipliedColorU8::from_rgba(100, 100, 100, 255).unwrap();
                 }
             },
         );
 
         self.pixmapik.draw_pixmap(
-            (xik as f32 * self.glyph_width) as i32,
-            (yik as u32 * self.line_height) as i32,
+            (xik as u32 * self.char_width) as i32,
+            (yik as u32 * self.char_height) as i32,
             self.pixmap.as_ref(),
             &self.pixmap_paint,
             Transform::identity(),
@@ -150,9 +154,9 @@ impl SoftBackend {
         let mut swash_cache = SwashCache::new();
         let mut skia_paint = Paint::default();
         skia_paint.anti_alias = false;
-        let line_height = 18;
+        let line_height = 30;
         let mut font_system = FontSystem::new();
-        let metrics = Metrics::new(line_height as f32 - 3.0, line_height as f32);
+        let metrics = Metrics::new(line_height as f32, line_height as f32);
         let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
         let mut buffer = buffer.borrow_with(&mut font_system);
         buffer.set_text(
@@ -162,8 +166,14 @@ impl SoftBackend {
         );
         buffer.shape_until_scroll(true);
         let boop = buffer.layout_runs().next().unwrap();
-        let glyph_width = boop.line_w;
-        let glyph_height = boop.line_y;
+        let physical_glyph = boop.glyphs.iter().next().unwrap().physical((0., 0.), 1.0);
+
+        let wa = swash_cache
+            .get_image(&mut font_system, physical_glyph.cache_key)
+            .clone()
+            .unwrap()
+            .placement;
+        println!("Glyph height (bbox): {:#?}", physical_glyph);
 
         let mut pixmap_paint = PixmapPaint::default();
         let mut character_buffer = CosmicBuffer::new(&mut font_system, metrics);
@@ -173,13 +183,13 @@ impl SoftBackend {
 
         //  println!("Glyph height (bbox): {:#?}", boop);
         //      // Set a size for the text buffer, in pixels
-        let char_width = glyph_width + 1.00;
-        let char_height = line_height;
+        let char_width = wa.width;
+        let char_height = wa.height;
         let mut pixmap = Pixmap::new(char_width as u32, char_height).unwrap();
 
         let mut pixmapik = Pixmap::new(
-            (glyph_width * width as f32) as u32,
-            (metrics.line_height * height as f32) as u32,
+            (char_width * width as u32),
+            (char_height * height as u32) as u32,
         )
         .unwrap();
 
@@ -190,8 +200,7 @@ impl SoftBackend {
             font_system,
 
             pixmapik,
-            glyph_width,
-            glyph_height,
+
             line_height,
             pixmap_paint,
             character_buffer,
