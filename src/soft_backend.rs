@@ -6,7 +6,7 @@ use std::io;
 use ratatui::backend::{Backend, ClearType, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
-use ratatui::style::Color as RatColor;
+use ratatui::style::{Color as RatColor, Modifier};
 
 use cosmic_text::{
     Attrs, Buffer as CosmicBuffer, Color as CosmicColor, Family, FontSystem, Metrics, Shaping,
@@ -36,8 +36,8 @@ impl SoftBackend {
         let mut buffer = buffer.borrow_with(&mut self.font_system);
 
         // Set a size for the text buffer, in pixels
-        let width = self.glyph_width as u32 + 1;
-        let height = self.line_height + 1;
+        let width = self.glyph_width + 1.00;
+        let height = self.line_height;
         buffer.set_size(Some(width as f32), Some(height as f32));
 
         // Set and shape text
@@ -49,14 +49,46 @@ impl SoftBackend {
         buffer.shape_until_scroll(true);
 
         // Prepare Pixmap to draw into
-        let mut pixmap = Pixmap::new(width, height).unwrap();
-        pixmap.fill(rat_to_skia_color(&rat_cell.bg, false));
-
-        let text_color = rat_to_cosmic_color(&rat_cell.fg, true);
 
         // Draw using tiny-skia
         let mut swash_cache = SwashCache::new();
         let mut paint = Paint::default();
+        let mut pixmap = Pixmap::new(width as u32, height).unwrap();
+
+        let is_bold = rat_cell.modifier.contains(Modifier::BOLD);
+        let is_italic = rat_cell.modifier.contains(Modifier::ITALIC);
+        let is_underlined = rat_cell.modifier.contains(Modifier::UNDERLINED);
+        let is_slowblink = rat_cell.modifier.contains(Modifier::SLOW_BLINK);
+        let is_rapidblink = rat_cell.modifier.contains(Modifier::RAPID_BLINK);
+        let is_reversed = rat_cell.modifier.contains(Modifier::REVERSED);
+        let is_dim = rat_cell.modifier.contains(Modifier::DIM);
+        let is_hidden = rat_cell.modifier.contains(Modifier::HIDDEN);
+        let is_crossed_out = rat_cell.modifier.contains(Modifier::CROSSED_OUT);
+
+        let text_color = if is_reversed {
+            pixmap.fill(rat_to_skia_color(&rat_cell.fg, false));
+
+            rat_to_cosmic_color(&rat_cell.bg, true)
+        } else {
+            pixmap.fill(rat_to_skia_color(&rat_cell.bg, false));
+
+            rat_to_cosmic_color(&rat_cell.fg, true)
+        };
+        /*   if is_hidden {
+            tf_fg_color = tf_bg_color.clone();
+        }
+
+        let tf_stroke = if is_crossed_out {
+            Stroke::new(char_height / 8.0, tf_fg_color)
+        } else {
+            Stroke::NONE
+        };
+
+        let tf_underline = if is_underlined {
+            Stroke::new(char_height / 3.0, tf_fg_color)
+        } else {
+            Stroke::NONE
+        }; */
         buffer.draw(&mut swash_cache, text_color, |x, y, w, h, color| {
             if let Some(rect) = SkiaRect::from_xywh(x as f32, y as f32, w as f32, h as f32) {
                 let [r, g, b, a] = color.as_rgba();
@@ -79,7 +111,7 @@ impl SoftBackend {
 
     /// Creates a new `SoftBackend` with the specified width and height.
     pub fn new(width: u16, height: u16) -> Self {
-        let line_height = 16;
+        let line_height = 20;
         let mut font_system = FontSystem::new();
         let metrics = Metrics::new(line_height as f32, line_height as f32);
         let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
