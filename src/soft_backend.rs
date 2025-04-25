@@ -29,6 +29,10 @@ pub struct SoftBackend {
     glyph_width: f32,
     glyph_height: f32,
     line_height: u32,
+    pixmap_paint: PixmapPaint,
+    character_buffer: CosmicBuffer,
+    char_width: f32,
+    char_height: u32,
 }
 
 fn add_strikeout(text: &String) -> String {
@@ -44,20 +48,12 @@ fn add_underline(text: &String) -> String {
 
 impl SoftBackend {
     pub fn draw_cell(&mut self, rat_cell: &Cell, xik: u16, yik: u16) {
-        let mut buffer = CosmicBuffer::new(&mut self.font_system, self.metrics);
-        let mut buffer = buffer.borrow_with(&mut self.font_system);
-
-        // Set a size for the text buffer, in pixels
-        let width = self.glyph_width + 1.00;
-        let height = self.line_height;
-        buffer.set_size(Some(width as f32), Some(height as f32));
-
         // Prepare Pixmap to draw into
 
         // Draw using tiny-skia
         let mut swash_cache = SwashCache::new();
         let mut paint = Paint::default();
-        let mut pixmap = Pixmap::new(width as u32, height).unwrap();
+        let mut pixmap = Pixmap::new(self.char_width as u32, self.char_height).unwrap();
 
         let is_bold = rat_cell.modifier.contains(Modifier::BOLD);
         let is_italic = rat_cell.modifier.contains(Modifier::ITALIC);
@@ -101,24 +97,39 @@ impl SoftBackend {
         if is_italic {
             attrs = attrs.style(Style::Italic);
         }
-        // Set and shape text
-        buffer.set_text(&text_symbol, &attrs, Shaping::Advanced);
-        buffer.shape_until_scroll(true);
-        buffer.draw(&mut swash_cache, text_color, |x, y, w, h, color| {
-            if let Some(rect) = SkiaRect::from_xywh(x as f32, y as f32, w as f32, h as f32) {
-                let [r, g, b, a] = color.as_rgba();
-                paint.set_color(SkiaColor::from_rgba8(r, g, b, a));
-                pixmap.fill_rect(rect, &paint, tiny_skia::Transform::identity(), None);
-            }
-        });
-        let mut paint = PixmapPaint::default();
 
-        paint.quality = FilterQuality::Nearest;
+        self.character_buffer.set_size(
+            &mut self.font_system,
+            Some(self.char_width),
+            Some(self.char_height as f32),
+        );
+        // Set and shape text
+        self.character_buffer.set_text(
+            &mut self.font_system,
+            &text_symbol,
+            &attrs,
+            Shaping::Advanced,
+        );
+        self.character_buffer
+            .shape_until_scroll(&mut self.font_system, true);
+        self.character_buffer.draw(
+            &mut self.font_system,
+            &mut swash_cache,
+            text_color,
+            |x, y, w, h, color| {
+                if let Some(rect) = SkiaRect::from_xywh(x as f32, y as f32, w as f32, h as f32) {
+                    let [r, g, b, a] = color.as_rgba();
+                    paint.set_color(SkiaColor::from_rgba8(r, g, b, a));
+                    pixmap.fill_rect(rect, &paint, tiny_skia::Transform::identity(), None);
+                }
+            },
+        );
+
         self.pixmapik.draw_pixmap(
             (xik as f32 * self.glyph_width) as i32,
-            (yik as f32 * self.metrics.line_height) as i32,
+            (yik as u32 * self.line_height) as i32,
             pixmap.as_ref(),
-            &paint,
+            &self.pixmap_paint,
             Transform::identity(),
             None,
         );
@@ -126,28 +137,31 @@ impl SoftBackend {
 
     /// Creates a new `SoftBackend` with the specified width and height.
     pub fn new(width: u16, height: u16) -> Self {
-        let line_height = 20;
+        let line_height = 16;
         let mut font_system = FontSystem::new();
         let metrics = Metrics::new(line_height as f32, line_height as f32);
         let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
         let mut buffer = buffer.borrow_with(&mut font_system);
-
         buffer.set_text(
             "█\n█",
             &Attrs::new().family(Family::Monospace),
             Shaping::Advanced,
         );
         buffer.shape_until_scroll(true);
-        /* for runik in buffer.layout_runs() {
-            println!("Glyph height (bbox): {:#?}", runik);
-            let glyph_width = runik.line_w;
-            let glyph_height = runik.line_y;
-        } */
-
         let boop = buffer.layout_runs().next().unwrap();
         let glyph_width = boop.line_w;
         let glyph_height = boop.line_y;
-        println!("Glyph height (bbox): {:#?}", boop);
+
+        let mut pixmap_paint = PixmapPaint::default();
+        let mut character_buffer = CosmicBuffer::new(&mut font_system, metrics);
+        // let mut character_buffer = character_buffer.borrow_with(&mut font_system);
+
+        pixmap_paint.quality = FilterQuality::Nearest;
+
+        //  println!("Glyph height (bbox): {:#?}", boop);
+        //      // Set a size for the text buffer, in pixels
+        let char_width = glyph_width + 1.00;
+        let char_height = line_height;
 
         let mut pixmapik = Pixmap::new(
             (glyph_width * width as f32) as u32,
@@ -165,6 +179,10 @@ impl SoftBackend {
             glyph_width,
             glyph_height,
             line_height,
+            pixmap_paint,
+            character_buffer,
+            char_width,
+            char_height,
         };
         return_struct.clear();
         return_struct
