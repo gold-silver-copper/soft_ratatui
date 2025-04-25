@@ -3,6 +3,7 @@
 
 use std::io;
 
+use cosmic_text::Style;
 use ratatui::backend::{Backend, ClearType, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
@@ -10,7 +11,7 @@ use ratatui::style::{Color as RatColor, Modifier};
 
 use cosmic_text::{
     Attrs, Buffer as CosmicBuffer, Color as CosmicColor, Family, FontSystem, Metrics, Shaping,
-    SwashCache,
+    SwashCache, Weight,
 };
 use tiny_skia::{
     Color as SkiaColor, FilterQuality, Paint, Pixmap, PixmapMut, PixmapPaint, Rect as SkiaRect,
@@ -93,12 +94,15 @@ impl SoftBackend {
             text_symbol = add_underline(&text_symbol);
         }
 
+        let mut attrs = Attrs::new().family(Family::Monospace);
+        if is_bold {
+            attrs = attrs.weight(Weight::BOLD);
+        }
+        if is_italic {
+            attrs = attrs.style(Style::Italic);
+        }
         // Set and shape text
-        buffer.set_text(
-            &text_symbol,
-            &Attrs::new().family(Family::Monospace),
-            Shaping::Advanced,
-        );
+        buffer.set_text(&text_symbol, &attrs, Shaping::Advanced);
         buffer.shape_until_scroll(true);
         buffer.draw(&mut swash_cache, text_color, |x, y, w, h, color| {
             if let Some(rect) = SkiaRect::from_xywh(x as f32, y as f32, w as f32, h as f32) {
@@ -109,7 +113,7 @@ impl SoftBackend {
         });
         let mut paint = PixmapPaint::default();
 
-        paint.quality = FilterQuality::Bicubic;
+        paint.quality = FilterQuality::Nearest;
         self.pixmapik.draw_pixmap(
             (xik as f32 * self.glyph_width) as i32,
             (yik as f32 * self.metrics.line_height) as i32,
