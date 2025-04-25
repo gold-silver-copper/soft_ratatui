@@ -48,17 +48,17 @@ pub fn draw_cell(
 
     // Prepare Pixmap to draw into
     let mut pixmap = Pixmap::new(width, height).unwrap();
-    pixmap.fill(SkiaColor::from_rgba8(100, 100, 100, 100)); // black background
+    pixmap.fill(rat_to_skia_color(&rat_cell.bg, false)); // black background
 
-    let text_color = CosmicColor::rgb(0xFF, 0xFF, 0xFF); // white
+    let text_color = CosmicColor::rgb(0b1111, 0xFF, 0xFF); // white
 
     // Draw using tiny-skia
     let mut swash_cache = SwashCache::new();
-    buffer.draw(&mut swash_cache, text_color, |x, y, w, h, color| {
+    buffer.draw(&mut swash_cache, text_color, |x, y, w, h, _color| {
         if let Some(rect) = SkiaRect::from_xywh(x as f32, y as f32, w as f32, h as f32) {
             let mut paint = Paint::default();
-            let [r, g, b, a] = color.as_rgba();
-            paint.set_color(SkiaColor::from_rgba8(r, g, b, a));
+
+            paint.set_color(rat_to_skia_color(&rat_cell.fg, true));
             pixmap.fill_rect(rect, &paint, tiny_skia::Transform::identity(), None);
         }
     });
