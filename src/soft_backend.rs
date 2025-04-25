@@ -14,7 +14,7 @@ use cosmic_text::{
     SwashCache, Weight,
 };
 use tiny_skia::{
-    BlendMode, Color as SkiaColor, FilterQuality, Paint, Pixmap, PixmapMut, PixmapPaint,
+    BlendMode, Color as SkiaColor, FilterQuality, IntSize, Paint, Pixmap, PixmapMut, PixmapPaint,
     PremultipliedColorU8, Rect as SkiaRect, Transform,
 };
 
@@ -104,18 +104,35 @@ impl SoftBackend {
             Some(self.char_height as f32),
         );
         // Set and shape text
-        self.character_buffer
-            .set_text(&mut self.font_system, &text_symbol, &attrs, Shaping::Basic);
+        self.character_buffer.set_text(
+            &mut self.font_system,
+            &text_symbol,
+            &attrs,
+            Shaping::Advanced, // Basic for better performance
+        );
         self.character_buffer
             .shape_until_scroll(&mut self.font_system, true);
 
-        let color_vec: Vec<u8> = Vec::new();
+        let mut color_vec: Vec<u8> = Vec::new(); //figure out how to use color_vec instead of fill_rect
+                                                 //create color vec filled with background color
+                                                 //manually set each pixel thru vector rgba x + y
+        let mut max_x = 0;
+        let mut max_y = 0;
         self.character_buffer.draw(
             &mut self.font_system,
             &mut self.swash_cache,
             text_color,
             |x, y, w, h, color| {
-                // println!("{x}{y}{w}{h}");
+                //   println!("{x}{y}{w}{h}");
+                let colores = color.as_rgba();
+                color_vec.append(&mut colores.to_vec());
+                if x > max_x {
+                    max_x = x;
+                }
+                if y > max_y {
+                    max_y = y;
+                }
+
                 if let Some(rect) = SkiaRect::from_xywh(x as f32, y as f32, 1.0, 1.0) {
                     let [r, g, b, a] = color.as_rgba();
                     self.skia_paint.set_color(SkiaColor::from_rgba8(r, g, b, a));
@@ -132,6 +149,12 @@ impl SoftBackend {
                 }
             },
         );
+        println!("stats {} {} {}", color_vec.len(), max_x, max_y);
+        if let Some(int_size) = IntSize::from_wh(max_x as u32 - 1, max_y as u32 - 1) {
+            if let Some(test_pixmap) = Pixmap::from_vec(color_vec, int_size) {
+                println!("WOOOOOOOOOO");
+            }
+        }
 
         self.pixmapik.draw_pixmap(
             (xik as f32 * self.glyph_width) as i32,
@@ -148,9 +171,9 @@ impl SoftBackend {
         let mut swash_cache = SwashCache::new();
         let mut skia_paint = Paint::default();
         skia_paint.anti_alias = false;
-        let line_height = 8;
+        let line_height = 18;
         let mut font_system = FontSystem::new();
-        let metrics = Metrics::new(line_height as f32, line_height as f32);
+        let metrics = Metrics::new(line_height as f32 - 3.0, line_height as f32);
         let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
         let mut buffer = buffer.borrow_with(&mut font_system);
         buffer.set_text(
