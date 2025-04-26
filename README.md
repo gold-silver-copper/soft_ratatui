@@ -9,15 +9,6 @@ Fast, portable, no-bloat. Powered by [`tiny-skia`](https://github.com/RazrFalcon
 
 ---
 
-## Why
-
-**`ratatui`** is great — but its rendering depends on terminal escape sequences.
-Sometimes you just want a raw framebuffer and pixel-by-pixel control.
-This crate gives you that.
-**No GPU, no terminal, no nonsense.**
-
----
-
 ## Features
 
 - ✅ Draws [`ratatui`]([https://github.com/ratatui/ratatui) Widgets into memory.
