@@ -11,7 +11,6 @@ Fast, portable, no-bloat. Powered by [`tiny-skia`](https://github.com/RazrFalcon
 
 ## Features
 
-- ✅ Draws [`ratatui`]([https://github.com/ratatui/ratatui) Widgets into memory.
 - ✅ Font rendering with [`cosmic-text`](https://github.com/pop-os/cosmic-text).
 - ✅ Tiny-skia-based pixel rasterizer.
 - ✅ High-quality text, color, and effects (bold, italic, underline, strikethrough).
