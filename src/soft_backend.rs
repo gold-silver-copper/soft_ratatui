@@ -3,6 +3,7 @@
 
 use std::io;
 
+use crate::colors::*;
 use cosmic_text::Style;
 use ratatui::backend::{Backend, ClearType, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
@@ -31,20 +32,9 @@ pub struct SoftBackend {
     character_buffer: CosmicBuffer,
     char_width: u32,
     char_height: u32,
-    pixmap: Pixmap,
+    glyph_pixmap: Pixmap,
     skia_paint: Paint<'static>,
     swash_cache: SwashCache,
-}
-
-fn add_strikeout(text: &String) -> String {
-    // Unicode combining long stroke overlay
-    let strike = '\u{0336}';
-    text.chars().flat_map(|c| [c, strike]).collect()
-}
-fn add_underline(text: &String) -> String {
-    // Unicode combining long stroke overlay
-    let strike = '\u{0332}';
-    text.chars().flat_map(|c| [c, strike]).collect()
 }
 
 impl SoftBackend {
@@ -69,7 +59,7 @@ impl SoftBackend {
             rat_fg = rat_bg.clone();
         }
 
-        let mut mut_pixmap = self.pixmap.as_mut();
+        let mut mut_pixmap = self.glyph_pixmap.as_mut();
 
         let mut text_color = if is_reversed {
             mut_pixmap.fill(rat_to_skia_color(&rat_fg, true));
@@ -138,9 +128,10 @@ impl SoftBackend {
         let mut skia_paint = Paint::default();
         skia_paint.anti_alias = false;
         // skia_paint.blend_mode = BlendMode::Difference;
-        let line_height = 16;
+        let font_size = 14;
+        let line_height = 17.0;
         let mut font_system = FontSystem::new();
-        let metrics = Metrics::new(line_height as f32, line_height as f32);
+        let metrics = Metrics::new(font_size as f32, line_height as f32);
         let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
         let mut buffer = buffer.borrow_with(&mut font_system);
         buffer.set_text(
@@ -151,7 +142,7 @@ impl SoftBackend {
         buffer.shape_until_scroll(true);
         let boop = buffer.layout_runs().next().unwrap();
         let physical_glyph = boop.glyphs.iter().next().unwrap().physical((0., 0.), 1.0);
-
+        println!("physical glyph: {:#?}", physical_glyph);
         let wa = swash_cache
             .get_image(&mut font_system, physical_glyph.cache_key)
             .clone()
@@ -162,12 +153,8 @@ impl SoftBackend {
         let mut pixmap_paint = PixmapPaint::default();
         let mut character_buffer = CosmicBuffer::new(&mut font_system, metrics);
 
-        // let mut character_buffer = character_buffer.borrow_with(&mut font_system);
-
         pixmap_paint.quality = FilterQuality::Nearest;
 
-        //  println!("Glyph height (bbox): {:#?}", boop);
-        //      // Set a size for the text buffer, in pixels
         let char_width = wa.width;
         let char_height = wa.height;
         character_buffer.set_size(
@@ -175,13 +162,10 @@ impl SoftBackend {
             Some(char_width as f32),
             Some(char_height as f32),
         );
-        let mut pixmap = Pixmap::new(char_width as u32, char_height).unwrap();
+        let mut glyph_pixmap = Pixmap::new(char_width, char_height).unwrap();
 
-        let mut screen_pixmap = Pixmap::new(
-            (char_width * width as u32),
-            (char_height * height as u32) as u32,
-        )
-        .unwrap();
+        let mut screen_pixmap =
+            Pixmap::new((char_width * width as u32), (char_height * height as u32)).unwrap();
 
         let mut return_struct = Self {
             buffer: Buffer::empty(Rect::new(0, 0, width, height)),
@@ -195,11 +179,11 @@ impl SoftBackend {
             character_buffer,
             char_width,
             char_height,
-            pixmap,
+            glyph_pixmap,
             skia_paint,
             swash_cache,
         };
-        return_struct.clear();
+        let _ = return_struct.clear();
         return_struct
     }
 
@@ -221,10 +205,10 @@ impl Backend for SoftBackend {
     {
         for (x, y, c) in content {
             self.buffer[(x, y)] = c.clone();
-            self.draw_cell(&c, x, y);
+            //   self.draw_cell(&c, x, y);
             //   println!("{c:#?}");
         }
-
+        self.draw_buffer();
         // Save to PNG file
         self.screen_pixmap.save_png("output_tiny_skia.png").unwrap();
 
@@ -289,6 +273,14 @@ impl SoftBackend {
         let buffer_height = self.buffer.area.height;
         let attrs = Attrs::new().family(Family::Monospace);
 
+        println!("attrs: {attrs:#?}");
+
+        self.character_buffer.set_size(
+            &mut self.font_system,
+            Some(self.char_width as f32 * buffer_width as f32),
+            Some(self.char_height as f32 * buffer_height as f32),
+        );
+
         let mut text_vec = Vec::new();
 
         for y in 0..buffer_height {
@@ -321,7 +313,7 @@ impl SoftBackend {
 
                 text_vec.push((rat_cell.symbol(), cell_attrs));
             }
-            if y < buffer_height {
+            if y < buffer_height - 1 {
                 text_vec.push(("\n", attrs.clone()));
             }
         }
@@ -352,107 +344,5 @@ impl SoftBackend {
                 }
             },
         );
-    }
-}
-
-/// Convert a ratatui color to a tiny-skia SkiaColor
-pub fn rat_to_skia_color(rat_col: &RatColor, is_a_fg: bool) -> SkiaColor {
-    match rat_col {
-        RatColor::Reset => {
-            if is_a_fg {
-                SkiaColor::from_rgba8(204, 204, 255, 255)
-            } else {
-                SkiaColor::from_rgba8(15, 15, 112, 255)
-            }
-        }
-        RatColor::Black => SkiaColor::from_rgba8(0, 0, 0, 255),
-        RatColor::Red => SkiaColor::from_rgba8(139, 0, 0, 255),
-        RatColor::Green => SkiaColor::from_rgba8(0, 100, 0, 255),
-        RatColor::Yellow => SkiaColor::from_rgba8(255, 215, 0, 255),
-        RatColor::Blue => SkiaColor::from_rgba8(0, 0, 139, 255),
-        RatColor::Magenta => SkiaColor::from_rgba8(99, 9, 99, 255),
-        RatColor::Cyan => SkiaColor::from_rgba8(0, 0, 255, 255),
-        RatColor::Gray => SkiaColor::from_rgba8(128, 128, 128, 255),
-        RatColor::DarkGray => SkiaColor::from_rgba8(64, 64, 64, 255),
-        RatColor::LightRed => SkiaColor::from_rgba8(255, 0, 0, 255),
-        RatColor::LightGreen => SkiaColor::from_rgba8(0, 255, 0, 255),
-        RatColor::LightBlue => SkiaColor::from_rgba8(173, 216, 230, 255),
-        RatColor::LightYellow => SkiaColor::from_rgba8(255, 255, 224, 255),
-        RatColor::LightMagenta => SkiaColor::from_rgba8(139, 0, 139, 255),
-        RatColor::LightCyan => SkiaColor::from_rgba8(224, 255, 255, 255),
-        RatColor::White => SkiaColor::from_rgba8(255, 255, 255, 255),
-        RatColor::Indexed(i) => {
-            // You can customize this mapping, or use a fixed 256-color palette lookup
-            let i = *i as u8;
-            SkiaColor::from_rgba8(i.wrapping_mul(i), i.wrapping_add(i), i, 255)
-        }
-        RatColor::Rgb(r, g, b) => SkiaColor::from_rgba8(*r, *g, *b, 255),
-    }
-}
-
-pub fn rat_to_skia_coloru8(rat_col: &RatColor, is_a_fg: bool) -> SkiaColorU8 {
-    match rat_col {
-        RatColor::Reset => {
-            if is_a_fg {
-                SkiaColorU8::from_rgba(204, 204, 255, 255)
-            } else {
-                SkiaColorU8::from_rgba(15, 15, 112, 255)
-            }
-        }
-        RatColor::Black => SkiaColorU8::from_rgba(0, 0, 0, 255),
-        RatColor::Red => SkiaColorU8::from_rgba(139, 0, 0, 255),
-        RatColor::Green => SkiaColorU8::from_rgba(0, 100, 0, 255),
-        RatColor::Yellow => SkiaColorU8::from_rgba(255, 215, 0, 255),
-        RatColor::Blue => SkiaColorU8::from_rgba(0, 0, 139, 255),
-        RatColor::Magenta => SkiaColorU8::from_rgba(99, 9, 99, 255),
-        RatColor::Cyan => SkiaColorU8::from_rgba(0, 0, 255, 255),
-        RatColor::Gray => SkiaColorU8::from_rgba(128, 128, 128, 255),
-        RatColor::DarkGray => SkiaColorU8::from_rgba(64, 64, 64, 255),
-        RatColor::LightRed => SkiaColorU8::from_rgba(255, 0, 0, 255),
-        RatColor::LightGreen => SkiaColorU8::from_rgba(0, 255, 0, 255),
-        RatColor::LightBlue => SkiaColorU8::from_rgba(173, 216, 230, 255),
-        RatColor::LightYellow => SkiaColorU8::from_rgba(255, 255, 224, 255),
-        RatColor::LightMagenta => SkiaColorU8::from_rgba(139, 0, 139, 255),
-        RatColor::LightCyan => SkiaColorU8::from_rgba(224, 255, 255, 255),
-        RatColor::White => SkiaColorU8::from_rgba(255, 255, 255, 255),
-        RatColor::Indexed(i) => {
-            // You can customize this mapping, or use a fixed 256-color palette lookup
-            let i = *i as u8;
-            SkiaColorU8::from_rgba(i.wrapping_mul(i), i.wrapping_add(i), i, 255)
-        }
-        RatColor::Rgb(r, g, b) => SkiaColorU8::from_rgba(*r, *g, *b, 255),
-    }
-}
-
-pub fn rat_to_cosmic_color(rat_col: &RatColor, is_a_fg: bool) -> CosmicColor {
-    match rat_col {
-        RatColor::Reset => {
-            if is_a_fg {
-                CosmicColor::rgba(204, 204, 255, 255)
-            } else {
-                CosmicColor::rgba(15, 15, 112, 255)
-            }
-        }
-        RatColor::Black => CosmicColor::rgba(0, 0, 0, 255),
-        RatColor::Red => CosmicColor::rgba(139, 0, 0, 255),
-        RatColor::Green => CosmicColor::rgba(0, 100, 0, 255),
-        RatColor::Yellow => CosmicColor::rgba(255, 215, 0, 255),
-        RatColor::Blue => CosmicColor::rgba(0, 0, 139, 255),
-        RatColor::Magenta => CosmicColor::rgba(99, 9, 99, 255),
-        RatColor::Cyan => CosmicColor::rgba(0, 0, 255, 255),
-        RatColor::Gray => CosmicColor::rgba(128, 128, 128, 255),
-        RatColor::DarkGray => CosmicColor::rgba(64, 64, 64, 255),
-        RatColor::LightRed => CosmicColor::rgba(255, 0, 0, 255),
-        RatColor::LightGreen => CosmicColor::rgba(0, 255, 0, 255),
-        RatColor::LightBlue => CosmicColor::rgba(173, 216, 230, 255),
-        RatColor::LightYellow => CosmicColor::rgba(255, 255, 224, 255),
-        RatColor::LightMagenta => CosmicColor::rgba(139, 0, 139, 255),
-        RatColor::LightCyan => CosmicColor::rgba(224, 255, 255, 255),
-        RatColor::White => CosmicColor::rgba(255, 255, 255, 255),
-        RatColor::Indexed(i) => {
-            let i = *i as u8;
-            CosmicColor::rgba(i.wrapping_mul(i), i.wrapping_add(i), i, 255)
-        }
-        RatColor::Rgb(r, g, b) => CosmicColor::rgba(*r, *g, *b, 255),
     }
 }
