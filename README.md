@@ -20,6 +20,8 @@ This crate gives you that.
 
 ---
 
+[](https://github.com/gold-silver-copper/soft_ratatui/blob/main/output_tiny_skia.png)
+
 ## Features
 
 - ✅ Draws [`ratatui`]([https://github.com/ratatui/ratatui) Widgets into memory.
