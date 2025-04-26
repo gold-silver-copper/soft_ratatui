@@ -113,10 +113,7 @@ impl SoftBackend {
             if let Some(rect) = SkiaRect::from_xywh(x as f32, y as f32, 1.0, 1.0) {
                 let [r, g, b, a] = color.as_rgba();
                 self.skia_paint.set_color(SkiaColor::from_rgba8(r, g, b, a));
-                /*
-                if let Some(pixel) = self.pixmap.pixel_mut(x, y) {
-                    *pixel = PremultipliedColorU8::from_color(color);
-                } */
+
                 mut_pixmap.fill_rect(
                     rect,
                     &self.skia_paint,
@@ -144,7 +141,7 @@ impl SoftBackend {
         // skia_paint.blend_mode = BlendMode::Difference;
         let line_height = 16;
         let mut font_system = FontSystem::new();
-        let metrics = Metrics::new(line_height as f32 - 1.0, line_height as f32);
+        let metrics = Metrics::new(line_height as f32 - 3.0, line_height as f32);
         let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
         let mut buffer = buffer.borrow_with(&mut font_system);
         buffer.set_text(
@@ -176,14 +173,14 @@ impl SoftBackend {
         let char_height = wa.height;
         character_buffer.set_size(
             &mut font_system,
-            Some(char_width as f32),
-            Some(char_height as f32),
+            Some(char_width as f32 * width as f32),
+            Some(line_height as f32 * height as f32),
         );
         let mut pixmap = Pixmap::new(char_width as u32, char_height).unwrap();
 
         let mut screen_pixmap = Pixmap::new(
             (char_width * width as u32),
-            (char_height * height as u32) as u32,
+            (line_height * height as u32) as u32,
         )
         .unwrap();
 
@@ -216,6 +213,78 @@ impl SoftBackend {
     pub fn resize(&mut self, width: u16, height: u16) {
         self.buffer.resize(Rect::new(0, 0, width, height));
     }
+    pub fn draw_buffer(&mut self) {
+        let clear_cell = Cell::EMPTY;
+        self.screen_pixmap
+            .fill(rat_to_skia_color(&clear_cell.bg, false));
+        let buffer_width = self.buffer.area.width;
+        let buffer_height = self.buffer.area.height;
+        let attrs = Attrs::new().family(Family::Monospace);
+
+        let mut text_vec = Vec::new();
+
+        for y in 0..buffer_height {
+            for x in 0..buffer_width {
+                let mut cell_attrs = attrs.clone();
+                let rat_cell = self.buffer.cell((x, y)).unwrap();
+                let is_bold = rat_cell.modifier.contains(Modifier::BOLD);
+                let is_italic = rat_cell.modifier.contains(Modifier::ITALIC);
+                let is_underlined = rat_cell.modifier.contains(Modifier::UNDERLINED);
+                let is_slowblink = rat_cell.modifier.contains(Modifier::SLOW_BLINK);
+                let is_rapidblink = rat_cell.modifier.contains(Modifier::RAPID_BLINK);
+                let is_reversed = rat_cell.modifier.contains(Modifier::REVERSED);
+                let is_dim = rat_cell.modifier.contains(Modifier::DIM);
+                let is_hidden = rat_cell.modifier.contains(Modifier::HIDDEN);
+                let is_crossed_out = rat_cell.modifier.contains(Modifier::CROSSED_OUT);
+
+                let mut rat_fg = rat_cell.fg.clone();
+                let rat_bg = rat_cell.bg.clone();
+                if is_hidden {
+                    rat_fg = rat_bg.clone();
+                }
+
+                let mut text_color = if is_reversed {
+                    rat_to_cosmic_color(&rat_bg, false)
+                } else {
+                    rat_to_cosmic_color(&rat_fg, true)
+                };
+
+                cell_attrs = cell_attrs.color(text_color);
+
+                text_vec.push((rat_cell.symbol(), cell_attrs));
+            }
+            if y < buffer_height {
+                text_vec.push(("\n", attrs.clone()));
+            }
+        }
+        //  println!("{text_vec:#?}");
+        self.character_buffer.set_rich_text(
+            &mut self.font_system,
+            text_vec,
+            &attrs,
+            Shaping::Advanced,
+            None,
+        );
+        self.character_buffer.draw(
+            &mut self.font_system,
+            &mut self.swash_cache,
+            CosmicColor::rgb(200, 200, 100),
+            |x, y, w, h, color| {
+                // println!("{x}{y}{w}{h}");
+                if let Some(rect) = SkiaRect::from_xywh(x as f32, y as f32, w as f32, h as f32) {
+                    let [r, g, b, a] = color.as_rgba();
+                    self.skia_paint.set_color(SkiaColor::from_rgba8(r, g, b, a));
+
+                    self.screen_pixmap.fill_rect(
+                        rect,
+                        &self.skia_paint,
+                        tiny_skia::Transform::identity(),
+                        None,
+                    );
+                }
+            },
+        );
+    }
 }
 
 impl Backend for SoftBackend {
@@ -225,9 +294,12 @@ impl Backend for SoftBackend {
     {
         for (x, y, c) in content {
             self.buffer[(x, y)] = c.clone();
-            self.draw_cell(&c, x, y);
+            // self.draw_cell(&c, x, y);
             //   println!("{c:#?}");
         }
+        self.draw_buffer();
+        //  println!("weee");
+
         // Save to PNG file
         self.screen_pixmap.save_png("output_tiny_skia.png").unwrap();
 
