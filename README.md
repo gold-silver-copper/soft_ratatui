@@ -20,7 +20,8 @@ This crate gives you that.
 
 ---
 
-![]([https://github.com/gold-silver-copper/soft_ratatui/blob/main/output_tiny_skia.png)
+![]([https://github.com/gold-silver-copper/soft_ratatui/blob/master/output_tiny_skia.png)
+![](https://github.com/gold-silver-copper/soft_ratatui/blob/main/output_tiny_skia.png)
 
 ## Features
 
