@@ -1,6 +1,6 @@
 # soft_ratatui
 
-**Software rendering backend for [ratatui]([https://github.com/tui-rs/ratatui](https://github.com/ratatui/ratatui)). No GPU required. TUI everywhere.**
+**Software rendering backend for [`ratatui`](https://github.com/ratatui/ratatui). No GPU required. TUI everywhere.**
 
 Fast, portable, no-bloat. Powered by [`tiny-skia`](https://github.com/RazrFalcon/tiny-skia) and [`cosmic-text`](https://github.com/pop-os/cosmic-text).
 
@@ -22,7 +22,7 @@ This crate gives you that.
 
 ## Features
 
-- ✅ Draws [`ratatui`]([https://github.com/tui-rs/ratatui](https://github.com/ratatui/ratatui)) Widgets into memory.
+- ✅ Draws [`ratatui`]([https://github.com/ratatui/ratatui) Widgets into memory.
 - ✅ Font rendering with [`cosmic-text`](https://github.com/pop-os/cosmic-text).
 - ✅ Tiny-skia-based pixel rasterizer.
 - ✅ High-quality text, color, and effects (bold, italic, underline, strikethrough).
