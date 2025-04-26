@@ -15,7 +15,7 @@ use ratatui::layout::{Constraint, Layout};
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::Line;
 use ratatui::widgets::Paragraph;
-use ratatui::{DefaultTerminal, Frame, Terminal};
+use ratatui::{Frame, Terminal};
 use soft_ratatui::SoftBackend;
 
 type Result<T> = result::Result<T, Box<dyn Error>>;
@@ -25,7 +25,7 @@ fn main() -> Result<()> {
     let backend = SoftBackend::new(100, 50);
     let mut terminal = Terminal::new(backend).unwrap();
     let app_result = run(terminal);
-    ratatui::restore();
+
     app_result
 }
 

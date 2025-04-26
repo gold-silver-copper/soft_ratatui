@@ -110,17 +110,16 @@ impl SoftBackend {
 
         mut_buffer.draw(&mut self.swash_cache, text_color, |x, y, w, h, color| {
             // println!("{x}{y}{w}{h}");
-            if let Some(rect) = SkiaRect::from_xywh(x as f32, y as f32, 1.0, 1.0) {
-                let [r, g, b, a] = color.as_rgba();
-                self.skia_paint.set_color(SkiaColor::from_rgba8(r, g, b, a));
 
-                mut_pixmap.fill_rect(
-                    rect,
-                    &self.skia_paint,
-                    tiny_skia::Transform::identity(),
-                    None,
-                );
-            }
+            let [r, g, b, a] = color.as_rgba();
+            self.skia_paint.set_color(SkiaColor::from_rgba8(r, g, b, a));
+
+            mut_pixmap.fill_rect(
+                SkiaRect::from_xywh(x as f32, y as f32, w as f32, h as f32).unwrap(),
+                &self.skia_paint,
+                Transform::identity(),
+                None,
+            );
         });
 
         self.screen_pixmap.draw_pixmap(
@@ -141,7 +140,7 @@ impl SoftBackend {
         // skia_paint.blend_mode = BlendMode::Difference;
         let line_height = 16;
         let mut font_system = FontSystem::new();
-        let metrics = Metrics::new(line_height as f32 - 3.0, line_height as f32);
+        let metrics = Metrics::new(line_height as f32, line_height as f32);
         let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
         let mut buffer = buffer.borrow_with(&mut font_system);
         buffer.set_text(
@@ -173,14 +172,14 @@ impl SoftBackend {
         let char_height = wa.height;
         character_buffer.set_size(
             &mut font_system,
-            Some(char_width as f32 * width as f32),
-            Some(line_height as f32 * height as f32),
+            Some(char_width as f32),
+            Some(char_height as f32),
         );
         let mut pixmap = Pixmap::new(char_width as u32, char_height).unwrap();
 
         let mut screen_pixmap = Pixmap::new(
             (char_width * width as u32),
-            (line_height * height as u32) as u32,
+            (char_height * height as u32) as u32,
         )
         .unwrap();
 
@@ -213,6 +212,75 @@ impl SoftBackend {
     pub fn resize(&mut self, width: u16, height: u16) {
         self.buffer.resize(Rect::new(0, 0, width, height));
     }
+}
+
+impl Backend for SoftBackend {
+    fn draw<'a, I>(&mut self, content: I) -> io::Result<()>
+    where
+        I: Iterator<Item = (u16, u16, &'a Cell)>,
+    {
+        for (x, y, c) in content {
+            self.buffer[(x, y)] = c.clone();
+            self.draw_cell(&c, x, y);
+            //   println!("{c:#?}");
+        }
+
+        // Save to PNG file
+        self.screen_pixmap.save_png("output_tiny_skia.png").unwrap();
+
+        Ok(())
+    }
+
+    fn hide_cursor(&mut self) -> io::Result<()> {
+        self.cursor = false;
+
+        Ok(())
+    }
+
+    fn show_cursor(&mut self) -> io::Result<()> {
+        self.cursor = true;
+        Ok(())
+    }
+
+    fn get_cursor_position(&mut self) -> io::Result<Position> {
+        Ok(self.pos.into())
+    }
+
+    fn set_cursor_position<P: Into<Position>>(&mut self, position: P) -> io::Result<()> {
+        self.pos = position.into().into();
+        Ok(())
+    }
+
+    fn clear(&mut self) -> io::Result<()> {
+        self.buffer.reset();
+        let clear_cell = Cell::EMPTY;
+        self.screen_pixmap
+            .fill(rat_to_skia_color(&clear_cell.bg, false));
+        Ok(())
+    }
+
+    fn size(&self) -> io::Result<Size> {
+        Ok(self.buffer.area.as_size())
+    }
+
+    fn window_size(&mut self) -> io::Result<WindowSize> {
+        // Some arbitrary window pixel size, probably doesn't need much testing.
+        const WINDOW_PIXEL_SIZE: Size = Size {
+            width: 640,
+            height: 480,
+        };
+        Ok(WindowSize {
+            columns_rows: self.buffer.area.as_size(),
+            pixels: WINDOW_PIXEL_SIZE,
+        })
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+impl SoftBackend {
     pub fn draw_buffer(&mut self) {
         let clear_cell = Cell::EMPTY;
         self.screen_pixmap
@@ -284,74 +352,6 @@ impl SoftBackend {
                 }
             },
         );
-    }
-}
-
-impl Backend for SoftBackend {
-    fn draw<'a, I>(&mut self, content: I) -> io::Result<()>
-    where
-        I: Iterator<Item = (u16, u16, &'a Cell)>,
-    {
-        for (x, y, c) in content {
-            self.buffer[(x, y)] = c.clone();
-            // self.draw_cell(&c, x, y);
-            //   println!("{c:#?}");
-        }
-        self.draw_buffer();
-        //  println!("weee");
-
-        // Save to PNG file
-        self.screen_pixmap.save_png("output_tiny_skia.png").unwrap();
-
-        Ok(())
-    }
-
-    fn hide_cursor(&mut self) -> io::Result<()> {
-        self.cursor = false;
-
-        Ok(())
-    }
-
-    fn show_cursor(&mut self) -> io::Result<()> {
-        self.cursor = true;
-        Ok(())
-    }
-
-    fn get_cursor_position(&mut self) -> io::Result<Position> {
-        Ok(self.pos.into())
-    }
-
-    fn set_cursor_position<P: Into<Position>>(&mut self, position: P) -> io::Result<()> {
-        self.pos = position.into().into();
-        Ok(())
-    }
-
-    fn clear(&mut self) -> io::Result<()> {
-        self.buffer.reset();
-        let clear_cell = Cell::EMPTY;
-        self.screen_pixmap
-            .fill(rat_to_skia_color(&clear_cell.bg, false));
-        Ok(())
-    }
-
-    fn size(&self) -> io::Result<Size> {
-        Ok(self.buffer.area.as_size())
-    }
-
-    fn window_size(&mut self) -> io::Result<WindowSize> {
-        // Some arbitrary window pixel size, probably doesn't need much testing.
-        const WINDOW_PIXEL_SIZE: Size = Size {
-            width: 640,
-            height: 480,
-        };
-        Ok(WindowSize {
-            columns_rows: self.buffer.area.as_size(),
-            pixels: WINDOW_PIXEL_SIZE,
-        })
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
     }
 }
 

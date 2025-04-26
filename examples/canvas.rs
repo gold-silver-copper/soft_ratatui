@@ -30,7 +30,6 @@ fn main() -> Result<()> {
     let backend = SoftBackend::new(100, 50);
     let mut terminal = Terminal::new(backend).unwrap();
     let app_result = App::new().run(terminal);
-    ratatui::restore();
 
     app_result
 }
