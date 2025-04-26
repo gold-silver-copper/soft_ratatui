@@ -5,8 +5,6 @@
 Fast, portable, no-bloat. Powered by [`tiny-skia`](https://github.com/RazrFalcon/tiny-skia) and [`cosmic-text`](https://github.com/pop-os/cosmic-text).
 
 - Full Unicode + font fallback.
-- Truecolor rendering.
-- Runs anywhere: SDL, Wasm, Framebuffer, Emulators, Serial, whatever.
 - Optimized for low memory and CPU use.
 
 ---
