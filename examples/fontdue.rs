@@ -14,7 +14,7 @@ fn main() {
     pixmap.fill(Color::WHITE);
 
     // Text you want to render
-    let text = "Hello, tiny-skia!";
+    let text = "Hello, tiny-skia写汉字 - 学中文!";
 
     // Starting point
     let mut x = 20.0;

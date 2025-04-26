@@ -14,17 +14,14 @@ repository = "https://github.com/gold-silver-copper/soft_ratatui"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-cosmic-text = { version = "0.14.2", default-features = false, features = [
-    "std",
-    "swash",
-] }
+fontdue = "0.9.3"
 ratatui = { version = "0.29.0", default-features = false } # Strip out unneeded features
 tiny-skia = "0.11.4"
 #tiny-skia = { version = "0.11.4", default-features = false }
 
 [dev-dependencies]
 color-eyre = "0.6.3"
-fontdue = "0.9.3"
+
 itertools = "0.14.0"
 palette = "0.7.6"
 
