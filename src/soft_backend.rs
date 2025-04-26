@@ -14,7 +14,7 @@ use tiny_skia::{
     BlendMode, Color as SkiaColor, ColorU8 as SkiaColorU8, FilterQuality, IntSize, Paint, Pixmap,
     PixmapMut, PixmapPaint, PremultipliedColorU8, Rect as SkiaRect, Transform,
 };
-static FONT_DATA: &[u8] = include_bytes!("../assets/mono_robot.ttf");
+static FONT_DATA: &[u8] = include_bytes!("../assets/iosevka.ttf");
 #[derive(Debug)]
 pub struct SoftBackend {
     buffer: Buffer,
@@ -73,8 +73,8 @@ impl SoftBackend {
                     if alpha > 0.0 {
                         mut_pixmap.fill_rect(
                             tiny_skia::Rect::from_xywh(
-                                (col as f32),
-                                (metrics.ymin as f32) + (row as f32),
+                                (metrics.bounds.xmin) + (col as f32),
+                                (metrics.bounds.ymin) + (row as f32),
                                 1.0,
                                 1.0,
                             )
@@ -85,7 +85,7 @@ impl SoftBackend {
                                 ..Default::default()
                             },
                             Transform::identity(),
-                            None, //Some(alpha),
+                            None, // or Some(alpha) if you want to alpha-blend
                         );
                     }
                 }
@@ -109,19 +109,22 @@ impl SoftBackend {
         let mut skia_paint = Paint::default();
         skia_paint.anti_alias = false;
         // skia_paint.blend_mode = BlendMode::Difference;
-        let font_size = 14.0;
-        let line_height = 17.0;
+        let font_size = 20.0;
 
         let mut pixmap_paint = PixmapPaint::default();
 
         pixmap_paint.quality = FilterQuality::Nearest;
 
-        let char_width = 10;
-        let char_height = 10;
+        // Rasterize each character
+        let (metrics, bitmap) = font.rasterize('C', font_size);
+        println!("{metrics:#?}");
 
-        let mut glyph_pixmap = Pixmap::new(char_width, char_height).unwrap();
+        let char_width = metrics.width as u32;
+        let char_height = metrics.height as u32;
 
-        let mut screen_pixmap =
+        let glyph_pixmap = Pixmap::new(char_width, char_height).unwrap();
+
+        let screen_pixmap =
             Pixmap::new((char_width * width as u32), (char_height * height as u32)).unwrap();
 
         let mut return_struct = Self {
@@ -164,7 +167,7 @@ impl Backend for SoftBackend {
             self.draw_cell(&c, x, y);
             //   println!("{c:#?}");
         }
-        println!("WTF");
+        //    println!("WTF");
         // Save to PNG file
         self.screen_pixmap.save_png("output_tiny_skia.png").unwrap();
 

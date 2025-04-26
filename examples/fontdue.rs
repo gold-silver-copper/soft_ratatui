@@ -14,7 +14,7 @@ fn main() {
     pixmap.fill(Color::WHITE);
 
     // Text you want to render
-    let text = "Hello, tiny-skia写汉字 - 学中文!";
+    let text = "Hello tiny-skia!";
 
     // Starting point
     let mut x = 20.0;
@@ -26,6 +26,7 @@ fn main() {
     for ch in text.chars() {
         // Rasterize each character
         let (metrics, bitmap) = font.rasterize(ch, font_size);
+        println!("{ch} : {metrics:#?}");
 
         // Draw the glyph bitmap onto the pixmap
         for row in 0..metrics.height {
@@ -35,7 +36,7 @@ fn main() {
                     pixmap.fill_rect(
                         tiny_skia::Rect::from_xywh(
                             x + (col as f32),
-                            y - (metrics.ymin as f32) + (row as f32),
+                            y + (metrics.ymin as f32) + (row as f32),
                             1.0,
                             1.0,
                         )
