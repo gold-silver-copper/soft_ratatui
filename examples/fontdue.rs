@@ -2,7 +2,7 @@ use fontdue::Font;
 use tiny_skia::{Color, Paint, PathBuilder, Pixmap, Transform};
 
 // Load a font (you can use any TTF or OTF font you have)
-static FONT_DATA: &[u8] = include_bytes!("../assets/iosevka.ttf");
+static FONT_DATA: &[u8] = include_bytes!("../assets/tc.ttf");
 
 fn main() {
     // Load the font
@@ -14,7 +14,7 @@ fn main() {
     pixmap.fill(Color::WHITE);
 
     // Text you want to render
-    let text = "Hello█ █ tiny-skia!";
+    let text = "Hello人生█ █ tiny-skia!";
 
     // Starting point
     let mut x = 0.0;

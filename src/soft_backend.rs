@@ -72,10 +72,11 @@ impl SoftBackend {
             for col in 0..metrics.width {
                 let alpha = bitmap[row * metrics.width + col] as f32 / 255.0;
                 if alpha > 0.0 {
+                    let y = self.char_height - metrics.bounds.height as u32 - metrics.ymin as u32;
                     mut_pixmap.fill_rect(
                         tiny_skia::Rect::from_xywh(
                             (metrics.bounds.xmin) + (col as f32),
-                            -(metrics.bounds.ymin) + (row as f32),
+                            y as f32 - (metrics.bounds.ymin) + (row as f32),
                             1.0,
                             1.0,
                         )
@@ -105,7 +106,7 @@ impl SoftBackend {
         let mut skia_paint = Paint::default();
         skia_paint.anti_alias = false;
         // skia_paint.blend_mode = BlendMode::Difference;
-        let font_size = 16.0;
+        let font_size = 20.0;
 
         let mut pixmap_paint = PixmapPaint::default();
 
@@ -119,7 +120,7 @@ impl SoftBackend {
         let char_width = metrics.advance_width as u32;
         let char_height = metrics.height as u32;
 
-        let glyph_pixmap = Pixmap::new(char_width, char_height).unwrap();
+        let glyph_pixmap = Pixmap::new(metrics.advance_width as u32, char_height).unwrap();
 
         let screen_pixmap =
             Pixmap::new((char_width * width as u32), (char_height * height as u32)).unwrap();
