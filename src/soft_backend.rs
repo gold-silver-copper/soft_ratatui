@@ -131,8 +131,8 @@ impl SoftBackend {
                 SkiaRect::from_xywh(
                     xik as f32 * self.char_width as f32 + x as f32,
                     yik as f32 * self.char_height as f32 + y as f32,
-                    1.0,
-                    1.0,
+                    2.0,
+                    2.0,
                 )
                 .unwrap(),
                 &self.skia_paint,
@@ -157,7 +157,7 @@ impl SoftBackend {
         let mut skia_paint = Paint::default();
         skia_paint.anti_alias = false;
         // skia_paint.blend_mode = BlendMode::Difference;
-        let line_height = 20;
+        let line_height = 15;
         let mut font_system = FontSystem::new();
         let metrics = Metrics::new(line_height as f32, line_height as f32);
         let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
