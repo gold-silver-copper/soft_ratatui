@@ -63,16 +63,10 @@ impl SoftBackend {
             rat_fg = rat_bg.clone();
         }
 
-        let (text_color, bg_color) = if is_reversed {
-            (
-                rat_to_cosmic_color(&rat_bg, false),
-                rat_to_rgba(&rat_fg, true),
-            )
+        let (fg_color, bg_color) = if is_reversed {
+            (rat_to_rgba(&rat_bg, false), rat_to_rgba(&rat_fg, true))
         } else {
-            (
-                rat_to_cosmic_color(&rat_fg, true),
-                rat_to_rgba(&rat_bg, false),
-            )
+            (rat_to_rgba(&rat_fg, true), rat_to_rgba(&rat_bg, false))
         };
         let begin_x = xik as u32 * self.char_width;
         let begin_y = yik as u32 * self.char_height;
@@ -111,21 +105,22 @@ impl SoftBackend {
         );
         //mut_buffer.shape_until_scroll(true);
 
-        mut_buffer.draw(&mut self.swash_cache, text_color, |x, y, w, h, color| {
-            // println!("{x}{y}{w}{h}");
-            let [r, g, b, a] = color.as_rgba();
+        mut_buffer.draw(
+            &mut self.swash_cache,
+            CosmicColor::rgba(1, 1, 1, 255),
+            |x, y, _w, _h, color| {
+                // println!("{x}{y}{w}{h}");
+                let [_r, _g, _b, a] = color.as_rgba();
 
-            if x > -1 && y > -1 && a > 0
-            //    && y < self.char_height as i32
-            //  && x < self.char_width as i32
-            {
-                self.image_buffer.put_pixel(
-                    begin_x + x as u32,
-                    begin_y + y as u32,
-                    Rgba([r, g, b, a]),
-                );
-            }
-        });
+                if x > -1 && y > -1 && a > 0 {
+                    self.image_buffer.put_pixel(
+                        begin_x + x as u32,
+                        begin_y + y as u32,
+                        Rgba(fg_color),
+                    );
+                }
+            },
+        );
     }
 
     /// Creates a new `SoftBackend` with the specified width and height.
@@ -133,7 +128,7 @@ impl SoftBackend {
         let mut swash_cache = SwashCache::new();
 
         // skia_paint.blend_mode = BlendMode::Difference;
-        let line_height = 15;
+        let line_height = 20;
         let mut font_system = FontSystem::new();
         let metrics = Metrics::new(line_height as f32, line_height as f32);
         let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
