@@ -68,15 +68,15 @@ impl SoftBackend {
             .rasterize(rat_cell.symbol().chars().next().unwrap(), self.font_size);
         self.skia_paint.set_color(text_color);
         // Draw the glyph bitmap onto the pixmap
+        let y = self.char_height as f32 - metrics.bounds.height;
         for row in 0..metrics.height {
             for col in 0..metrics.width {
                 let alpha = bitmap[row * metrics.width + col] as f32 / 255.0;
                 if alpha > 0.0 {
-                    let y = self.char_height - metrics.bounds.height as u32 - metrics.ymin as u32;
                     mut_pixmap.fill_rect(
                         tiny_skia::Rect::from_xywh(
                             (metrics.bounds.xmin) + (col as f32),
-                            y as f32 - (metrics.bounds.ymin) + (row as f32),
+                            y - (metrics.bounds.ymin) + (row as f32),
                             1.0,
                             1.0,
                         )
@@ -116,6 +116,12 @@ impl SoftBackend {
         let (metrics, bitmap) = font.rasterize('█', font_size);
         //  let (metrics, bitmap) = font.rasterize('}', font_size);
         println!("{metrics:#?}");
+        let (test_metrics, _) = font.rasterize('\n', font_size);
+        //  let (metrics, bitmap) = font.rasterize('}', font_size);
+        println!("{test_metrics:#?}");
+        let (test_metrics, _) = font.rasterize('|', font_size);
+        //  let (metrics, bitmap) = font.rasterize('}', font_size);
+        println!("{test_metrics:#?}");
 
         let char_width = metrics.advance_width as u32;
         let char_height = metrics.height as u32;
