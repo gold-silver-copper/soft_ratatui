@@ -28,11 +28,11 @@ itertools = "0.14.0"
 palette = "0.7.6"
 
 [profile.release]
-opt-level = 3
-lto = true        # Enable link-time optimization
-codegen-units = 1 # Better optimizations, slightly slower compile
-panic = "abort"   # Smaller binary if you don't need backtraces
-strip = "symbols" # Remove debug symbols (unless you need them)
+#opt-level = 3
+#lto = true        # Enable link-time optimization
+#codegen-units = 1 # Better optimizations, slightly slower compile
+#panic = "abort"   # Smaller binary if you don't need backtraces
+#strip = "symbols" # Remove debug symbols (unless you need them)
 
 # Uncomment this for even smaller output (disable debug info)
-# debug = false
+debug = true
