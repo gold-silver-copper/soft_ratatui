@@ -138,7 +138,7 @@ impl SoftBackend {
         let mut skia_paint = Paint::default();
         skia_paint.anti_alias = false;
         // skia_paint.blend_mode = BlendMode::Difference;
-        let line_height = 16;
+        let line_height = 20;
         let mut font_system = FontSystem::new();
         let metrics = Metrics::new(line_height as f32, line_height as f32);
         let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
