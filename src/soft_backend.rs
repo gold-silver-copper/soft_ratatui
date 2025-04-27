@@ -9,7 +9,7 @@ use cosmic_text::{
     Attrs, Buffer as CosmicBuffer, Color as CosmicColor, Family, FontSystem, Metrics, Shaping,
     SwashCache, Weight,
 };
-use image::{ImageBuffer, Rgb, RgbImage};
+use image::{ImageBuffer, Rgba, RgbaImage};
 use ratatui::backend::{Backend, ClearType, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
@@ -21,7 +21,7 @@ pub struct SoftBackend {
     cursor: bool,
     pos: (u16, u16),
     font_system: FontSystem,
-    image_buffer: RgbImage,
+    image_buffer: RgbaImage,
 
     character_buffer: CosmicBuffer,
     char_width: u32,
@@ -66,19 +66,21 @@ impl SoftBackend {
         let (text_color, bg_color) = if is_reversed {
             (
                 rat_to_cosmic_color(&rat_bg, false),
-                rat_to_rgb(&rat_fg, true),
+                rat_to_rgba(&rat_fg, true),
             )
         } else {
             (
                 rat_to_cosmic_color(&rat_fg, true),
-                rat_to_rgb(&rat_bg, false),
+                rat_to_rgba(&rat_bg, false),
             )
         };
         let begin_x = xik as u32 * self.char_width;
         let begin_y = yik as u32 * self.char_height;
-        for y in begin_y..(begin_y + self.char_height) {
-            for x in begin_x..(begin_x + self.char_width) {
-                self.image_buffer.put_pixel(x, y, Rgb(bg_color));
+        for y in begin_y..=(begin_y + self.char_height) {
+            for x in begin_x..=(begin_x + self.char_width) {
+                if x < self.image_buffer.width() && y < self.image_buffer.height() {
+                    self.image_buffer.put_pixel(x, y, Rgba(bg_color));
+                }
             }
         }
 
@@ -111,25 +113,19 @@ impl SoftBackend {
 
         mut_buffer.draw(&mut self.swash_cache, text_color, |x, y, w, h, color| {
             // println!("{x}{y}{w}{h}");
+            let [r, g, b, a] = color.as_rgba();
 
-            if x > 0 && y > 0 {
-                let [r, g, b, a] = color.as_rgba();
+            if x > -1 && y > -1 && a > 0
+            //    && y < self.char_height as i32
+            //  && x < self.char_width as i32
+            {
                 self.image_buffer.put_pixel(
-                    xik as u32 * self.char_width + x as u32,
-                    yik as u32 * self.char_height + y as u32,
-                    Rgb([r, g, b]),
+                    begin_x + x as u32,
+                    begin_y + y as u32,
+                    Rgba([r, g, b, a]),
                 );
             }
         });
-
-        /*   self.screen_pixmap.draw_pixmap(
-            (xik as u32 * self.char_width) as i32,
-            (yik as u32 * self.char_height) as i32,
-            mut_pixmap.as_ref(),
-            &self.pixmap_paint,
-            Transform::identity(),
-            None,
-        ); */
     }
 
     /// Creates a new `SoftBackend` with the specified width and height.
@@ -172,7 +168,7 @@ impl SoftBackend {
             Some(char_height as f32),
         );
         let mut image_buffer =
-            RgbImage::new(char_width * width as u32, char_height * height as u32);
+            RgbaImage::new(char_width * width as u32, char_height * height as u32);
 
         let mut return_struct = Self {
             buffer: Buffer::empty(Rect::new(0, 0, width, height)),
@@ -244,10 +240,10 @@ impl Backend for SoftBackend {
         self.buffer.reset();
         let clear_cell = Cell::EMPTY;
 
-        self.image_buffer = RgbImage::from_pixel(
+        self.image_buffer = RgbaImage::from_pixel(
             self.char_width * self.buffer.area.width as u32,
             self.char_height * self.buffer.area.height as u32,
-            Rgb(rat_to_rgb(&clear_cell.bg, false)),
+            Rgba(rat_to_rgba(&clear_cell.bg, false)),
         );
         Ok(())
     }
