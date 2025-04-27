@@ -72,14 +72,27 @@ impl SoftBackend {
         let mut mut_pixmap = self.pixmap.as_mut();
 
         let mut text_color = if is_reversed {
-            mut_pixmap.fill(rat_to_skia_color(&rat_fg, true));
+            self.skia_paint.set_color(rat_to_skia_color(&rat_fg, true));
 
             rat_to_cosmic_color(&rat_bg, false)
         } else {
-            mut_pixmap.fill(rat_to_skia_color(&rat_bg, false));
+            self.skia_paint.set_color(rat_to_skia_color(&rat_bg, false));
 
             rat_to_cosmic_color(&rat_fg, true)
         };
+
+        self.screen_pixmap.fill_rect(
+            SkiaRect::from_xywh(
+                xik as f32 * self.char_width as f32,
+                yik as f32 * self.char_height as f32,
+                self.char_width as f32,
+                self.char_height as f32,
+            )
+            .unwrap(),
+            &self.skia_paint,
+            Transform::identity(),
+            None,
+        );
 
         let mut text_symbol: String = rat_cell.symbol().to_string();
 
@@ -114,22 +127,28 @@ impl SoftBackend {
             let [r, g, b, a] = color.as_rgba();
             self.skia_paint.set_color(SkiaColor::from_rgba8(r, g, b, a));
 
-            mut_pixmap.fill_rect(
-                SkiaRect::from_xywh(x as f32, y as f32, w as f32, h as f32).unwrap(),
+            self.screen_pixmap.fill_rect(
+                SkiaRect::from_xywh(
+                    xik as f32 * self.char_width as f32 + x as f32,
+                    yik as f32 * self.char_height as f32 + y as f32,
+                    1.0,
+                    1.0,
+                )
+                .unwrap(),
                 &self.skia_paint,
                 Transform::identity(),
                 None,
             );
         });
 
-        self.screen_pixmap.draw_pixmap(
+        /*   self.screen_pixmap.draw_pixmap(
             (xik as u32 * self.char_width) as i32,
             (yik as u32 * self.char_height) as i32,
             mut_pixmap.as_ref(),
             &self.pixmap_paint,
             Transform::identity(),
             None,
-        );
+        ); */
     }
 
     /// Creates a new `SoftBackend` with the specified width and height.
