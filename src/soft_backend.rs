@@ -62,32 +62,28 @@ impl SoftBackend {
             rat_to_skia_color(&rat_fg, true)
         };
 
-        for ch in rat_cell.symbol().chars() {
-            // Rasterize each character
-            let (metrics, bitmap) = self.font.rasterize(ch, self.font_size);
-
-            // Draw the glyph bitmap onto the pixmap
-            for row in 0..metrics.height {
-                for col in 0..metrics.width {
-                    let alpha = bitmap[row * metrics.width + col] as f32 / 255.0;
-                    if alpha > 0.0 {
-                        mut_pixmap.fill_rect(
-                            tiny_skia::Rect::from_xywh(
-                                (metrics.bounds.xmin) + (col as f32),
-                                (metrics.bounds.ymin) + (row as f32),
-                                1.0,
-                                1.0,
-                            )
-                            .unwrap(),
-                            &tiny_skia::Paint {
-                                shader: tiny_skia::Shader::SolidColor(text_color),
-                                anti_alias: false,
-                                ..Default::default()
-                            },
-                            Transform::identity(),
-                            None, // or Some(alpha) if you want to alpha-blend
-                        );
-                    }
+        // Rasterize each character
+        let (metrics, bitmap) = self
+            .font
+            .rasterize(rat_cell.symbol().chars().next().unwrap(), self.font_size);
+        self.skia_paint.set_color(text_color);
+        // Draw the glyph bitmap onto the pixmap
+        for row in 0..metrics.height {
+            for col in 0..metrics.width {
+                let alpha = bitmap[row * metrics.width + col] as f32 / 255.0;
+                if alpha > 0.0 {
+                    mut_pixmap.fill_rect(
+                        tiny_skia::Rect::from_xywh(
+                            (metrics.bounds.xmin) + (col as f32),
+                            -(metrics.bounds.ymin) + (row as f32),
+                            1.0,
+                            1.0,
+                        )
+                        .unwrap(),
+                        &self.skia_paint,
+                        Transform::identity(),
+                        None, // or Some(alpha) if you want to alpha-blend
+                    );
                 }
             }
         }
@@ -109,17 +105,18 @@ impl SoftBackend {
         let mut skia_paint = Paint::default();
         skia_paint.anti_alias = false;
         // skia_paint.blend_mode = BlendMode::Difference;
-        let font_size = 20.0;
+        let font_size = 16.0;
 
         let mut pixmap_paint = PixmapPaint::default();
 
         pixmap_paint.quality = FilterQuality::Nearest;
 
         // Rasterize each character
-        let (metrics, bitmap) = font.rasterize('C', font_size);
+        let (metrics, bitmap) = font.rasterize('█', font_size);
+        //  let (metrics, bitmap) = font.rasterize('}', font_size);
         println!("{metrics:#?}");
 
-        let char_width = metrics.width as u32;
+        let char_width = metrics.advance_width as u32;
         let char_height = metrics.height as u32;
 
         let glyph_pixmap = Pixmap::new(char_width, char_height).unwrap();
