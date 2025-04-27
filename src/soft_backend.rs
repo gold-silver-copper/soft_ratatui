@@ -4,30 +4,23 @@
 use std::io;
 
 use crate::colors::*;
-use cosmic_text::Style;
-use cosmic_text::{
-    Attrs, Buffer as CosmicBuffer, Color as CosmicColor, Family, FontSystem, Metrics, Shaping,
-    SwashCache, Weight,
-};
+use fontdue::Font;
 use image::{ImageBuffer, Rgba, RgbaImage};
 use ratatui::backend::{Backend, ClearType, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
 use ratatui::style::{Color as RatColor, Modifier};
-
+static FONT_DATA: &[u8] = include_bytes!("../assets/iosevka.ttf");
 #[derive(Debug)]
 pub struct SoftBackend {
     buffer: Buffer,
     cursor: bool,
     pos: (u16, u16),
-    font_system: FontSystem,
+    font: Font,
     image_buffer: RgbaImage,
-
-    character_buffer: CosmicBuffer,
+    font_size: f32,
     char_width: u32,
     char_height: u32,
-
-    swash_cache: SwashCache,
 }
 
 fn add_strikeout(text: &String) -> String {
@@ -78,90 +71,37 @@ impl SoftBackend {
             }
         }
 
-        let mut text_symbol: String = rat_cell.symbol().to_string();
+        // Rasterize each character
+        let (metrics, bitmap) = self
+            .font
+            .rasterize(rat_cell.symbol().chars().next().unwrap(), self.font_size);
 
-        if is_crossed_out {
-            text_symbol = add_strikeout(&text_symbol);
-        }
-        if is_underlined {
-            text_symbol = add_underline(&text_symbol);
-        }
-
-        let mut attrs = Attrs::new().family(Family::Monospace);
-        if is_bold {
-            attrs = attrs.weight(Weight::BOLD);
-        }
-        if is_italic {
-            attrs = attrs.style(Style::Italic);
-        }
-
-        let mut mut_buffer = self.character_buffer.borrow_with(&mut self.font_system);
-
-        // Set and shape text
-        mut_buffer.set_text(
-            &text_symbol,
-            &attrs,
-            Shaping::Advanced, // Basic for better performance
-        );
-        //mut_buffer.shape_until_scroll(true);
-
-        mut_buffer.draw(
-            &mut self.swash_cache,
-            CosmicColor::rgba(1, 1, 1, 255),
-            |x, y, _w, _h, color| {
-                // println!("{x}{y}{w}{h}");
-                let [_r, _g, _b, a] = color.as_rgba();
-
-                if x > -1 && y > -1 && a > 0 {
+        let y = self.char_height - metrics.height as u32;
+        for row in 0..metrics.height {
+            for col in 0..metrics.width {
+                let alpha = bitmap[row * metrics.width + col] as f32 / 255.0;
+                if alpha > 0.0 {
                     self.image_buffer.put_pixel(
-                        begin_x + x as u32,
-                        begin_y + y as u32,
+                        (begin_x as f32 + metrics.bounds.xmin + col as f32) as u32,
+                        (begin_y as f32 + y as f32 - metrics.bounds.ymin + row as f32) as u32,
                         Rgba(fg_color),
                     );
                 }
-            },
-        );
+            }
+        }
     }
 
     /// Creates a new `SoftBackend` with the specified width and height.
     pub fn new(width: u16, height: u16) -> Self {
-        let mut swash_cache = SwashCache::new();
-
-        // skia_paint.blend_mode = BlendMode::Difference;
-        let line_height = 20;
-        let mut font_system = FontSystem::new();
-        let metrics = Metrics::new(line_height as f32, line_height as f32);
-        let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
-        let mut buffer = buffer.borrow_with(&mut font_system);
-        buffer.set_text(
-            "█\n█",
-            &Attrs::new().family(Family::Monospace),
-            Shaping::Advanced,
-        );
-        buffer.shape_until_scroll(true);
-        let boop = buffer.layout_runs().next().unwrap();
-        let physical_glyph = boop.glyphs.iter().next().unwrap().physical((0., 0.), 1.0);
-
-        let wa = swash_cache
-            .get_image(&mut font_system, physical_glyph.cache_key)
-            .clone()
-            .unwrap()
-            .placement;
-        println!("Glyph height (bbox): {:#?}", wa);
-
-        let mut character_buffer = CosmicBuffer::new(&mut font_system, metrics);
-
-        // let mut character_buffer = character_buffer.borrow_with(&mut font_system);
-
-        //  println!("Glyph height (bbox): {:#?}", boop);
-        //      // Set a size for the text buffer, in pixels
-        let char_width = wa.width;
-        let char_height = wa.height;
-        character_buffer.set_size(
-            &mut font_system,
-            Some(char_width as f32),
-            Some(char_height as f32),
-        );
+        let font = Font::from_bytes(FONT_DATA, fontdue::FontSettings::default())
+            .expect("Failed to load font");
+        let font_size = 20.0;
+        // Rasterize each character
+        let (metrics, bitmap) = font.rasterize('█', font_size);
+        //  let (metrics, bitmap) = font.rasterize('}', font_size);
+        println!("{metrics:#?}");
+        let char_width = metrics.width as u32;
+        let char_height = metrics.height as u32;
         let mut image_buffer =
             RgbaImage::new(char_width * width as u32, char_height * height as u32);
 
@@ -169,13 +109,12 @@ impl SoftBackend {
             buffer: Buffer::empty(Rect::new(0, 0, width, height)),
             cursor: false,
             pos: (0, 0),
-            font_system,
+            font,
+            font_size,
             image_buffer,
-            character_buffer,
+
             char_width,
             char_height,
-
-            swash_cache,
         };
         return_struct.clear();
         return_struct

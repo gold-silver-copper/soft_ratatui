@@ -14,10 +14,8 @@ repository = "https://github.com/gold-silver-copper/soft_ratatui"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-cosmic-text = { version = "0.14.2", default-features = false, features = [
-    "std",
-    "swash",
-] }
+
+fontdue = "0.9.3"
 image = "0.25.6"
 ratatui = { version = "0.29.0", default-features = false } # Strip out unneeded features
 
