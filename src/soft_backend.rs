@@ -63,11 +63,9 @@ impl SoftBackend {
         };
         let begin_x = xik as u32 * self.char_width;
         let begin_y = yik as u32 * self.char_height;
-        for y in begin_y..=(begin_y + self.char_height) {
-            for x in begin_x..=(begin_x + self.char_width) {
-                if x < self.image_buffer.width() && y < self.image_buffer.height() {
-                    self.image_buffer.put_pixel(x, y, Rgba(bg_color));
-                }
+        for y in begin_y..(begin_y + self.char_height) {
+            for x in begin_x..(begin_x + self.char_width) {
+                self.image_buffer.put_pixel(x, y, Rgba(bg_color));
             }
         }
 
@@ -95,7 +93,7 @@ impl SoftBackend {
     pub fn new(width: u16, height: u16) -> Self {
         let font = Font::from_bytes(FONT_DATA, fontdue::FontSettings::default())
             .expect("Failed to load font");
-        let font_size = 20.0;
+        let font_size = 16.0;
         // Rasterize each character
         let (metrics, bitmap) = font.rasterize('█', font_size);
         //  let (metrics, bitmap) = font.rasterize('}', font_size);
