@@ -63,11 +63,6 @@ impl SoftBackend {
         };
         let begin_x = xik as u32 * self.char_width;
         let begin_y = yik as u32 * self.char_height;
-        for y in begin_y..(begin_y + self.char_height) {
-            for x in begin_x..(begin_x + self.char_width) {
-                self.image_buffer.put_pixel(x, y, Rgba(bg_color));
-            }
-        }
 
         // Rasterize each character
         let (metrics, bitmap) = self
@@ -75,14 +70,26 @@ impl SoftBackend {
             .rasterize(rat_cell.symbol().chars().next().unwrap(), self.font_size);
 
         let y = self.char_height - metrics.height as u32;
-        for row in 0..metrics.height {
+        for row in 0..self.char_height {
             for col in 0..metrics.width {
-                let alpha = bitmap[row * metrics.width + col] as f32 / 255.0;
+                let alpha = if row < metrics.height as u32 {
+                    bitmap[row as usize * metrics.width + col] as f32 / 255.0
+                } else {
+                    0.0
+                };
+                let y_put = (begin_y as f32 + y as f32 - metrics.bounds.ymin + row as f32) as u32;
+
                 if alpha > 0.0 {
                     self.image_buffer.put_pixel(
                         (begin_x as f32 + metrics.bounds.xmin + col as f32) as u32,
-                        (begin_y as f32 + y as f32 - metrics.bounds.ymin + row as f32) as u32,
+                        y_put,
                         Rgba(fg_color),
+                    );
+                } else if y_put < self.image_buffer.height() {
+                    self.image_buffer.put_pixel(
+                        (begin_x as f32 + metrics.bounds.xmin + col as f32) as u32,
+                        y_put,
+                        Rgba(bg_color),
                     );
                 }
             }
