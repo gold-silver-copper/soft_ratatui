@@ -64,33 +64,31 @@ impl SoftBackend {
         let begin_x = xik as u32 * self.char_width;
         let begin_y = yik as u32 * self.char_height;
 
+        let char = rat_cell.symbol().chars().next().unwrap();
+        if rat_cell.symbol() == "" {
+            panic!()
+        }
         // Rasterize each character
-        let (metrics, bitmap) = self
-            .font
-            .rasterize(rat_cell.symbol().chars().next().unwrap(), self.font_size);
+        let (metrics, bitmap) = self.font.rasterize(char, self.font_size);
 
         let y = self.char_height - metrics.height as u32;
         for row in 0..self.char_height {
-            for col in 0..metrics.width {
-                let alpha = if row < metrics.height as u32 {
-                    bitmap[row as usize * metrics.width + col] as f32 / 255.0
+            for col in 0..self.char_width {
+                let alpha = if ((row as usize) < metrics.height) && ((col as usize) < metrics.width)
+                {
+                    let bit_index = (row as usize) * metrics.width + (col as usize);
+
+                    bitmap[bit_index]
                 } else {
-                    0.0
+                    0
                 };
                 let y_put = (begin_y as f32 + y as f32 - metrics.bounds.ymin + row as f32) as u32;
-
-                if alpha > 0.0 {
-                    self.image_buffer.put_pixel(
-                        (begin_x as f32 + metrics.bounds.xmin + col as f32) as u32,
-                        y_put,
-                        Rgba(fg_color),
-                    );
-                } else if y_put < self.image_buffer.height() {
-                    self.image_buffer.put_pixel(
-                        (begin_x as f32 + metrics.bounds.xmin + col as f32) as u32,
-                        y_put,
-                        Rgba(bg_color),
-                    );
+                let x_put = (begin_x as f32 + metrics.bounds.xmin + col as f32) as u32;
+                if y_put < self.image_buffer.height() && x_put < self.image_buffer.width() {
+                    self.image_buffer.put_pixel(x_put, y_put, Rgba(bg_color));
+                    if alpha > 0 {
+                        self.image_buffer.put_pixel(x_put, y_put, Rgba(fg_color));
+                    }
                 }
             }
         }
@@ -100,7 +98,7 @@ impl SoftBackend {
     pub fn new(width: u16, height: u16) -> Self {
         let font = Font::from_bytes(FONT_DATA, fontdue::FontSettings::default())
             .expect("Failed to load font");
-        let font_size = 16.0;
+        let font_size = 10.0;
         // Rasterize each character
         let (metrics, bitmap) = font.rasterize('█', font_size);
         //  let (metrics, bitmap) = font.rasterize('}', font_size);

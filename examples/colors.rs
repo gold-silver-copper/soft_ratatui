@@ -128,7 +128,7 @@ impl Widget for &mut App {
         use Constraint::{Length, Min};
         let [top, colors] = Layout::vertical([Length(1), Min(0)]).areas(area);
         let [title, fps] = Layout::horizontal([Min(0), Length(8)]).areas(top);
-        Text::from("colors_rgb example. Press q to quit")
+        Text::from("colors_rgb1234567890 example. Press q to quit")
             .centered()
             .render(title, buf);
         self.fps_widget.render(fps, buf);
