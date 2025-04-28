@@ -67,10 +67,7 @@ impl SoftBackend {
         let begin_y = yik as u32 * self.char_height;
         for y in begin_y..(begin_y + self.char_height) {
             for x in begin_x..(begin_x + self.char_width) {
-                if y as i32 - self.ymin < self.image_buffer.height() as i32 {
-                    self.image_buffer
-                        .put_pixel(x, (y as i32 - self.ymin) as u32, Rgba(bg_color));
-                }
+                self.image_buffer.put_pixel(x, y as u32, Rgba(bg_color));
             }
         }
 
@@ -81,7 +78,9 @@ impl SoftBackend {
                 if alpha > 0 {
                     self.image_buffer.put_pixel(
                         (begin_x as f32 + metrics.bounds.xmin + col as f32) as u32,
-                        (begin_y as f32 + y as f32 - metrics.bounds.ymin + row as f32) as u32,
+                        (begin_y as f32 + y as f32 - metrics.bounds.ymin
+                            + self.ymin as f32
+                            + row as f32) as u32,
                         Rgba(fg_color),
                     );
                 }
@@ -93,7 +92,7 @@ impl SoftBackend {
     pub fn new(width: u16, height: u16) -> Self {
         let font = Font::from_bytes(FONT_DATA, fontdue::FontSettings::default())
             .expect("Failed to load font");
-        let font_size = 15.0;
+        let font_size = 20.0;
 
         let (metrics, bitmap) = font.rasterize('█', font_size);
         //  let (metrics, bitmap) = font.rasterize('}', font_size);
@@ -101,10 +100,8 @@ impl SoftBackend {
         let char_width = metrics.width as u32;
         let char_height = metrics.height as u32;
         let ymin = metrics.ymin;
-        let mut image_buffer = RgbaImage::new(
-            char_width * (width as u32 + 15),
-            char_height * height as u32,
-        );
+        let mut image_buffer =
+            RgbaImage::new(char_width * width as u32, char_height * height as u32);
         let counter = 0;
 
         let mut return_struct = Self {
