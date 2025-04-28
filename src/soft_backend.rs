@@ -21,6 +21,7 @@ pub struct SoftBackend {
     font_size: f32,
     char_width: u32,
     char_height: u32,
+    counter: u32,
     ymin: i32,
 }
 
@@ -37,9 +38,9 @@ fn add_underline(text: &String) -> String {
 
 impl SoftBackend {
     pub fn draw_cell(&mut self, rat_cell: &Cell, xik: u16, yik: u16) {
-        // Prepare Pixmap to draw into
+        let char = rat_cell.symbol().chars().next().unwrap();
 
-        // Draw using tiny-skia
+        let (metrics, bitmap) = self.font.rasterize(char, self.font_size);
 
         let is_bold = rat_cell.modifier.contains(Modifier::BOLD);
         let is_italic = rat_cell.modifier.contains(Modifier::ITALIC);
@@ -73,11 +74,6 @@ impl SoftBackend {
             }
         }
 
-        let char = rat_cell.symbol().chars().next().unwrap();
-
-        // Rasterize each character
-        let (metrics, bitmap) = self.font.rasterize(char, self.font_size);
-
         let y = self.char_height - metrics.height as u32;
         for row in 0..metrics.height {
             for col in 0..metrics.width {
@@ -98,15 +94,18 @@ impl SoftBackend {
         let font = Font::from_bytes(FONT_DATA, fontdue::FontSettings::default())
             .expect("Failed to load font");
         let font_size = 15.0;
-        // Rasterize each character
+
         let (metrics, bitmap) = font.rasterize('█', font_size);
         //  let (metrics, bitmap) = font.rasterize('}', font_size);
         println!("{metrics:#?}");
         let char_width = metrics.width as u32;
         let char_height = metrics.height as u32;
         let ymin = metrics.ymin;
-        let mut image_buffer =
-            RgbaImage::new(char_width * width as u32, char_height * height as u32);
+        let mut image_buffer = RgbaImage::new(
+            char_width * (width as u32 + 15),
+            char_height * height as u32,
+        );
+        let counter = 0;
 
         let mut return_struct = Self {
             buffer: Buffer::empty(Rect::new(0, 0, width, height)),
@@ -116,7 +115,7 @@ impl SoftBackend {
             font_size,
             image_buffer,
             ymin,
-
+            counter,
             char_width,
             char_height,
         };
@@ -145,11 +144,11 @@ impl Backend for SoftBackend {
             self.draw_cell(&c, x, y);
             //   println!("{c:#?}");
         }
-        //  self.draw_buffer();
 
-        // Save to PNG file
-
-        self.image_buffer.save("my_image.png").unwrap();
+        //self.counter += 1;
+        //  let title = format!("junk/my_image{}.png", self.counter);
+        let title = format!("my_image.png");
+        self.image_buffer.save(title).unwrap();
 
         Ok(())
     }
