@@ -32,3 +32,31 @@ pub fn rat_to_rgba(rat_col: &RatColor, is_a_fg: bool) -> [u8; 4] {
         RatColor::Rgb(r, g, b) => [*r, *g, *b, 255],
     }
 }
+
+/// Blend two RGBA colors using alpha compositing.
+///
+/// (fg over bg) -> resulting RGBA
+///
+/// * `fg` - [R, G, B, A] foreground color
+/// * `bg` - [R, G, B, A] background color
+///
+/// Returns: blended color as [u8; 4]
+pub fn blend_rgba(fg: [u8; 4], bg: [u8; 4]) -> [u8; 4] {
+    let fg_a = fg[3] as f32 / 255.0;
+    let bg_a = bg[3] as f32 / 255.0;
+    let out_a = fg_a + bg_a * (1.0 - fg_a);
+
+    let blend_channel =
+        |f: u8, b: u8| ((f as f32 * fg_a + b as f32 * bg_a * (1.0 - fg_a)) / out_a).round() as u8;
+
+    if out_a == 0.0 {
+        [0, 0, 0, 0]
+    } else {
+        [
+            blend_channel(fg[0], bg[0]),
+            blend_channel(fg[1], bg[1]),
+            blend_channel(fg[2], bg[2]),
+            (out_a * 255.0).round() as u8,
+        ]
+    }
+}

@@ -65,24 +65,32 @@ impl SoftBackend {
         };
         let begin_x = xik as u32 * self.char_width;
         let begin_y = yik as u32 * self.char_height;
-        for y in begin_y..(begin_y + self.char_height) {
-            for x in begin_x..(begin_x + self.char_width) {
-                self.image_buffer.put_pixel(x, y as u32, Rgba(bg_color));
+        for y in 0..self.char_height {
+            for x in 0..self.char_width {
+                self.image_buffer
+                    .put_pixel(begin_x + x, begin_y + y, Rgba(bg_color));
             }
         }
 
-        let y = self.char_height - metrics.height as u32;
-        for row in 0..metrics.height {
-            for col in 0..metrics.width {
-                let alpha = bitmap[row * metrics.width + col];
-                if alpha > 0 {
-                    self.image_buffer.put_pixel(
-                        (begin_x as f32 + metrics.bounds.xmin + col as f32) as u32,
-                        (begin_y as f32 + y as f32 - metrics.bounds.ymin
+        let shift_y = self.char_height - metrics.height as u32;
+        for row in 0..self.char_height {
+            for col in 0..self.char_width {
+                if row < metrics.height as u32 && col < metrics.width as u32 {
+                    let alpha = bitmap[row as usize * metrics.width + col as usize];
+                    if alpha > 0 {
+                        let get_y = (begin_y as f32 + shift_y as f32 - metrics.bounds.ymin
                             + self.ymin as f32
-                            + row as f32) as u32,
-                        Rgba([fg_color[0], fg_color[1], fg_color[2], fg_color[3]]), //alpha instead of fg_color 3
-                    );
+                            + row as f32) as u32;
+                        let get_x = (begin_x as f32 + metrics.bounds.xmin + col as f32) as u32;
+                        let bg_pixel = self.image_buffer.get_pixel(get_x, get_y);
+                        let put_color =
+                            blend_rgba([fg_color[0], fg_color[1], fg_color[2], alpha], bg_pixel.0);
+                        self.image_buffer.put_pixel(
+                            get_x,
+                            get_y,
+                            Rgba(put_color), //alpha instead of fg_color 3
+                        );
+                    }
                 }
             }
         }
