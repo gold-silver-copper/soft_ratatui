@@ -81,7 +81,7 @@ impl SoftBackend {
                         (begin_y as f32 + y as f32 - metrics.bounds.ymin
                             + self.ymin as f32
                             + row as f32) as u32,
-                        Rgba(fg_color),
+                        Rgba([fg_color[0], fg_color[1], fg_color[2], fg_color[3]]), //alpha instead of fg_color 3
                     );
                 }
             }
@@ -92,7 +92,7 @@ impl SoftBackend {
     pub fn new(width: u16, height: u16) -> Self {
         let font = Font::from_bytes(FONT_DATA, fontdue::FontSettings::default())
             .expect("Failed to load font");
-        let font_size = 20.0;
+        let font_size = 16.0;
 
         let (metrics, bitmap) = font.rasterize('█', font_size);
         //  let (metrics, bitmap) = font.rasterize('}', font_size);
