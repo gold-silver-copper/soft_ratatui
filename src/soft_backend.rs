@@ -4,6 +4,7 @@
 use std::io;
 
 use crate::colors::*;
+use crate::pixmap::RgbaPixmap;
 use fontdue::Font;
 use image::{ImageBuffer, Rgba, RgbaImage};
 use ratatui::backend::{Backend, ClearType, WindowSize};
@@ -17,11 +18,12 @@ pub struct SoftBackend {
     cursor: bool,
     pos: (u16, u16),
     font: Font,
-    image_buffer: RgbaImage,
+
     font_size: f32,
     char_width: u32,
     char_height: u32,
-    counter: u32,
+    rgba_pixmap: RgbaPixmap,
+
     ymin: i32,
 }
 
@@ -67,8 +69,11 @@ impl SoftBackend {
         let begin_y = yik as u32 * self.char_height;
         for y in 0..self.char_height {
             for x in 0..self.char_width {
-                self.image_buffer
-                    .put_pixel(begin_x + x, begin_y + y, Rgba(bg_color));
+                self.rgba_pixmap.put_pixel(
+                    begin_x as usize + x as usize,
+                    begin_y as usize + y as usize,
+                    bg_color,
+                );
             }
         }
 
@@ -82,13 +87,13 @@ impl SoftBackend {
                             + self.ymin as f32
                             + row as f32) as u32;
                         let get_x = (begin_x as f32 + metrics.bounds.xmin + col as f32) as u32;
-                        let bg_pixel = self.image_buffer.get_pixel(get_x, get_y);
+                        let bg_pixel = self.rgba_pixmap.get_pixel(get_x as usize, get_y as usize);
                         let put_color =
-                            blend_rgba([fg_color[0], fg_color[1], fg_color[2], alpha], bg_pixel.0);
-                        self.image_buffer.put_pixel(
-                            get_x,
-                            get_y,
-                            Rgba(put_color), //alpha instead of fg_color 3
+                            blend_rgba([fg_color[0], fg_color[1], fg_color[2], alpha], bg_pixel);
+                        self.rgba_pixmap.put_pixel(
+                            get_x as usize,
+                            get_y as usize,
+                            put_color, //alpha instead of fg_color 3
                         );
                     }
                 }
@@ -108,9 +113,11 @@ impl SoftBackend {
         let char_width = metrics.width as u32;
         let char_height = metrics.height as u32;
         let ymin = metrics.ymin;
-        let mut image_buffer =
-            RgbaImage::new(char_width * width as u32, char_height * height as u32);
-        let counter = 0;
+
+        let rgba_pixmap = RgbaPixmap::new(
+            char_width as usize * width as usize,
+            char_height as usize * height as usize,
+        );
 
         let mut return_struct = Self {
             buffer: Buffer::empty(Rect::new(0, 0, width, height)),
@@ -118,9 +125,9 @@ impl SoftBackend {
             pos: (0, 0),
             font,
             font_size,
-            image_buffer,
+
             ymin,
-            counter,
+            rgba_pixmap,
             char_width,
             char_height,
         };
@@ -150,10 +157,14 @@ impl Backend for SoftBackend {
             //   println!("{c:#?}");
         }
 
-        //self.counter += 1;
-        //  let title = format!("junk/my_image{}.png", self.counter);
         let title = format!("my_image.png");
-        self.image_buffer.save(title).unwrap();
+        let boop: ImageBuffer<Rgba<u8>, &[u8]> = ImageBuffer::from_raw(
+            self.rgba_pixmap.width() as u32,
+            self.rgba_pixmap.height() as u32,
+            self.rgba_pixmap.data(),
+        )
+        .unwrap();
+        boop.save(title).unwrap();
 
         Ok(())
     }
@@ -181,12 +192,10 @@ impl Backend for SoftBackend {
     fn clear(&mut self) -> io::Result<()> {
         self.buffer.reset();
         let clear_cell = Cell::EMPTY;
+        let colorik = rat_to_rgba(&clear_cell.bg, false);
 
-        self.image_buffer = RgbaImage::from_pixel(
-            self.char_width * self.buffer.area.width as u32,
-            self.char_height * self.buffer.area.height as u32,
-            Rgba(rat_to_rgba(&clear_cell.bg, false)),
-        );
+        self.rgba_pixmap.fill(colorik);
+
         Ok(())
     }
 
