@@ -6,7 +6,7 @@ use std::io;
 use crate::colors::*;
 use crate::pixmap::RgbPixmap;
 use fontdue::Font;
-use image::{ImageBuffer, Rgb};
+
 use ratatui::backend::{Backend, ClearType, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
@@ -27,18 +27,17 @@ pub struct SoftBackend {
     ymin: i32,
 }
 
-fn add_strikeout(text: &String) -> String {
-    // Unicode combining long stroke overlay
-    let strike = '\u{0336}';
-    text.chars().flat_map(|c| [c, strike]).collect()
-}
-fn add_underline(text: &String) -> String {
-    // Unicode combining long stroke overlay
-    let strike = '\u{0332}';
-    text.chars().flat_map(|c| [c, strike]).collect()
-}
-
 impl SoftBackend {
+    pub fn get_pixmap_data(&self) -> &[u8] {
+        self.rgba_pixmap.data()
+    }
+    pub fn get_pixmap_width(&self) -> usize {
+        self.rgba_pixmap.width()
+    }
+    pub fn get_pixmap_height(&self) -> usize {
+        self.rgba_pixmap.height()
+    }
+
     pub fn draw_cell(&mut self, rat_cell: &Cell, xik: u16, yik: u16) {
         let char = rat_cell.symbol().chars().next().unwrap();
 
@@ -158,15 +157,6 @@ impl Backend for SoftBackend {
             self.draw_cell(&c, x, y);
             //   println!("{c:#?}");
         }
-
-        let title = format!("my_image.png");
-        let boop: ImageBuffer<Rgb<u8>, &[u8]> = ImageBuffer::from_raw(
-            self.rgba_pixmap.width() as u32,
-            self.rgba_pixmap.height() as u32,
-            self.rgba_pixmap.data(),
-        )
-        .unwrap();
-        boop.save(title).unwrap();
 
         Ok(())
     }
