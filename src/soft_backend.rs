@@ -4,9 +4,9 @@
 use std::io;
 
 use crate::colors::*;
-use crate::pixmap::RgbaPixmap;
+use crate::pixmap::RgbPixmap;
 use fontdue::Font;
-use image::{ImageBuffer, Rgba, RgbaImage};
+use image::{ImageBuffer, Rgb};
 use ratatui::backend::{Backend, ClearType, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
@@ -22,7 +22,7 @@ pub struct SoftBackend {
     font_size: f32,
     char_width: u32,
     char_height: u32,
-    rgba_pixmap: RgbaPixmap,
+    rgba_pixmap: RgbPixmap,
 
     ymin: i32,
 }
@@ -72,7 +72,7 @@ impl SoftBackend {
                 self.rgba_pixmap.put_pixel(
                     begin_x as usize + x as usize,
                     begin_y as usize + y as usize,
-                    bg_color,
+                    [bg_color[0], bg_color[1], bg_color[2]],
                 );
             }
         }
@@ -88,8 +88,10 @@ impl SoftBackend {
                             + row as f32) as u32;
                         let get_x = (begin_x as f32 + metrics.bounds.xmin + col as f32) as u32;
                         let bg_pixel = self.rgba_pixmap.get_pixel(get_x as usize, get_y as usize);
-                        let put_color =
-                            blend_rgba([fg_color[0], fg_color[1], fg_color[2], alpha], bg_pixel);
+                        let put_color = blend_rgba(
+                            [fg_color[0], fg_color[1], fg_color[2], alpha],
+                            [bg_color[0], bg_color[1], bg_color[2], 255],
+                        );
                         self.rgba_pixmap.put_pixel(
                             get_x as usize,
                             get_y as usize,
@@ -114,7 +116,7 @@ impl SoftBackend {
         let char_height = metrics.height as u32;
         let ymin = metrics.ymin;
 
-        let rgba_pixmap = RgbaPixmap::new(
+        let rgba_pixmap = RgbPixmap::new(
             char_width as usize * width as usize,
             char_height as usize * height as usize,
         );
@@ -158,7 +160,7 @@ impl Backend for SoftBackend {
         }
 
         let title = format!("my_image.png");
-        let boop: ImageBuffer<Rgba<u8>, &[u8]> = ImageBuffer::from_raw(
+        let boop: ImageBuffer<Rgb<u8>, &[u8]> = ImageBuffer::from_raw(
             self.rgba_pixmap.width() as u32,
             self.rgba_pixmap.height() as u32,
             self.rgba_pixmap.data(),
@@ -194,7 +196,7 @@ impl Backend for SoftBackend {
         let clear_cell = Cell::EMPTY;
         let colorik = rat_to_rgba(&clear_cell.bg, false);
 
-        self.rgba_pixmap.fill(colorik);
+        self.rgba_pixmap.fill([colorik[0], colorik[1], colorik[2]]);
 
         Ok(())
     }
