@@ -22,7 +22,7 @@ type Result<T> = result::Result<T, Box<dyn Error>>;
 
 fn main() -> Result<()> {
     color_eyre::install()?;
-    let backend = SoftBackend::new(100, 50);
+    let backend = SoftBackend::new(100, 50, "assets/iosevka.ttf");
     let mut terminal = Terminal::new(backend).unwrap();
     let app_result = run(terminal);
 

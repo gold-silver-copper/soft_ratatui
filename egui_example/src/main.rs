@@ -30,7 +30,7 @@ struct MyApp {
 
 impl MyApp {
     fn new() -> Self {
-        let backend = SoftBackend::new(100, 50);
+        let backend = SoftBackend::new(100, 50, "../assets/iosevka.ttf");
         let mut terminal = Terminal::new(backend).unwrap();
         terminal.clear();
         Self { terminal }

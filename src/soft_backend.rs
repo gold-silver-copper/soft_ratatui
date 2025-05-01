@@ -1,7 +1,7 @@
 //! This module provides the `SoftBackend` implementation for the [`Backend`] trait.
 //! It is used in the integration tests to verify the correctness of the library.
 
-use std::io;
+use std::{fs, io};
 
 use crate::colors::*;
 use crate::pixmap::RgbPixmap;
@@ -11,7 +11,7 @@ use ratatui::backend::{Backend, ClearType, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
 use ratatui::style::{Color as RatColor, Modifier};
-static FONT_DATA: &[u8] = include_bytes!("../assets/iosevka.ttf");
+
 #[derive(Debug)]
 pub struct SoftBackend {
     buffer: Buffer,
@@ -103,8 +103,10 @@ impl SoftBackend {
     }
 
     /// Creates a new `SoftBackend` with the specified width and height.
-    pub fn new(width: u16, height: u16) -> Self {
-        let font = Font::from_bytes(FONT_DATA, fontdue::FontSettings::default())
+    pub fn new(width: u16, height: u16, font_path: &str) -> Self {
+        let font_data = fs::read(font_path).unwrap();
+
+        let font = Font::from_bytes(font_data, fontdue::FontSettings::default())
             .expect("Failed to load font");
         let font_size = 16.0;
 
