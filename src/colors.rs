@@ -50,13 +50,13 @@ pub fn blend_rgba(fg: [u8; 4], bg: [u8; 4]) -> [u8; 4] {
         |f: u8, b: u8| ((f as f32 * fg_a + b as f32 * bg_a * (1.0 - fg_a)) / out_a).round() as u8;
 
     if out_a == 0.0 {
-        [0, 0, 0, 0]
+        [0, 0, 0, 255]
     } else {
         [
             blend_channel(fg[0], bg[0]),
             blend_channel(fg[1], bg[1]),
             blend_channel(fg[2], bg[2]),
-            (out_a * 255.0).round() as u8,
+            255,
         ]
     }
 }
