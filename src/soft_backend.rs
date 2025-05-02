@@ -14,17 +14,17 @@ use ratatui::style::{Color as RatColor, Modifier};
 
 #[derive(Debug)]
 pub struct SoftBackend {
-    buffer: Buffer,
-    cursor: bool,
-    pos: (u16, u16),
-    font: Font,
+    pub buffer: Buffer,
+    pub cursor: bool,
+    pub pos: (u16, u16),
+    pub font: Font,
 
-    font_size: f32,
-    char_width: u32,
-    char_height: u32,
-    rgba_pixmap: RgbPixmap,
+    pub font_size: f32,
+    pub char_width: u32,
+    pub char_height: u32,
+    pub rgba_pixmap: RgbPixmap,
 
-    ymin: i32,
+    pub ymin: i32,
 }
 
 impl SoftBackend {
@@ -146,6 +146,21 @@ impl SoftBackend {
     /// Resizes the `SoftBackend` to the specified width and height.
     pub fn resize(&mut self, width: u16, height: u16) {
         self.buffer.resize(Rect::new(0, 0, width, height));
+        let rgba_pixmap = RgbPixmap::new(
+            self.char_width as usize * width as usize,
+            self.char_height as usize * height as usize,
+        );
+        self.rgba_pixmap = rgba_pixmap;
+        self.redraw();
+    }
+
+    pub fn redraw(&mut self) {
+        for x in 0..self.buffer.area.width {
+            for y in 0..self.buffer.area.height {
+                let c = self.buffer[(x, y)].clone();
+                self.draw_cell(&c, x, y);
+            }
+        }
     }
 }
 
