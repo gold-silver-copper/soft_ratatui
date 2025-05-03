@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+color-eyre = "0.6.4"
 eframe = "0.31.1"
+palette = "0.7.6"
 ratatui = "0.29.0"
 soft_ratatui = { path = ".." }
