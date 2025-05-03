@@ -87,9 +87,10 @@ impl SoftBackend {
                             + row as f32) as u32;
                         let get_x = (begin_x as f32 + metrics.bounds.xmin + col as f32) as u32;
                         let bg_pixel = self.rgba_pixmap.get_pixel(get_x as usize, get_y as usize);
+                        //bg_color or bg_pixel for put_color?
                         let put_color = blend_rgba(
                             [fg_color[0], fg_color[1], fg_color[2], alpha],
-                            [bg_color[0], bg_color[1], bg_color[2], 255],
+                            [bg_pixel[0], bg_pixel[1], bg_pixel[2], 255],
                         );
                         self.rgba_pixmap.put_pixel(
                             get_x as usize,
