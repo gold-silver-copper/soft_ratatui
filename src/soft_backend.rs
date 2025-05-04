@@ -5,14 +5,20 @@ use std::{fs, io};
 
 use crate::colors::*;
 use crate::pixmap::RgbPixmap;
-use fontdue::Font;
 
-use ratatui::backend::{Backend, ClearType, WindowSize};
+use ratatui::backend::{Backend, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
-use ratatui::style::{Color as RatColor, Modifier};
+use ratatui::style::Modifier;
 
-#[derive(Debug)]
+#[cfg(feature = "cosmic")]
+use cosmic_text::{Attrs, Color, Family, Metrics, Shaping, Style, Weight};
+#[cfg(feature = "cosmic")]
+use cosmic_text::{Buffer as CosmicBuffer, FontSystem, SwashCache};
+#[cfg(feature = "fontdue")]
+use fontdue::Font;
+
+#[cfg(feature = "fontdue")]
 pub struct SoftBackend {
     pub buffer: Buffer,
     pub cursor: bool,
@@ -27,6 +33,32 @@ pub struct SoftBackend {
     pub ymin: i32,
 }
 
+#[cfg(feature = "cosmic")]
+pub struct SoftBackend {
+    buffer: Buffer,
+    cursor: bool,
+    pos: (u16, u16),
+    font_system: FontSystem,
+    character_buffer: CosmicBuffer,
+    char_width: u32,
+    char_height: u32,
+
+    swash_cache: SwashCache,
+    pub rgba_pixmap: RgbPixmap,
+}
+#[cfg(feature = "cosmic")]
+fn add_strikeout(text: &String) -> String {
+    // Unicode combining long stroke overlay
+    let strike = '\u{0336}';
+    text.chars().flat_map(|c| [c, strike]).collect()
+}
+#[cfg(feature = "cosmic")]
+fn add_underline(text: &String) -> String {
+    // Unicode combining long stroke overlay
+    let strike = '\u{0332}';
+    text.chars().flat_map(|c| [c, strike]).collect()
+}
+
 impl SoftBackend {
     pub fn get_pixmap_data(&self) -> &[u8] {
         self.rgba_pixmap.data()
@@ -37,7 +69,105 @@ impl SoftBackend {
     pub fn get_pixmap_height(&self) -> usize {
         self.rgba_pixmap.height()
     }
+    #[cfg(feature = "cosmic")]
+    pub fn draw_cell(&mut self, rat_cell: &Cell, xik: u16, yik: u16) {
+        // Prepare Pixmap to draw into
 
+        // Draw using tiny-skia
+
+        let is_bold = rat_cell.modifier.contains(Modifier::BOLD);
+        let is_italic = rat_cell.modifier.contains(Modifier::ITALIC);
+        let is_underlined = rat_cell.modifier.contains(Modifier::UNDERLINED);
+        let is_slowblink = rat_cell.modifier.contains(Modifier::SLOW_BLINK);
+        let is_rapidblink = rat_cell.modifier.contains(Modifier::RAPID_BLINK);
+        let is_reversed = rat_cell.modifier.contains(Modifier::REVERSED);
+        let is_dim = rat_cell.modifier.contains(Modifier::DIM);
+        let is_hidden = rat_cell.modifier.contains(Modifier::HIDDEN);
+        let is_crossed_out = rat_cell.modifier.contains(Modifier::CROSSED_OUT);
+
+        let mut rat_fg = rat_cell.fg.clone();
+        let rat_bg = rat_cell.bg.clone();
+        if is_hidden {
+            rat_fg = rat_bg.clone();
+        }
+
+        let (fg_color, bg_color) = if is_reversed {
+            (rat_to_rgba(&rat_bg, false), rat_to_rgba(&rat_fg, true))
+        } else {
+            (rat_to_rgba(&rat_fg, true), rat_to_rgba(&rat_bg, false))
+        };
+
+        let begin_x = xik as u32 * self.char_width;
+        let begin_y = yik as u32 * self.char_height;
+        for y in 0..self.char_height {
+            for x in 0..self.char_width {
+                self.rgba_pixmap.put_pixel(
+                    begin_x as usize + x as usize,
+                    begin_y as usize + y as usize,
+                    [bg_color[0], bg_color[1], bg_color[2]],
+                );
+            }
+        }
+
+        let mut text_symbol: String = rat_cell.symbol().to_string();
+
+        if is_crossed_out {
+            text_symbol = add_strikeout(&text_symbol);
+        }
+        if is_underlined {
+            text_symbol = add_underline(&text_symbol);
+        }
+
+        let mut attrs = Attrs::new().family(Family::Monospace);
+        if is_bold {
+            attrs = attrs.weight(Weight::BOLD);
+        }
+        if is_italic {
+            attrs = attrs.style(Style::Italic);
+        }
+
+        let mut mut_buffer = self.character_buffer.borrow_with(&mut self.font_system);
+
+        // Set and shape text
+        mut_buffer.set_text(
+            &text_symbol,
+            &attrs,
+            Shaping::Advanced, // Basic for better performance
+        );
+        //mut_buffer.shape_until_scroll(true);
+
+        mut_buffer.draw(
+            &mut self.swash_cache,
+            rat_to_cosmic_color(&rat_fg, true),
+            |x, y, w, h, color| {
+                if x >= 0 && y >= 0 {
+                    let [r, g, b, a] = color.as_rgba();
+                    let get_x = (xik as i32 * self.char_width as i32 + x) as usize;
+                    let get_y = (yik as i32 * self.char_height as i32 + y) as usize;
+                    let bg_pixel = self.rgba_pixmap.get_pixel(get_x, get_y);
+                    //bg_color or bg_pixel for put_color?
+                    let put_color = blend_rgba(
+                        [fg_color[0], fg_color[1], fg_color[2], a],
+                        [bg_pixel[0], bg_pixel[1], bg_pixel[2], 255],
+                    );
+
+                    self.rgba_pixmap.put_pixel(
+                        get_x, get_y, put_color, //alpha instead of fg_color 3
+                    );
+                }
+            },
+        );
+
+        /*   self.screen_pixmap.draw_pixmap(
+            (xik as u32 * self.char_width) as i32,
+            (yik as u32 * self.char_height) as i32,
+            mut_pixmap.as_ref(),
+            &self.pixmap_paint,
+            Transform::identity(),
+            None,
+        ); */
+    }
+    #[cfg(feature = "fontdue")]
     pub fn draw_cell(&mut self, rat_cell: &Cell, xik: u16, yik: u16) {
         let char = rat_cell.symbol().chars().next().unwrap();
 
@@ -103,12 +233,13 @@ impl SoftBackend {
         }
     }
 
-    /// Creates a new `SoftBackend` with the specified width and height.
+    #[cfg(feature = "fontdue")]
     pub fn new(width: u16, height: u16, font_path: &str) -> Self {
         let font_data = fs::read(font_path).unwrap();
 
-        let font = Font::from_bytes(font_data, fontdue::FontSettings::default())
+        let font = Font::from_bytes(font_data.clone(), fontdue::FontSettings::default())
             .expect("Failed to load font");
+
         let font_size = 16.0;
 
         let (metrics, bitmap) = font.rasterize('█', font_size);
@@ -134,6 +265,67 @@ impl SoftBackend {
             rgba_pixmap,
             char_width,
             char_height,
+        };
+        return_struct.clear();
+        return_struct
+    }
+
+    #[cfg(feature = "cosmic")]
+    pub fn new(width: u16, height: u16, font_path: &str) -> Self {
+        let mut swash_cache = SwashCache::new();
+
+        let line_height = 15;
+        let mut font_system = FontSystem::new();
+        let metrics = Metrics::new(line_height as f32, line_height as f32);
+        let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
+        let mut buffer = buffer.borrow_with(&mut font_system);
+        buffer.set_text(
+            "█\n█",
+            &Attrs::new().family(Family::Monospace),
+            Shaping::Advanced,
+        );
+        buffer.shape_until_scroll(true);
+        let boop = buffer.layout_runs().next().unwrap();
+        let physical_glyph = boop.glyphs.iter().next().unwrap().physical((0., 0.), 1.0);
+
+        let wa = swash_cache
+            .get_image(&mut font_system, physical_glyph.cache_key)
+            .clone()
+            .unwrap()
+            .placement;
+        println!("Glyph height (bbox): {:#?}", wa);
+
+        let mut character_buffer = CosmicBuffer::new(&mut font_system, metrics);
+
+        // let mut character_buffer = character_buffer.borrow_with(&mut font_system);
+
+        //  println!("Glyph height (bbox): {:#?}", boop);
+        //      // Set a size for the text buffer, in pixels
+        let char_width = wa.width;
+        let char_height = wa.height;
+        character_buffer.set_size(
+            &mut font_system,
+            Some(char_width as f32),
+            Some(char_height as f32),
+        );
+
+        let rgba_pixmap = RgbPixmap::new(
+            (char_width * width as u32) as usize,
+            (char_height * height as u32) as usize,
+        );
+
+        let mut return_struct = Self {
+            buffer: Buffer::empty(Rect::new(0, 0, width, height)),
+            cursor: false,
+            pos: (0, 0),
+            font_system,
+
+            rgba_pixmap,
+            character_buffer,
+            char_width,
+            char_height,
+
+            swash_cache,
         };
         return_struct.clear();
         return_struct

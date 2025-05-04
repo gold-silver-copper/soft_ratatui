@@ -25,6 +25,10 @@ impl RgbPixmap {
     ///
     /// * color : [u8; 4] - RGBA pixel
     pub fn put_pixel(&mut self, x: usize, y: usize, color: [u8; 3]) {
+        /*  println!(
+            "tried to put pixel at {},{} on screen size of {},{}",
+            x, y, self.width, self.height
+        ); */
         assert!(
             x < self.width && y < self.height,
             "Pixel coordinates out of bounds"
