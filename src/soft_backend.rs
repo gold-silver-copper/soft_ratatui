@@ -73,9 +73,9 @@ impl SoftBackend {
         }
 
         let (fg_color, bg_color) = if is_reversed {
-            (rat_to_rgba(&rat_bg, false), rat_to_rgba(&rat_fg, true))
+            (rat_to_rgb(&rat_bg, false), rat_to_rgb(&rat_fg, true))
         } else {
-            (rat_to_rgba(&rat_fg, true), rat_to_rgba(&rat_bg, false))
+            (rat_to_rgb(&rat_fg, true), rat_to_rgb(&rat_bg, false))
         };
 
         let begin_x = xik as u32 * self.char_width;
@@ -123,18 +123,21 @@ impl SoftBackend {
             |x, y, w, h, color| {
                 if x >= 0 && y >= 0 {
                     let [r, g, b, a] = color.as_rgba();
+
                     let get_x = (xik as i32 * self.char_width as i32 + x) as usize;
                     let get_y = (yik as i32 * self.char_height as i32 + y) as usize;
                     let bg_pixel = self.rgba_pixmap.get_pixel(get_x, get_y);
-                    //bg_color or bg_pixel for put_color?
                     let put_color = blend_rgba(
                         [fg_color[0], fg_color[1], fg_color[2], a],
                         [bg_pixel[0], bg_pixel[1], bg_pixel[2], 255],
                     );
-
                     self.rgba_pixmap.put_pixel(
                         get_x, get_y, put_color, //alpha instead of fg_color 3
                     );
+
+                    /*
+                    //bg_color or bg_pixel for put_color?
+                     */
                 }
             },
         );
@@ -272,7 +275,7 @@ impl Backend for SoftBackend {
     fn clear(&mut self) -> io::Result<()> {
         self.buffer.reset();
         let clear_cell = Cell::EMPTY;
-        let colorik = rat_to_rgba(&clear_cell.bg, false);
+        let colorik = rat_to_rgb(&clear_cell.bg, false);
 
         self.rgba_pixmap.fill([colorik[0], colorik[1], colorik[2]]);
 
