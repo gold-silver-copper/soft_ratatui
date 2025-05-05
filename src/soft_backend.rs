@@ -35,15 +35,15 @@ pub struct SoftBackend {
 
 #[cfg(feature = "cosmic")]
 pub struct SoftBackend {
-    buffer: Buffer,
-    cursor: bool,
-    pos: (u16, u16),
-    font_system: FontSystem,
-    character_buffer: CosmicBuffer,
-    char_width: u32,
-    char_height: u32,
+    pub buffer: Buffer,
+    pub cursor: bool,
+    pub pos: (u16, u16),
+    pub font_system: FontSystem,
+    pub character_buffer: CosmicBuffer,
+    pub char_width: u32,
+    pub char_height: u32,
 
-    swash_cache: SwashCache,
+    pub swash_cache: SwashCache,
     pub rgba_pixmap: RgbPixmap,
 }
 #[cfg(feature = "cosmic")]
