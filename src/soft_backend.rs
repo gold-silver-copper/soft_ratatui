@@ -11,7 +11,7 @@ use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
 use ratatui::style::Modifier;
 
-use cosmic_text::{Attrs, Color, Family, Metrics, Shaping, Style, Weight};
+use cosmic_text::{Attrs, Color as CosmicColor, Family, Metrics, Shaping, Style, Weight};
 
 use cosmic_text::{Buffer as CosmicBuffer, FontSystem, SwashCache};
 
@@ -23,6 +23,7 @@ pub struct SoftBackend {
     pub character_buffer: CosmicBuffer,
     pub char_width: u32,
     pub char_height: u32,
+    pub const_color: CosmicColor,
 
     pub swash_cache: SwashCache,
     pub rgba_pixmap: RgbPixmap,
@@ -117,28 +118,30 @@ impl SoftBackend {
         );
         //mut_buffer.shape_until_scroll(true);
 
-        let cosmic_color = rat_to_cosmic_color(&rat_fg, true);
+        mut_buffer.draw(
+            &mut self.swash_cache,
+            self.const_color,
+            |x, y, _, _, color| {
+                if x >= 0 && y >= 0 {
+                    let [_, _, _, a] = color.as_rgba();
 
-        mut_buffer.draw(&mut self.swash_cache, cosmic_color, |x, y, w, h, color| {
-            if x >= 0 && y >= 0 {
-                let [r, g, b, a] = color.as_rgba();
+                    let get_x = (xik as i32 * self.char_width as i32 + x) as usize;
+                    let get_y = (yik as i32 * self.char_height as i32 + y) as usize;
+                    //let bg_pixel = self.rgba_pixmap.get_pixel(get_x, get_y);
+                    let put_color = blend_rgba(
+                        [fg_color[0], fg_color[1], fg_color[2], a],
+                        [bg_color[0], bg_color[1], bg_color[2], 255],
+                    );
+                    self.rgba_pixmap.put_pixel(
+                        get_x, get_y, put_color, //alpha instead of fg_color 3
+                    );
 
-                let get_x = (xik as i32 * self.char_width as i32 + x) as usize;
-                let get_y = (yik as i32 * self.char_height as i32 + y) as usize;
-                //let bg_pixel = self.rgba_pixmap.get_pixel(get_x, get_y);
-                let put_color = blend_rgba(
-                    [fg_color[0], fg_color[1], fg_color[2], a],
-                    [bg_color[0], bg_color[1], bg_color[2], 255],
-                );
-                self.rgba_pixmap.put_pixel(
-                    get_x, get_y, put_color, //alpha instead of fg_color 3
-                );
-
-                /*
-                //bg_color or bg_pixel for put_color?
-                 */
-            }
-        });
+                    /*
+                    //bg_color or bg_pixel for put_color?
+                     */
+                }
+            },
+        );
 
         /*   self.screen_pixmap.draw_pixmap(
             (xik as u32 * self.char_width) as i32,
@@ -188,6 +191,8 @@ impl SoftBackend {
             Some(char_height as f32),
         );
 
+        let const_color = CosmicColor::rgb(255, 255, 255);
+
         let rgba_pixmap = RgbPixmap::new(
             (char_width * width as u32) as usize,
             (char_height * height as u32) as usize,
@@ -203,6 +208,7 @@ impl SoftBackend {
             character_buffer,
             char_width,
             char_height,
+            const_color,
 
             swash_cache,
         };

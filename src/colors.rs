@@ -1,4 +1,3 @@
-use cosmic_text::{Attrs, Color as CosmicColor};
 use ratatui::style::Color as RatColor;
 
 pub fn rat_to_rgb(rat_col: &RatColor, is_a_fg: bool) -> [u8; 3] {
@@ -36,7 +35,7 @@ pub fn rat_to_rgb(rat_col: &RatColor, is_a_fg: bool) -> [u8; 3] {
 
 /// Blend two RGBA colors using alpha compositing.
 ///
-/// (fg over bg) -> resulting RGBA
+/// (fg over bg) -> resulting RGB
 ///
 /// * `fg` - [R, G, B, A] foreground color
 /// * `bg` - [R, G, B, A] background color
@@ -60,7 +59,7 @@ pub fn blend_rgba(fg: [u8; 4], bg: [u8; 4]) -> [u8; 3] {
         ]
     }
 }
-
+/*
 pub fn rat_to_cosmic_color(rat_col: &RatColor, is_a_fg: bool) -> CosmicColor {
     match rat_col {
         RatColor::Reset => {
@@ -93,3 +92,4 @@ pub fn rat_to_cosmic_color(rat_col: &RatColor, is_a_fg: bool) -> CosmicColor {
         RatColor::Rgb(r, g, b) => CosmicColor::rgba(*r, *g, *b, 255),
     }
 }
+ */
