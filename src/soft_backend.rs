@@ -117,30 +117,28 @@ impl SoftBackend {
         );
         //mut_buffer.shape_until_scroll(true);
 
-        mut_buffer.draw(
-            &mut self.swash_cache,
-            rat_to_cosmic_color(&rat_fg, true),
-            |x, y, w, h, color| {
-                if x >= 0 && y >= 0 {
-                    let [r, g, b, a] = color.as_rgba();
+        let cosmic_color = rat_to_cosmic_color(&rat_fg, true);
 
-                    let get_x = (xik as i32 * self.char_width as i32 + x) as usize;
-                    let get_y = (yik as i32 * self.char_height as i32 + y) as usize;
-                    let bg_pixel = self.rgba_pixmap.get_pixel(get_x, get_y);
-                    let put_color = blend_rgba(
-                        [fg_color[0], fg_color[1], fg_color[2], a],
-                        [bg_pixel[0], bg_pixel[1], bg_pixel[2], 255],
-                    );
-                    self.rgba_pixmap.put_pixel(
-                        get_x, get_y, put_color, //alpha instead of fg_color 3
-                    );
+        mut_buffer.draw(&mut self.swash_cache, cosmic_color, |x, y, w, h, color| {
+            if x >= 0 && y >= 0 {
+                let [r, g, b, a] = color.as_rgba();
 
-                    /*
-                    //bg_color or bg_pixel for put_color?
-                     */
-                }
-            },
-        );
+                let get_x = (xik as i32 * self.char_width as i32 + x) as usize;
+                let get_y = (yik as i32 * self.char_height as i32 + y) as usize;
+                //let bg_pixel = self.rgba_pixmap.get_pixel(get_x, get_y);
+                let put_color = blend_rgba(
+                    [fg_color[0], fg_color[1], fg_color[2], a],
+                    [bg_color[0], bg_color[1], bg_color[2], 255],
+                );
+                self.rgba_pixmap.put_pixel(
+                    get_x, get_y, put_color, //alpha instead of fg_color 3
+                );
+
+                /*
+                //bg_color or bg_pixel for put_color?
+                 */
+            }
+        });
 
         /*   self.screen_pixmap.draw_pixmap(
             (xik as u32 * self.char_width) as i32,
