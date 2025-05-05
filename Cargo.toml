@@ -15,10 +15,8 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 # Optional dependencies
-cosmic-text = { version = "0.14.2", optional = true, features = [
-    "shape-run-cache",
-] }
-fontdue = { version = "0.9.3", optional = true }
+cosmic-text = { version = "0.14.2", features = ["shape-run-cache"] }
+
 
 # Other dependencies
 ratatui = { version = "0.29.0", default-features = false }
@@ -27,13 +25,6 @@ ratatui = { version = "0.29.0", default-features = false }
 color-eyre = "0.6.3"
 itertools = "0.14.0"
 palette = "0.7.6"
-
-[features]
-default = ["cosmic"]
-
-# New feature flags
-cosmic = ["dep:cosmic-text"]
-fontdue = ["dep:fontdue"]
 
 
 [profile.release]

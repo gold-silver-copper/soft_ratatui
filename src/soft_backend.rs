@@ -11,29 +11,10 @@ use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
 use ratatui::style::Modifier;
 
-#[cfg(feature = "cosmic")]
 use cosmic_text::{Attrs, Color, Family, Metrics, Shaping, Style, Weight};
-#[cfg(feature = "cosmic")]
+
 use cosmic_text::{Buffer as CosmicBuffer, FontSystem, SwashCache};
-#[cfg(feature = "fontdue")]
-use fontdue::Font;
 
-#[cfg(feature = "fontdue")]
-pub struct SoftBackend {
-    pub buffer: Buffer,
-    pub cursor: bool,
-    pub pos: (u16, u16),
-    pub font: Font,
-
-    pub font_size: f32,
-    pub char_width: u32,
-    pub char_height: u32,
-    pub rgba_pixmap: RgbPixmap,
-
-    pub ymin: i32,
-}
-
-#[cfg(feature = "cosmic")]
 pub struct SoftBackend {
     pub buffer: Buffer,
     pub cursor: bool,
@@ -46,13 +27,13 @@ pub struct SoftBackend {
     pub swash_cache: SwashCache,
     pub rgba_pixmap: RgbPixmap,
 }
-#[cfg(feature = "cosmic")]
+
 fn add_strikeout(text: &String) -> String {
     // Unicode combining long stroke overlay
     let strike = '\u{0336}';
     text.chars().flat_map(|c| [c, strike]).collect()
 }
-#[cfg(feature = "cosmic")]
+
 fn add_underline(text: &String) -> String {
     // Unicode combining long stroke overlay
     let strike = '\u{0332}';
@@ -69,7 +50,7 @@ impl SoftBackend {
     pub fn get_pixmap_height(&self) -> usize {
         self.rgba_pixmap.height()
     }
-    #[cfg(feature = "cosmic")]
+
     pub fn draw_cell(&mut self, rat_cell: &Cell, xik: u16, yik: u16) {
         // Prepare Pixmap to draw into
 
@@ -167,110 +148,7 @@ impl SoftBackend {
             None,
         ); */
     }
-    #[cfg(feature = "fontdue")]
-    pub fn draw_cell(&mut self, rat_cell: &Cell, xik: u16, yik: u16) {
-        let char = rat_cell.symbol().chars().next().unwrap();
 
-        let (metrics, bitmap) = self.font.rasterize(char, self.font_size);
-
-        let is_bold = rat_cell.modifier.contains(Modifier::BOLD);
-        let is_italic = rat_cell.modifier.contains(Modifier::ITALIC);
-        let is_underlined = rat_cell.modifier.contains(Modifier::UNDERLINED);
-        let is_slowblink = rat_cell.modifier.contains(Modifier::SLOW_BLINK);
-        let is_rapidblink = rat_cell.modifier.contains(Modifier::RAPID_BLINK);
-        let is_reversed = rat_cell.modifier.contains(Modifier::REVERSED);
-        let is_dim = rat_cell.modifier.contains(Modifier::DIM);
-        let is_hidden = rat_cell.modifier.contains(Modifier::HIDDEN);
-        let is_crossed_out = rat_cell.modifier.contains(Modifier::CROSSED_OUT);
-
-        let mut rat_fg = rat_cell.fg.clone();
-        let rat_bg = rat_cell.bg.clone();
-        if is_hidden {
-            rat_fg = rat_bg.clone();
-        }
-
-        let (fg_color, bg_color) = if is_reversed {
-            (rat_to_rgba(&rat_bg, false), rat_to_rgba(&rat_fg, true))
-        } else {
-            (rat_to_rgba(&rat_fg, true), rat_to_rgba(&rat_bg, false))
-        };
-        let begin_x = xik as u32 * self.char_width;
-        let begin_y = yik as u32 * self.char_height;
-        for y in 0..self.char_height {
-            for x in 0..self.char_width {
-                self.rgba_pixmap.put_pixel(
-                    begin_x as usize + x as usize,
-                    begin_y as usize + y as usize,
-                    [bg_color[0], bg_color[1], bg_color[2]],
-                );
-            }
-        }
-
-        let shift_y = self.char_height - metrics.height as u32;
-        for row in 0..self.char_height {
-            for col in 0..self.char_width {
-                if row < metrics.height as u32 && col < metrics.width as u32 {
-                    let alpha = bitmap[row as usize * metrics.width + col as usize];
-                    if alpha > 0 {
-                        let get_y = (begin_y as f32 + shift_y as f32 - metrics.bounds.ymin
-                            + self.ymin as f32
-                            + row as f32) as u32;
-                        let get_x = (begin_x as f32 + metrics.bounds.xmin + col as f32) as u32;
-                        let bg_pixel = self.rgba_pixmap.get_pixel(get_x as usize, get_y as usize);
-                        //bg_color or bg_pixel for put_color?
-                        let put_color = blend_rgba(
-                            [fg_color[0], fg_color[1], fg_color[2], alpha],
-                            [bg_pixel[0], bg_pixel[1], bg_pixel[2], 255],
-                        );
-                        self.rgba_pixmap.put_pixel(
-                            get_x as usize,
-                            get_y as usize,
-                            put_color, //alpha instead of fg_color 3
-                        );
-                    }
-                }
-            }
-        }
-    }
-
-    #[cfg(feature = "fontdue")]
-    pub fn new(width: u16, height: u16, font_path: &str) -> Self {
-        let font_data = fs::read(font_path).unwrap();
-
-        let font = Font::from_bytes(font_data.clone(), fontdue::FontSettings::default())
-            .expect("Failed to load font");
-
-        let font_size = 16.0;
-
-        let (metrics, bitmap) = font.rasterize('█', font_size);
-        //  let (metrics, bitmap) = font.rasterize('}', font_size);
-        println!("{metrics:#?}");
-        let char_width = metrics.width as u32;
-        let char_height = metrics.height as u32;
-        let ymin = metrics.ymin;
-
-        let rgba_pixmap = RgbPixmap::new(
-            char_width as usize * width as usize,
-            char_height as usize * height as usize,
-        );
-
-        let mut return_struct = Self {
-            buffer: Buffer::empty(Rect::new(0, 0, width, height)),
-            cursor: false,
-            pos: (0, 0),
-            font,
-            font_size,
-
-            ymin,
-            rgba_pixmap,
-            char_width,
-            char_height,
-        };
-        return_struct.clear();
-        return_struct
-    }
-
-    #[cfg(feature = "cosmic")]
     pub fn new(width: u16, height: u16, font_path: &str) -> Self {
         let mut swash_cache = SwashCache::new();
 

@@ -1,5 +1,4 @@
-#[cfg(feature = "cosmic")]
-use cosmic_text::{Attrs, Color as CosmicColor, Family, Metrics, Shaping, Style, Weight};
+use cosmic_text::{Attrs, Color as CosmicColor};
 use ratatui::style::Color as RatColor;
 
 pub fn rat_to_rgba(rat_col: &RatColor, is_a_fg: bool) -> [u8; 4] {
@@ -62,7 +61,6 @@ pub fn blend_rgba(fg: [u8; 4], bg: [u8; 4]) -> [u8; 3] {
     }
 }
 
-#[cfg(feature = "cosmic")]
 pub fn rat_to_cosmic_color(rat_col: &RatColor, is_a_fg: bool) -> CosmicColor {
     match rat_col {
         RatColor::Reset => {
