@@ -15,7 +15,9 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 # Optional dependencies
-cosmic-text = { version = "0.14.2", optional = true }
+cosmic-text = { version = "0.14.2", optional = true, features = [
+    "shape-run-cache",
+] }
 fontdue = { version = "0.9.3", optional = true }
 
 # Other dependencies
@@ -35,11 +37,11 @@ fontdue = ["dep:fontdue"]
 
 
 [profile.release]
-#opt-level = 3
-#lto = true        # Enable link-time optimization
+#opt-level = 1
+#lto = true # Enable link-time optimization
 #codegen-units = 1 # Better optimizations, slightly slower compile
 #panic = "abort"   # Smaller binary if you don't need backtraces
 #strip = "symbols" # Remove debug symbols (unless you need them)
 
 # Uncomment this for even smaller output (disable debug info)
-debug = true
+#debug = true
