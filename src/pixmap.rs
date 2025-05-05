@@ -29,7 +29,7 @@ impl RgbPixmap {
             "tried to put pixel at {},{} on screen size of {},{}",
             x, y, self.width, self.height
         ); */
-        assert!(
+        debug_assert!(
             x < self.width && y < self.height,
             "Pixel coordinates out of bounds"
         );
@@ -41,7 +41,7 @@ impl RgbPixmap {
     ///
     /// -> [u8; 4] - RGBA pixel
     pub fn get_pixel(&self, x: usize, y: usize) -> [u8; 3] {
-        assert!(
+        debug_assert!(
             x < self.width && y < self.height,
             "Pixel coordinates out of bounds"
         );
