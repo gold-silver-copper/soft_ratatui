@@ -274,7 +274,7 @@ impl SoftBackend {
     pub fn new(width: u16, height: u16, font_path: &str) -> Self {
         let mut swash_cache = SwashCache::new();
 
-        let line_height = 15;
+        let line_height = 16;
         let mut font_system = FontSystem::new();
         let metrics = Metrics::new(line_height as f32, line_height as f32);
         let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
