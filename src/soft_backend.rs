@@ -205,11 +205,11 @@ impl SoftBackend {
         }
     }
 
-    pub fn new(width: u16, height: u16, font_size: i32) -> Self {
+    pub fn new_with_font(width: u16, height: u16, font_size: i32, font_path: &str) -> Self {
         let mut swash_cache = SwashCache::new();
 
         let mut db = Database::new();
-        db.load_font_file("../assets/iosevka.ttf")
+        db.load_font_file("assets/iosevka.ttf")
             .expect("FONT NOT FOUND, CHECK PATH");
         // db.set_monospace_family("Iosevka");
 
