@@ -11,7 +11,10 @@ use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
 use ratatui::style::Modifier;
 
-use cosmic_text::{Attrs, Color as CosmicColor, Family, Metrics, Shaping, Style, Weight};
+use cosmic_text::{
+    Attrs, AttrsList, BufferLine, Color as CosmicColor, Family, LineEnding, LineIter, Metrics,
+    Scroll, Shaping, Style, Weight,
+};
 
 use cosmic_text::{Buffer as CosmicBuffer, FontSystem, SwashCache};
 
@@ -137,12 +140,29 @@ impl SoftBackend {
             Shaping::Advanced, // Basic for better performance
         ); */
 
-        self.character_buffer.set_text(
-            &mut self.font_system,
-            &text_symbol,
-            &attrs,
-            Shaping::Advanced, // Basic for better performance
-        );
+        /*   self.character_buffer.set_text(
+                &mut self.font_system,
+                &text_symbol,
+                &attrs,
+                Shaping::Advanced, // Basic for better performance
+            );
+        */
+        {
+            //  self.character_buffer.lines.clear();
+
+            //  println!("{range:#?} {ending:#?}");
+            self.character_buffer.lines = vec![BufferLine::new(
+                &text_symbol,
+                LineEnding::None,
+                AttrsList::new(&attrs),
+                Shaping::Advanced,
+            )];
+
+            //   self.character_buffer.scroll = Scroll::default();
+
+            self.character_buffer
+                .shape_until_scroll(&mut self.font_system, false);
+        }
 
         for run in self.character_buffer.layout_runs() {
             for glyph in run.glyphs.iter() {
@@ -288,6 +308,7 @@ impl SoftBackend {
         self.redraw();
     }
 
+    //TODO fix redraw to use redraw list
     pub fn redraw(&mut self) {
         for x in 0..self.buffer.area.width {
             for y in 0..self.buffer.area.height {
