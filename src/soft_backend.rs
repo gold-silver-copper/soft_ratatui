@@ -148,7 +148,40 @@ impl SoftBackend {
             for glyph in run.glyphs.iter() {
                 let physical_glyph = glyph.physical((0., 0.), 1.0);
 
-                self.swash_cache.with_pixels(
+                if let Some(image) = self
+                    .swash_cache
+                    .get_image(&mut self.font_system, physical_glyph.cache_key)
+                {
+                    //    println!("imagik {:#?}", image.data.len());
+                    let x = image.placement.left;
+
+                    let y = -image.placement.top;
+                    let mut i = 0;
+
+                    for off_y in 0..image.placement.height as i32 {
+                        for off_x in 0..image.placement.width as i32 {
+                            //TODO: blend base alpha?
+
+                            let real_x = physical_glyph.x + x + off_x;
+                            let real_y = run.line_y as i32 + physical_glyph.y + y + off_y;
+                            //   println!("{}", run.line_y);
+                            if real_x >= 0 && real_y >= 0 {
+                                let get_x = (begin_x as i32 + real_x) as usize;
+                                let get_y = (begin_y as i32 + real_y) as usize;
+
+                                let put_color = blend_rgba(
+                                    [fg_color[0], fg_color[1], fg_color[2], image.data[i]],
+                                    [bg_color[0], bg_color[1], bg_color[2], 255],
+                                );
+                                self.rgba_pixmap.put_pixel(get_x, get_y, put_color);
+                            }
+
+                            i += 1;
+                        }
+                    }
+                }
+
+                /*self.swash_cache.with_pixels(
                     &mut self.font_system,
                     physical_glyph.cache_key,
                     self.const_color,
@@ -166,7 +199,7 @@ impl SoftBackend {
                             self.rgba_pixmap.put_pixel(get_x, get_y, put_color);
                         }
                     },
-                );
+                ); */
             }
         }
     }
