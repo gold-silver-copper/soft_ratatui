@@ -84,8 +84,8 @@ impl SoftBackend {
         for y in 0..self.char_height {
             for x in 0..self.char_width {
                 self.rgba_pixmap.put_pixel(
-                    begin_x as usize + x as usize,
-                    begin_y as usize + y as usize,
+                    (begin_x + x) as usize,
+                    (begin_y + y) as usize,
                     [bg_color[0], bg_color[1], bg_color[2]],
                 );
             }
@@ -125,8 +125,8 @@ impl SoftBackend {
                 if x >= 0 && y >= 0 {
                     let [_r, _g, _b, a] = color.as_rgba();
 
-                    let get_x = (xik as i32 * self.char_width as i32 + x) as usize;
-                    let get_y = (yik as i32 * self.char_height as i32 + y) as usize;
+                    let get_x = (begin_x as i32 + x) as usize;
+                    let get_y = (begin_y as i32 + y) as usize;
 
                     let put_color = blend_rgba(
                         [fg_color[0], fg_color[1], fg_color[2], a],
