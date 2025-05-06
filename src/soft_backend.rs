@@ -13,7 +13,7 @@ use ratatui::style::Modifier;
 
 use cosmic_text::{
     Attrs, AttrsList, BufferLine, Color as CosmicColor, Family, LineEnding, LineIter, Metrics,
-    Scroll, Shaping, Style, Weight,
+    Scroll, Shaping, Style, Weight, Wrap,
 };
 
 use cosmic_text::{Buffer as CosmicBuffer, FontSystem, SwashCache};
@@ -23,6 +23,7 @@ pub struct SoftBackend {
     pub cursor: bool,
     pub pos: (u16, u16),
     pub font_system: FontSystem,
+    pub metrics: Metrics,
     pub character_buffer: CosmicBuffer,
     pub char_width: usize,
     pub char_height: usize,
@@ -139,7 +140,23 @@ impl SoftBackend {
         )];
 
         self.character_buffer
-            .shape_until_scroll(&mut self.font_system, false);
+            .line_layout(&mut self.font_system, 0)
+            .expect("shape_until_scroll invalid line");
+
+        /* let boop = BufferLine::new(
+            &text_symbol,
+            LineEnding::None,
+            AttrsList::new(&attrs),
+            Shaping::Advanced,
+        )
+        .layout(
+            &mut self.font_system,
+            self.metrics.font_size,
+            None,
+            Wrap::None,
+            None,
+            1,
+        ); */
 
         for run in self.character_buffer.layout_runs() {
             for glyph in run.glyphs.iter() {
@@ -252,6 +269,7 @@ impl SoftBackend {
             cursor: false,
             pos: (0, 0),
             font_system,
+            metrics,
 
             rgba_pixmap,
             character_buffer,
