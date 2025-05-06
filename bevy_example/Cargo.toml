@@ -1,0 +1,9 @@
+[package]
+name = "bevy_example"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bevy = "0.16.0"
+ratatui = "0.29.0"
+soft_ratatui = { path = ".." }
