@@ -1,19 +1,21 @@
 //! This module provides the `SoftBackend` implementation for the [`Backend`] trait.
 //! It is used in the integration tests to verify the correctness of the library.
 
+use std::collections::HashSet;
 use std::{fs, io};
 
 use crate::colors::*;
 use crate::pixmap::RgbPixmap;
 
+use cosmic_text::fontdb::Database;
 use ratatui::backend::{Backend, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
 use ratatui::style::Modifier;
 
 use cosmic_text::{
-    Attrs, AttrsList, BufferLine, Color as CosmicColor, Family, LineEnding, LineIter, Metrics,
-    Scroll, Shaping, Style, Weight, Wrap,
+    Attrs, AttrsList, BufferLine, CacheKeyFlags, Color as CosmicColor, Family, LineEnding,
+    LineIter, Metrics, Scroll, Shaping, Style, Weight, Wrap,
 };
 
 use cosmic_text::{Buffer as CosmicBuffer, FontSystem, SwashCache};
@@ -33,7 +35,7 @@ pub struct SoftBackend {
     pub blinking_slow: bool,
     pub swash_cache: SwashCache,
     pub rgba_pixmap: RgbPixmap,
-    pub redraw_list: Vec<(u16, u16)>,
+    pub redraw_list: HashSet<(u16, u16)>,
 }
 
 fn add_strikeout(text: &String) -> String {
@@ -66,29 +68,19 @@ impl SoftBackend {
 
         let rat_cell = self.buffer.cell(Position::new(xik, yik)).unwrap();
 
-        let is_bold = rat_cell.modifier.contains(Modifier::BOLD);
-        let is_italic = rat_cell.modifier.contains(Modifier::ITALIC);
-        let is_underlined = rat_cell.modifier.contains(Modifier::UNDERLINED);
-        let is_slowblink = rat_cell.modifier.contains(Modifier::SLOW_BLINK);
-        let is_rapidblink = rat_cell.modifier.contains(Modifier::RAPID_BLINK);
-        let is_reversed = rat_cell.modifier.contains(Modifier::REVERSED);
-        let is_dim = rat_cell.modifier.contains(Modifier::DIM);
-        let is_hidden = rat_cell.modifier.contains(Modifier::HIDDEN);
-        let is_crossed_out = rat_cell.modifier.contains(Modifier::CROSSED_OUT);
-
-        let mut rat_fg = rat_cell.fg.clone();
-        let rat_bg = rat_cell.bg.clone();
-        if is_hidden {
-            rat_fg = rat_bg.clone();
+        let mut rat_fg = rat_cell.fg;
+        let rat_bg = rat_cell.bg;
+        if rat_cell.modifier.contains(Modifier::HIDDEN) {
+            rat_fg = rat_bg;
         }
 
-        let (mut fg_color, mut bg_color) = if is_reversed {
+        let (mut fg_color, mut bg_color) = if rat_cell.modifier.contains(Modifier::REVERSED) {
             (rat_to_rgb(&rat_bg, false), rat_to_rgb(&rat_fg, true))
         } else {
             (rat_to_rgb(&rat_fg, true), rat_to_rgb(&rat_bg, false))
         };
 
-        if is_dim {
+        if rat_cell.modifier.contains(Modifier::DIM) {
             (fg_color, bg_color) = (dim_rgb(fg_color), dim_rgb(bg_color));
         };
 
@@ -96,40 +88,39 @@ impl SoftBackend {
         let begin_y = yik as usize * self.char_height;
         for y in 0..self.char_height {
             for x in 0..self.char_width {
-                self.rgba_pixmap.put_pixel(
-                    (begin_x + x),
-                    (begin_y + y),
-                    [bg_color[0], bg_color[1], bg_color[2]],
-                );
+                self.rgba_pixmap
+                    .put_pixel((begin_x + x), (begin_y + y), bg_color);
             }
         }
 
         let mut text_symbol: String = rat_cell.symbol().to_string();
 
-        if is_crossed_out {
+        if rat_cell.modifier.contains(Modifier::CROSSED_OUT) {
             text_symbol = add_strikeout(&text_symbol);
         }
-        if is_underlined {
+        if rat_cell.modifier.contains(Modifier::UNDERLINED) {
             text_symbol = add_underline(&text_symbol);
         }
 
-        if is_slowblink {
+        if rat_cell.modifier.contains(Modifier::SLOW_BLINK) {
+            self.redraw_list.insert((xik, yik));
             if self.blinking_slow {
                 fg_color = bg_color.clone();
             }
         }
-        if is_rapidblink {
+        if rat_cell.modifier.contains(Modifier::RAPID_BLINK) {
+            self.redraw_list.insert((xik, yik));
             if self.blinking_fast {
                 fg_color = bg_color.clone();
             }
         }
 
         let mut attrs = Attrs::new().family(Family::Monospace);
-        if is_bold {
+        if rat_cell.modifier.contains(Modifier::BOLD) {
             attrs = attrs.weight(Weight::BOLD);
         }
-        if is_italic {
-            attrs = attrs.style(Style::Italic);
+        if rat_cell.modifier.contains(Modifier::ITALIC) {
+            attrs = attrs.cache_key_flags(CacheKeyFlags::FAKE_ITALIC);
         }
 
         self.character_buffer.lines = vec![BufferLine::new(
@@ -176,11 +167,10 @@ impl SoftBackend {
 
                     for off_y in 0..image.placement.height {
                         for off_x in 0..image.placement.width {
-                            //TODO: blend base alpha?
-
                             let real_x = physical_glyph.x + x + off_x as i32;
+
                             let real_y = run.line_y as i32 + physical_glyph.y + y + off_y as i32;
-                            //   println!("{}", run.line_y);
+
                             if real_x >= 0 && real_y >= 0 {
                                 let get_x = (begin_x + real_x as usize);
                                 let get_y = (begin_y + real_y as usize);
@@ -196,26 +186,6 @@ impl SoftBackend {
                         }
                     }
                 }
-
-                /*self.swash_cache.with_pixels(
-                    &mut self.font_system,
-                    physical_glyph.cache_key,
-                    self.const_color,
-                    |x, y, color| {
-                        let real_x = physical_glyph.x + x;
-                        let real_y = run.line_y as i32 + physical_glyph.y + y;
-                        if real_x >= 0 && real_y >= 0 {
-                            let get_x = (begin_x as i32 + real_x) as usize;
-                            let get_y = (begin_y as i32 + real_y) as usize;
-
-                            let put_color = blend_rgba(
-                                [fg_color[0], fg_color[1], fg_color[2], color.a()],
-                                [bg_color[0], bg_color[1], bg_color[2], 255],
-                            );
-                            self.rgba_pixmap.put_pixel(get_x, get_y, put_color);
-                        }
-                    },
-                ); */
             }
         }
     }
@@ -223,8 +193,16 @@ impl SoftBackend {
     pub fn new(width: u16, height: u16, font_size: i32) -> Self {
         let mut swash_cache = SwashCache::new();
 
+        let mut db = Database::new();
+        db.load_font_file("../assets/iosevka.ttf")
+            .expect("FONT NOT FOUND, CHECK PATH");
+        // db.set_monospace_family("Iosevka");
+
         let mut font_system = FontSystem::new();
         let metrics = Metrics::new(font_size as f32, font_size as f32);
+
+        let boopiki = font_system.db_mut();
+        *boopiki = db;
         let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
         let mut buffer = buffer.borrow_with(&mut font_system);
         buffer.set_text(
@@ -279,11 +257,11 @@ impl SoftBackend {
             blink_counter: 0,
             blinking_fast: false,
             blinking_slow: false,
-            redraw_list: Vec::new(),
+            redraw_list: HashSet::new(),
 
             swash_cache,
         };
-        return_struct.clear();
+        _ = return_struct.clear();
         return_struct
     }
 
@@ -303,16 +281,15 @@ impl SoftBackend {
         self.redraw();
     }
 
-    //TODO fix redraw to use redraw list
     pub fn redraw(&mut self) {
+        self.redraw_list = HashSet::new();
         for x in 0..self.buffer.area.width {
             for y in 0..self.buffer.area.height {
                 self.draw_cell(x, y);
             }
         }
     }
-    // Call this every tick/frame
-    // Call this every tick/frame
+
     pub fn update_blinking(&mut self) {
         self.blink_counter = (self.blink_counter + 1) % 200;
 
@@ -328,11 +305,6 @@ impl Backend for SoftBackend {
     {
         self.update_blinking();
         for (x, y, c) in content {
-            if c.modifier.contains(Modifier::SLOW_BLINK)
-                || c.modifier.contains(Modifier::RAPID_BLINK)
-            {
-                self.redraw_list.push((x, y));
-            }
             self.buffer[(x, y)] = c.clone();
             self.draw_cell(x, y);
             //   println!("{c:#?}");

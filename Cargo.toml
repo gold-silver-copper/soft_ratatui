@@ -35,4 +35,4 @@ palette = "0.7.6"
 #strip = "symbols" # Remove debug symbols (unless you need them)
 
 # Uncomment this for even smaller output (disable debug info)
-#debug = true
+debug = true
