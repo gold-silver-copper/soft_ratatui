@@ -54,6 +54,9 @@ impl SoftBackend {
     pub fn get_pixmap_data(&self) -> &[u8] {
         self.rgba_pixmap.data()
     }
+    pub fn get_pixmap_data_as_rgba(&self) -> Vec<u8> {
+        self.rgba_pixmap.to_rgba()
+    }
     pub fn get_pixmap_width(&self) -> usize {
         self.rgba_pixmap.width()
     }
@@ -206,7 +209,7 @@ impl SoftBackend {
         let mut swash_cache = SwashCache::new();
 
         let mut db = Database::new();
-        db.load_font_file("assets/iosevka.ttf")
+        db.load_font_file("../assets/iosevka.ttf")
             .expect("FONT NOT FOUND, CHECK PATH");
         // db.set_monospace_family("Iosevka");
 

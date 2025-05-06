@@ -20,6 +20,16 @@ impl RgbPixmap {
             data,
         }
     }
+    pub fn to_rgba(&self) -> Vec<u8> {
+        let mut rgba_data = Vec::with_capacity(self.width * self.height * 4);
+        for chunk in self.data.chunks_exact(3) {
+            let r = chunk[0];
+            let g = chunk[1];
+            let b = chunk[2];
+            rgba_data.extend_from_slice(&[r, g, b, 255]); // Alpha = 255
+        }
+        rgba_data
+    }
 
     /// Sets the RGB value of a pixel at (x, y).
     ///
