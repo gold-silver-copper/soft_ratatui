@@ -7,6 +7,7 @@ use std::time::{Duration, Instant};
 
 use color_eyre::Result;
 use palette::{convert::FromColorUnclamped, Okhsv, Srgb};
+use ratatui::prelude::Stylize;
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Position, Rect},
@@ -187,7 +188,7 @@ impl Widget for &mut FpsWidget {
         self.calculate_fps();
         if let Some(fps) = self.fps {
             let text = format!("{fps:.1} fps");
-            Text::from(text).render(area, buf);
+            Text::from(text).slow_blink().render(area, buf);
         }
     }
 }

@@ -59,6 +59,16 @@ pub fn blend_rgba(fg: [u8; 4], bg: [u8; 4]) -> [u8; 3] {
         ]
     }
 }
+
+pub fn dim_rgb(color: [u8; 3]) -> [u8; 3] {
+    let factor = 77; // 77 ≈ 255 * 0.3
+    [
+        ((color[0] as u32 * factor + 127) / 255) as u8,
+        ((color[1] as u32 * factor + 127) / 255) as u8,
+        ((color[2] as u32 * factor + 127) / 255) as u8,
+    ]
+}
+
 /*
 pub fn rat_to_cosmic_color(rat_col: &RatColor, is_a_fg: bool) -> CosmicColor {
     match rat_col {
