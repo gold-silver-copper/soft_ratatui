@@ -128,34 +128,47 @@ impl SoftBackend {
             attrs = attrs.style(Style::Italic);
         }
 
-        let mut mut_buffer = self.character_buffer.borrow_with(&mut self.font_system);
+        //    let mut mut_buffer = self.character_buffer.borrow_with(&mut self.font_system);
 
-        // Set and shape text
+        /*  // Set and shape text
         mut_buffer.set_text(
             &text_symbol,
             &attrs,
             Shaping::Advanced, // Basic for better performance
+        ); */
+
+        self.character_buffer.set_text(
+            &mut self.font_system,
+            &text_symbol,
+            &attrs,
+            Shaping::Advanced, // Basic for better performance
         );
-        //mut_buffer.shape_until_scroll(true);
 
-        mut_buffer.draw(
-            &mut self.swash_cache,
-            self.const_color,
-            |x, y, _w, _h, color| {
-                if x >= 0 && y >= 0 {
-                    let [_r, _g, _b, a] = color.as_rgba();
+        for run in self.character_buffer.layout_runs() {
+            for glyph in run.glyphs.iter() {
+                let physical_glyph = glyph.physical((0., 0.), 1.0);
 
-                    let get_x = (begin_x as i32 + x) as usize;
-                    let get_y = (begin_y as i32 + y) as usize;
+                self.swash_cache.with_pixels(
+                    &mut self.font_system,
+                    physical_glyph.cache_key,
+                    self.const_color,
+                    |x, y, color| {
+                        let real_x = physical_glyph.x + x;
+                        let real_y = run.line_y as i32 + physical_glyph.y + y;
+                        if real_x >= 0 && real_y >= 0 {
+                            let get_x = (begin_x as i32 + real_x) as usize;
+                            let get_y = (begin_y as i32 + real_y) as usize;
 
-                    let put_color = blend_rgba(
-                        [fg_color[0], fg_color[1], fg_color[2], a],
-                        [bg_color[0], bg_color[1], bg_color[2], 255],
-                    );
-                    self.rgba_pixmap.put_pixel(get_x, get_y, put_color);
-                }
-            },
-        );
+                            let put_color = blend_rgba(
+                                [fg_color[0], fg_color[1], fg_color[2], color.a()],
+                                [bg_color[0], bg_color[1], bg_color[2], 255],
+                            );
+                            self.rgba_pixmap.put_pixel(get_x, get_y, put_color);
+                        }
+                    },
+                );
+            }
+        }
     }
 
     pub fn new(width: u16, height: u16, font_size: i32) -> Self {
@@ -243,7 +256,6 @@ impl SoftBackend {
     pub fn redraw(&mut self) {
         for x in 0..self.buffer.area.width {
             for y in 0..self.buffer.area.height {
-                let c = self.buffer[(x, y)].clone();
                 self.draw_cell(x, y);
             }
         }
@@ -253,8 +265,8 @@ impl SoftBackend {
     pub fn update_blinking(&mut self) {
         self.blink_counter = (self.blink_counter + 1) % 200;
 
-        self.blinking_fast = matches!(self.blink_counter % 50, 0..=10); // fast blink: 5 ticks on, 5 off
-        self.blinking_slow = matches!(self.blink_counter, 20..=29); // slow blink: ticks 20–29 only
+        self.blinking_fast = matches!(self.blink_counter % 100, 0..=5); // fast blink: 5 ticks on, 5 off
+        self.blinking_slow = matches!(self.blink_counter, 20..=25); // slow blink: ticks 20–29 only
     }
 }
 
