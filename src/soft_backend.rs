@@ -24,7 +24,9 @@ pub struct SoftBackend {
     pub char_width: u32,
     pub char_height: u32,
     pub const_color: CosmicColor,
-
+    pub blink_counter: u16,
+    pub blinking_fast: bool,
+    pub blinking_slow: bool,
     pub swash_cache: SwashCache,
     pub rgba_pixmap: RgbPixmap,
 }
@@ -73,10 +75,14 @@ impl SoftBackend {
             rat_fg = rat_bg.clone();
         }
 
-        let (fg_color, bg_color) = if is_reversed {
+        let (mut fg_color, mut bg_color) = if is_reversed {
             (rat_to_rgb(&rat_bg, false), rat_to_rgb(&rat_fg, true))
         } else {
             (rat_to_rgb(&rat_fg, true), rat_to_rgb(&rat_bg, false))
+        };
+
+        if is_dim {
+            (fg_color, bg_color) = (dim_rgb(fg_color), dim_rgb(bg_color));
         };
 
         let begin_x = xik as u32 * self.char_width;
@@ -98,6 +104,17 @@ impl SoftBackend {
         }
         if is_underlined {
             text_symbol = add_underline(&text_symbol);
+        }
+
+        if is_slowblink {
+            if self.blinking_slow {
+                fg_color = bg_color.clone();
+            }
+        }
+        if is_rapidblink {
+            if self.blinking_fast {
+                fg_color = bg_color.clone();
+            }
         }
 
         let mut attrs = Attrs::new().family(Family::Monospace);
@@ -193,6 +210,9 @@ impl SoftBackend {
             char_width,
             char_height,
             const_color,
+            blink_counter: 0,
+            blinking_fast: false,
+            blinking_slow: false,
 
             swash_cache,
         };
@@ -224,6 +244,18 @@ impl SoftBackend {
             }
         }
     }
+    // Call this every tick/frame
+    pub fn update_blinking(&mut self) {
+        self.blink_counter = self.blink_counter.wrapping_add(1) % 1024;
+
+        // Fast blinking: toggles every ~128 ticks (on for 64, off for 64)
+        self.blinking_fast = (self.blink_counter % 128) < 64;
+        println!("fast {}", self.blinking_fast);
+
+        // Slow blinking: active between tick 512–767
+        self.blinking_slow = (512..768).contains(&self.blink_counter);
+        println!("slow {}", self.blinking_slow);
+    }
 }
 
 impl Backend for SoftBackend {
@@ -231,11 +263,13 @@ impl Backend for SoftBackend {
     where
         I: Iterator<Item = (u16, u16, &'a Cell)>,
     {
+        self.update_blinking();
         for (x, y, c) in content {
             self.buffer[(x, y)] = c.clone();
             self.draw_cell(&c, x, y);
             //   println!("{c:#?}");
         }
+        // self.redraw();
 
         Ok(())
     }
