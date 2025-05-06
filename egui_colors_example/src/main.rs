@@ -43,7 +43,7 @@ struct MyApp {
 
 impl MyApp {
     fn new() -> Self {
-        let backend = SoftBackend::new(150, 70, 12);
+        let backend = SoftBackend::new(200, 100, 12);
         let mut terminal = Terminal::new(backend).unwrap();
         let appik = App::default();
 

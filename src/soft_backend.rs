@@ -15,7 +15,7 @@ use ratatui::style::Modifier;
 
 use cosmic_text::{
     Attrs, AttrsList, BufferLine, CacheKeyFlags, Color as CosmicColor, Family, LineEnding, Metrics,
-    Shaping, Weight,
+    Shaping, Weight, Wrap,
 };
 
 use cosmic_text::{Buffer as CosmicBuffer, FontSystem, SwashCache};
@@ -123,16 +123,28 @@ impl SoftBackend {
             attrs = attrs.cache_key_flags(CacheKeyFlags::FAKE_ITALIC);
         }
 
-        self.character_buffer.lines = vec![BufferLine::new(
+        /*  self.character_buffer.lines = vec![BufferLine::new(
             &text_symbol,
             LineEnding::None,
             AttrsList::new(&attrs),
             Shaping::Advanced,
-        )];
+        )]; */
 
-        self.character_buffer
-            .line_layout(&mut self.font_system, 0)
-            .expect("shape_until_scroll invalid line");
+        /* self.character_buffer
+        .line_layout(&mut self.font_system, 0)
+        .expect("shape_until_scroll invalid line"); */
+
+        let line = self.character_buffer.lines.get_mut(0).unwrap();
+        line.set_text(&text_symbol, LineEnding::None, AttrsList::new(&attrs));
+
+        line.layout(
+            &mut self.font_system,
+            self.metrics.font_size,
+            None,
+            Wrap::None,
+            None,
+            1,
+        );
 
         /* let boop = BufferLine::new(
             &text_symbol,
@@ -194,7 +206,7 @@ impl SoftBackend {
         let mut swash_cache = SwashCache::new();
 
         let mut db = Database::new();
-        db.load_font_file("../assets/iosevka.ttf")
+        db.load_font_file("assets/iosevka.ttf")
             .expect("FONT NOT FOUND, CHECK PATH");
         // db.set_monospace_family("Iosevka");
 
