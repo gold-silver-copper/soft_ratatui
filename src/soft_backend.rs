@@ -21,8 +21,8 @@ pub struct SoftBackend {
     pub pos: (u16, u16),
     pub font_system: FontSystem,
     pub character_buffer: CosmicBuffer,
-    pub char_width: u32,
-    pub char_height: u32,
+    pub char_width: usize,
+    pub char_height: usize,
     pub const_color: CosmicColor,
     pub blink_counter: u16,
     pub blinking_fast: bool,
@@ -88,13 +88,13 @@ impl SoftBackend {
             (fg_color, bg_color) = (dim_rgb(fg_color), dim_rgb(bg_color));
         };
 
-        let begin_x = xik as u32 * self.char_width;
-        let begin_y = yik as u32 * self.char_height;
+        let begin_x = xik as usize * self.char_width;
+        let begin_y = yik as usize * self.char_height;
         for y in 0..self.char_height {
             for x in 0..self.char_width {
                 self.rgba_pixmap.put_pixel(
-                    (begin_x + x) as usize,
-                    (begin_y + y) as usize,
+                    (begin_x + x),
+                    (begin_y + y),
                     [bg_color[0], bg_color[1], bg_color[2]],
                 );
             }
@@ -158,16 +158,16 @@ impl SoftBackend {
                     let y = -image.placement.top;
                     let mut i = 0;
 
-                    for off_y in 0..image.placement.height as i32 {
-                        for off_x in 0..image.placement.width as i32 {
+                    for off_y in 0..image.placement.height {
+                        for off_x in 0..image.placement.width {
                             //TODO: blend base alpha?
 
-                            let real_x = physical_glyph.x + x + off_x;
-                            let real_y = run.line_y as i32 + physical_glyph.y + y + off_y;
+                            let real_x = physical_glyph.x + x + off_x as i32;
+                            let real_y = run.line_y as i32 + physical_glyph.y + y + off_y as i32;
                             //   println!("{}", run.line_y);
                             if real_x >= 0 && real_y >= 0 {
-                                let get_x = (begin_x as i32 + real_x) as usize;
-                                let get_y = (begin_y as i32 + real_y) as usize;
+                                let get_x = (begin_x + real_x as usize);
+                                let get_y = (begin_y + real_y as usize);
 
                                 let put_color = blend_rgba(
                                     [fg_color[0], fg_color[1], fg_color[2], image.data[i]],
@@ -233,8 +233,8 @@ impl SoftBackend {
 
         //  println!("Glyph height (bbox): {:#?}", boop);
         //      // Set a size for the text buffer, in pixels
-        let char_width = wa.width;
-        let char_height = wa.height;
+        let char_width = wa.width as usize;
+        let char_height = wa.height as usize;
         character_buffer.set_size(
             &mut font_system,
             Some(char_width as f32),
@@ -244,8 +244,8 @@ impl SoftBackend {
         let const_color = CosmicColor::rgb(255, 255, 255);
 
         let rgba_pixmap = RgbPixmap::new(
-            (char_width * width as u32) as usize,
-            (char_height * height as u32) as usize,
+            (char_width * width as usize),
+            (char_height * height as usize),
         );
 
         let mut return_struct = Self {
