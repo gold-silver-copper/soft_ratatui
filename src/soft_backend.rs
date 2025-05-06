@@ -29,6 +29,7 @@ pub struct SoftBackend {
     pub blinking_slow: bool,
     pub swash_cache: SwashCache,
     pub rgba_pixmap: RgbPixmap,
+    pub redraw_list: Vec<(u16, u16)>,
 }
 
 fn add_strikeout(text: &String) -> String {
@@ -54,10 +55,12 @@ impl SoftBackend {
         self.rgba_pixmap.height()
     }
 
-    pub fn draw_cell(&mut self, rat_cell: &Cell, xik: u16, yik: u16) {
+    pub fn draw_cell(&mut self, xik: u16, yik: u16) {
         // Prepare Pixmap to draw into
 
         // Draw using tiny-skia
+
+        let rat_cell = self.buffer.cell(Position::new(xik, yik)).unwrap();
 
         let is_bold = rat_cell.modifier.contains(Modifier::BOLD);
         let is_italic = rat_cell.modifier.contains(Modifier::ITALIC);
@@ -213,6 +216,7 @@ impl SoftBackend {
             blink_counter: 0,
             blinking_fast: false,
             blinking_slow: false,
+            redraw_list: Vec::new(),
 
             swash_cache,
         };
@@ -240,21 +244,17 @@ impl SoftBackend {
         for x in 0..self.buffer.area.width {
             for y in 0..self.buffer.area.height {
                 let c = self.buffer[(x, y)].clone();
-                self.draw_cell(&c, x, y);
+                self.draw_cell(x, y);
             }
         }
     }
     // Call this every tick/frame
+    // Call this every tick/frame
     pub fn update_blinking(&mut self) {
-        self.blink_counter = self.blink_counter.wrapping_add(1) % 1024;
+        self.blink_counter = (self.blink_counter + 1) % 200;
 
-        // Fast blinking: toggles every ~128 ticks (on for 64, off for 64)
-        self.blinking_fast = (self.blink_counter % 128) < 64;
-        println!("fast {}", self.blinking_fast);
-
-        // Slow blinking: active between tick 512–767
-        self.blinking_slow = (512..768).contains(&self.blink_counter);
-        println!("slow {}", self.blinking_slow);
+        self.blinking_fast = matches!(self.blink_counter % 50, 0..=10); // fast blink: 5 ticks on, 5 off
+        self.blinking_slow = matches!(self.blink_counter, 20..=29); // slow blink: ticks 20–29 only
     }
 }
 
@@ -265,9 +265,17 @@ impl Backend for SoftBackend {
     {
         self.update_blinking();
         for (x, y, c) in content {
+            if c.modifier.contains(Modifier::SLOW_BLINK)
+                || c.modifier.contains(Modifier::RAPID_BLINK)
+            {
+                self.redraw_list.push((x, y));
+            }
             self.buffer[(x, y)] = c.clone();
-            self.draw_cell(&c, x, y);
+            self.draw_cell(x, y);
             //   println!("{c:#?}");
+        }
+        for (x, y) in self.redraw_list.clone().iter() {
+            self.draw_cell(*x, *y);
         }
         // self.redraw();
 
