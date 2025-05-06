@@ -2,7 +2,7 @@
 //! It is used in the integration tests to verify the correctness of the library.
 
 use std::collections::HashSet;
-use std::{fs, io};
+use std::io;
 
 use crate::colors::*;
 use crate::pixmap::RgbPixmap;
@@ -14,8 +14,7 @@ use ratatui::layout::{Position, Rect, Size};
 use ratatui::style::Modifier;
 
 use cosmic_text::{
-    Attrs, AttrsList, BufferLine, CacheKeyFlags, Color as CosmicColor, Family, LineEnding,
-    LineIter, Metrics, Scroll, Shaping, Style, Weight, Wrap,
+    Attrs, AttrsList, BufferLine, CacheKeyFlags, Color as CosmicColor, Family, LineEnding, Metrics, Shaping, Weight,
 };
 
 use cosmic_text::{Buffer as CosmicBuffer, FontSystem, SwashCache};
@@ -89,7 +88,7 @@ impl SoftBackend {
         for y in 0..self.char_height {
             for x in 0..self.char_width {
                 self.rgba_pixmap
-                    .put_pixel((begin_x + x), (begin_y + y), bg_color);
+                    .put_pixel(begin_x + x, begin_y + y, bg_color);
             }
         }
 
@@ -172,8 +171,8 @@ impl SoftBackend {
                             let real_y = run.line_y as i32 + physical_glyph.y + y + off_y as i32;
 
                             if real_x >= 0 && real_y >= 0 {
-                                let get_x = (begin_x + real_x as usize);
-                                let get_y = (begin_y + real_y as usize);
+                                let get_x = begin_x + real_x as usize;
+                                let get_y = begin_y + real_y as usize;
 
                                 let put_color = blend_rgba(
                                     [fg_color[0], fg_color[1], fg_color[2], image.data[i]],
@@ -238,8 +237,8 @@ impl SoftBackend {
         let const_color = CosmicColor::rgb(255, 255, 255);
 
         let rgba_pixmap = RgbPixmap::new(
-            (char_width * width as usize),
-            (char_height * height as usize),
+            char_width * width as usize,
+            char_height * height as usize,
         );
 
         let mut return_struct = Self {

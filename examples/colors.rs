@@ -43,7 +43,7 @@ use soft_ratatui::SoftBackend;
 fn main() -> Result<()> {
     color_eyre::install()?;
     let backend = SoftBackend::new(100, 50, 16);
-    let mut terminal = Terminal::new(backend).unwrap();
+    let terminal = Terminal::new(backend).unwrap();
     let app_result = App::default().run(terminal);
 
     app_result

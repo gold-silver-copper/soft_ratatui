@@ -8,10 +8,7 @@
 /// release.
 ///
 /// [`latest`]: https://github.com/ratatui/ratatui/tree/latest
-use std::{
-    io::stdout,
-    time::{Duration, Instant},
-};
+use std::time::{Duration, Instant};
 
 use color_eyre::Result;
 
@@ -28,7 +25,7 @@ use soft_ratatui::SoftBackend;
 fn main() -> Result<()> {
     color_eyre::install()?;
     let backend = SoftBackend::new(100, 50, 16);
-    let mut terminal = Terminal::new(backend).unwrap();
+    let terminal = Terminal::new(backend).unwrap();
     let app_result = App::new().run(terminal);
 
     app_result
