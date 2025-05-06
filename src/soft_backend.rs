@@ -148,6 +148,8 @@ impl SoftBackend {
             for glyph in run.glyphs.iter() {
                 let physical_glyph = glyph.physical((0., 0.), 1.0);
 
+                //TODO : Handle Content::Color (emojis?)
+
                 if let Some(image) = self
                     .swash_cache
                     .get_image(&mut self.font_system, physical_glyph.cache_key)
