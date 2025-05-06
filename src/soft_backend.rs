@@ -131,38 +131,15 @@ impl SoftBackend {
             attrs = attrs.style(Style::Italic);
         }
 
-        //    let mut mut_buffer = self.character_buffer.borrow_with(&mut self.font_system);
-
-        /*  // Set and shape text
-        mut_buffer.set_text(
+        self.character_buffer.lines = vec![BufferLine::new(
             &text_symbol,
-            &attrs,
-            Shaping::Advanced, // Basic for better performance
-        ); */
+            LineEnding::None,
+            AttrsList::new(&attrs),
+            Shaping::Advanced,
+        )];
 
-        /*   self.character_buffer.set_text(
-                &mut self.font_system,
-                &text_symbol,
-                &attrs,
-                Shaping::Advanced, // Basic for better performance
-            );
-        */
-        {
-            //  self.character_buffer.lines.clear();
-
-            //  println!("{range:#?} {ending:#?}");
-            self.character_buffer.lines = vec![BufferLine::new(
-                &text_symbol,
-                LineEnding::None,
-                AttrsList::new(&attrs),
-                Shaping::Advanced,
-            )];
-
-            //   self.character_buffer.scroll = Scroll::default();
-
-            self.character_buffer
-                .shape_until_scroll(&mut self.font_system, false);
-        }
+        self.character_buffer
+            .shape_until_scroll(&mut self.font_system, false);
 
         for run in self.character_buffer.layout_runs() {
             for glyph in run.glyphs.iter() {
