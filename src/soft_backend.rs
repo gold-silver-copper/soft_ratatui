@@ -14,7 +14,8 @@ use ratatui::layout::{Position, Rect, Size};
 use ratatui::style::Modifier;
 
 use cosmic_text::{
-    Attrs, AttrsList, BufferLine, CacheKeyFlags, Color as CosmicColor, Family, LineEnding, Metrics, Shaping, Weight,
+    Attrs, AttrsList, BufferLine, CacheKeyFlags, Color as CosmicColor, Family, LineEnding, Metrics,
+    Shaping, Weight,
 };
 
 use cosmic_text::{Buffer as CosmicBuffer, FontSystem, SwashCache};
@@ -236,10 +237,8 @@ impl SoftBackend {
 
         let const_color = CosmicColor::rgb(255, 255, 255);
 
-        let rgba_pixmap = RgbPixmap::new(
-            char_width * width as usize,
-            char_height * height as usize,
-        );
+        let rgba_pixmap =
+            RgbPixmap::new(char_width * width as usize, char_height * height as usize);
 
         let mut return_struct = Self {
             buffer: Buffer::empty(Rect::new(0, 0, width, height)),
