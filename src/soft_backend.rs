@@ -121,44 +121,28 @@ impl SoftBackend {
         mut_buffer.draw(
             &mut self.swash_cache,
             self.const_color,
-            |x, y, _, _, color| {
+            |x, y, _w, _h, color| {
                 if x >= 0 && y >= 0 {
-                    let [_, _, _, a] = color.as_rgba();
+                    let [_r, _g, _b, a] = color.as_rgba();
 
                     let get_x = (xik as i32 * self.char_width as i32 + x) as usize;
                     let get_y = (yik as i32 * self.char_height as i32 + y) as usize;
-                    //let bg_pixel = self.rgba_pixmap.get_pixel(get_x, get_y);
+
                     let put_color = blend_rgba(
                         [fg_color[0], fg_color[1], fg_color[2], a],
                         [bg_color[0], bg_color[1], bg_color[2], 255],
                     );
-                    self.rgba_pixmap.put_pixel(
-                        get_x, get_y, put_color, //alpha instead of fg_color 3
-                    );
-
-                    /*
-                    //bg_color or bg_pixel for put_color?
-                     */
+                    self.rgba_pixmap.put_pixel(get_x, get_y, put_color);
                 }
             },
         );
-
-        /*   self.screen_pixmap.draw_pixmap(
-            (xik as u32 * self.char_width) as i32,
-            (yik as u32 * self.char_height) as i32,
-            mut_pixmap.as_ref(),
-            &self.pixmap_paint,
-            Transform::identity(),
-            None,
-        ); */
     }
 
-    pub fn new(width: u16, height: u16, font_path: &str) -> Self {
+    pub fn new(width: u16, height: u16, font_size: i32) -> Self {
         let mut swash_cache = SwashCache::new();
 
-        let line_height = 16;
         let mut font_system = FontSystem::new();
-        let metrics = Metrics::new(line_height as f32, line_height as f32);
+        let metrics = Metrics::new(font_size as f32, font_size as f32);
         let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
         let mut buffer = buffer.borrow_with(&mut font_system);
         buffer.set_text(
