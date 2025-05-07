@@ -34,7 +34,7 @@ pub struct SoftBackend {
     pub blinking_fast: bool,
     pub blinking_slow: bool,
     pub swash_cache: SwashCache,
-    pub rgba_pixmap: RgbPixmap,
+    pub rgb_pixmap: RgbPixmap,
     pub redraw_list: HashSet<(u16, u16)>,
 }
 
@@ -52,16 +52,16 @@ fn add_underline(text: &String) -> String {
 
 impl SoftBackend {
     pub fn get_pixmap_data(&self) -> &[u8] {
-        self.rgba_pixmap.data()
+        self.rgb_pixmap.data()
     }
     pub fn get_pixmap_data_as_rgba(&self) -> Vec<u8> {
-        self.rgba_pixmap.to_rgba()
+        self.rgb_pixmap.to_rgba()
     }
     pub fn get_pixmap_width(&self) -> usize {
-        self.rgba_pixmap.width()
+        self.rgb_pixmap.width()
     }
     pub fn get_pixmap_height(&self) -> usize {
-        self.rgba_pixmap.height()
+        self.rgb_pixmap.height()
     }
 
     pub fn draw_cell(&mut self, xik: u16, yik: u16) {
@@ -91,7 +91,7 @@ impl SoftBackend {
         let begin_y = yik as usize * self.char_height;
         for y in 0..self.char_height {
             for x in 0..self.char_width {
-                self.rgba_pixmap
+                self.rgb_pixmap
                     .put_pixel(begin_x + x, begin_y + y, bg_color);
             }
         }
@@ -194,7 +194,7 @@ impl SoftBackend {
                                     [fg_color[0], fg_color[1], fg_color[2], image.data[i]],
                                     [bg_color[0], bg_color[1], bg_color[2], 255],
                                 );
-                                self.rgba_pixmap.put_pixel(get_x, get_y, put_color);
+                                self.rgb_pixmap.put_pixel(get_x, get_y, put_color);
                             }
 
                             i += 1;
@@ -209,7 +209,8 @@ impl SoftBackend {
         let mut swash_cache = SwashCache::new();
 
         let mut db = Database::new();
-        db.load_font_file("assets/iosevka.ttf")
+        // "assets/iosevka.ttf"
+        db.load_font_file(font_path)
             .expect("FONT NOT FOUND, CHECK PATH");
         // db.set_monospace_family("Iosevka");
 
@@ -238,10 +239,6 @@ impl SoftBackend {
 
         let mut character_buffer = CosmicBuffer::new(&mut font_system, metrics);
 
-        // let mut character_buffer = character_buffer.borrow_with(&mut font_system);
-
-        //  println!("Glyph height (bbox): {:#?}", boop);
-        //      // Set a size for the text buffer, in pixels
         let char_width = wa.width as usize;
         let char_height = wa.height as usize;
         character_buffer.set_size(
@@ -252,8 +249,7 @@ impl SoftBackend {
 
         let const_color = CosmicColor::rgb(255, 255, 255);
 
-        let rgba_pixmap =
-            RgbPixmap::new(char_width * width as usize, char_height * height as usize);
+        let rgb_pixmap = RgbPixmap::new(char_width * width as usize, char_height * height as usize);
 
         let mut return_struct = Self {
             buffer: Buffer::empty(Rect::new(0, 0, width, height)),
@@ -262,7 +258,7 @@ impl SoftBackend {
             font_system,
             metrics,
 
-            rgba_pixmap,
+            rgb_pixmap,
             character_buffer,
             char_width,
             char_height,
@@ -286,11 +282,11 @@ impl SoftBackend {
     /// Resizes the `SoftBackend` to the specified width and height.
     pub fn resize(&mut self, width: u16, height: u16) {
         self.buffer.resize(Rect::new(0, 0, width, height));
-        let rgba_pixmap = RgbPixmap::new(
+        let rgb_pixmap = RgbPixmap::new(
             self.char_width as usize * width as usize,
             self.char_height as usize * height as usize,
         );
-        self.rgba_pixmap = rgba_pixmap;
+        self.rgb_pixmap = rgb_pixmap;
         self.redraw();
     }
 
@@ -306,8 +302,8 @@ impl SoftBackend {
     pub fn update_blinking(&mut self) {
         self.blink_counter = (self.blink_counter + 1) % 200;
 
-        self.blinking_fast = matches!(self.blink_counter % 100, 0..=5); // fast blink: 5 ticks on, 5 off
-        self.blinking_slow = matches!(self.blink_counter, 20..=25); // slow blink: ticks 20–29 only
+        self.blinking_fast = matches!(self.blink_counter % 100, 0..=5);
+        self.blinking_slow = matches!(self.blink_counter, 20..=25);
     }
 }
 
@@ -325,7 +321,6 @@ impl Backend for SoftBackend {
         for (x, y) in self.redraw_list.clone().iter() {
             self.draw_cell(*x, *y);
         }
-        // self.redraw();
 
         Ok(())
     }
@@ -355,7 +350,7 @@ impl Backend for SoftBackend {
         let clear_cell = Cell::EMPTY;
         let colorik = rat_to_rgb(&clear_cell.bg, false);
 
-        self.rgba_pixmap.fill([colorik[0], colorik[1], colorik[2]]);
+        self.rgb_pixmap.fill([colorik[0], colorik[1], colorik[2]]);
 
         Ok(())
     }
