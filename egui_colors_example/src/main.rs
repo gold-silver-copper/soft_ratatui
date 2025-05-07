@@ -43,7 +43,7 @@ struct MyApp {
 
 impl MyApp {
     fn new() -> Self {
-        let backend = SoftBackend::new(200, 100, 12);
+        let backend = SoftBackend::new_with_font(100, 50, 12, "../assets/iosevka.ttf");
         let mut terminal = Terminal::new(backend).unwrap();
         let appik = App::default();
 
