@@ -25,7 +25,7 @@ pub struct SoftBackend {
     pub cursor: bool,
     pub pos: (u16, u16),
     pub font_system: FontSystem,
-    pub metrics: Metrics,
+
     pub character_buffer: CosmicBuffer,
     pub char_width: usize,
     pub char_height: usize,
@@ -119,18 +119,11 @@ impl SoftBackend {
         if rat_cell.modifier.contains(Modifier::ITALIC) {
             attrs = attrs.cache_key_flags(CacheKeyFlags::FAKE_ITALIC);
         }
-
+        let mets = self.character_buffer.metrics().font_size;
         let line = self.character_buffer.lines.get_mut(0).unwrap();
         line.set_text(&text_symbol, LineEnding::None, AttrsList::new(&attrs));
 
-        line.layout(
-            &mut self.font_system,
-            self.metrics.font_size,
-            None,
-            Wrap::None,
-            None,
-            1,
-        );
+        line.layout(&mut self.font_system, mets, None, Wrap::None, None, 1);
 
         for run in self.character_buffer.layout_runs() {
             for glyph in run.glyphs.iter() {
@@ -173,6 +166,46 @@ impl SoftBackend {
         }
     }
 
+    pub fn set_font_size(&mut self, font_size: i32) {
+        let metrics = Metrics::new(font_size as f32, font_size as f32);
+        self.character_buffer
+            .set_metrics(&mut self.font_system, metrics);
+        let mut buffer = CosmicBuffer::new(&mut self.font_system, metrics);
+        let mut buffer = buffer.borrow_with(&mut self.font_system);
+        buffer.set_text(
+            "█\n█",
+            &Attrs::new().family(Family::Monospace),
+            Shaping::Advanced,
+        );
+        buffer.shape_until_scroll(true);
+        let boop = buffer.layout_runs().next().unwrap();
+        let physical_glyph = boop.glyphs.iter().next().unwrap().physical((0., 0.), 1.0);
+
+        let wa = self
+            .swash_cache
+            .get_image(&mut self.font_system, physical_glyph.cache_key)
+            .clone()
+            .unwrap()
+            .placement;
+        // println!("Glyph height (bbox): {:#?}", wa);
+
+        let char_width = wa.width as usize;
+        let char_height = wa.height as usize;
+        self.character_buffer.set_size(
+            &mut self.font_system,
+            Some(char_width as f32),
+            Some(char_height as f32),
+        );
+        self.char_width = char_width;
+        self.char_height = char_height;
+        self.rgb_pixmap = RgbPixmap::new(
+            self.char_width * self.buffer.area.width as usize,
+            self.char_height * self.buffer.area.height as usize,
+        );
+
+        self.redraw();
+    }
+
     pub fn new_with_font(width: u16, height: u16, font_size: i32, font_data: &[u8]) -> Self {
         let mut swash_cache = SwashCache::new();
 
@@ -202,7 +235,7 @@ impl SoftBackend {
             .clone()
             .unwrap()
             .placement;
-        println!("Glyph height (bbox): {:#?}", wa);
+        // println!("Glyph height (bbox): {:#?}", wa);
 
         let mut character_buffer = CosmicBuffer::new(&mut font_system, metrics);
 
@@ -223,7 +256,6 @@ impl SoftBackend {
             cursor: false,
             pos: (0, 0),
             font_system,
-            metrics,
 
             rgb_pixmap,
             character_buffer,
@@ -263,7 +295,7 @@ impl SoftBackend {
             .clone()
             .unwrap()
             .placement;
-        println!("Glyph height (bbox): {:#?}", wa);
+        //  println!("Glyph height (bbox): {:#?}", wa);
 
         let mut character_buffer = CosmicBuffer::new(&mut font_system, metrics);
 
@@ -284,7 +316,6 @@ impl SoftBackend {
             cursor: false,
             pos: (0, 0),
             font_system,
-            metrics,
 
             rgb_pixmap,
             character_buffer,
