@@ -22,7 +22,7 @@ type Result<T> = result::Result<T, Box<dyn Error>>;
 
 fn main() -> Result<()> {
     color_eyre::install()?;
-    let backend = SoftBackend::new(100, 50, 16);
+    let backend = SoftBackend::new_with_system_fonts(100, 50, 16);
     let terminal = Terminal::new(backend).unwrap();
     let app_result = run(terminal);
 
