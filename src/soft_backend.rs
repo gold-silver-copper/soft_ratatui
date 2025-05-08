@@ -172,6 +172,7 @@ impl SoftBackend {
             .set_metrics(&mut self.font_system, metrics);
         let mut buffer = CosmicBuffer::new(&mut self.font_system, metrics);
         let mut buffer = buffer.borrow_with(&mut self.font_system);
+        //"█\n█",
         buffer.set_text(
             "█\n█",
             &Attrs::new().family(Family::Monospace),
@@ -212,17 +213,22 @@ impl SoftBackend {
         let mut db = Database::new();
         // "assets/iosevka.ttf"
         db.load_font_data(font_data.to_vec());
-        db.set_monospace_family("FiraMono");
+        //  db.set_monospace_family("Fira Mono");
 
         let mut font_system = FontSystem::new();
         let metrics = Metrics::new(font_size as f32, font_size as f32);
 
         let boopiki = font_system.db_mut();
         *boopiki = db;
+
+        /*   for wut in boopiki.faces() {
+            println!("{wut:#?}");
+        } */
+
         let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
         let mut buffer = buffer.borrow_with(&mut font_system);
         buffer.set_text(
-            "█\n█",
+            "██",
             &Attrs::new().family(Family::Monospace),
             Shaping::Advanced,
         );
