@@ -43,7 +43,7 @@ struct MyApp {
 
 impl MyApp {
     fn new() -> Self {
-        let backend = SoftBackend::new_with_font(100, 50, 12, "../assets/iosevka.ttf");
+        let backend = SoftBackend::new_with_system_fonts(100, 50, 12);
         let mut terminal = Terminal::new(backend).unwrap();
         let appik = App::default();
 
@@ -59,6 +59,9 @@ impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // terminal.draw(draw).expect("failed to draw frame");
         self.appik.run(&mut self.terminal);
+        let sizeik = (self.terminal.backend().blink_counter as i32) % 30 + 1;
+
+        // self.terminal.backend_mut().set_font_size(sizeik);
 
         let colorik = egui::ColorImage::from_rgb(
             [

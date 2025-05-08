@@ -72,6 +72,9 @@ fn ui_example_system(
     let width = softatui.backend().get_pixmap_width() as u32;
     let height = softatui.backend().get_pixmap_height() as u32;
     let data = softatui.backend().get_pixmap_data_as_rgba();
+    let sizeik = softatui.backend().blink_counter as i32 % 40 + 1;
+
+    softatui.backend_mut().set_font_size(sizeik);
 
     let imageik = Image::new(
         Extent3d {
