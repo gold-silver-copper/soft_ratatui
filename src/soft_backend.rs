@@ -212,7 +212,7 @@ impl SoftBackend {
         let mut db = Database::new();
         // "assets/iosevka.ttf"
         db.load_font_data(font_data.to_vec());
-        // db.set_monospace_family("Iosevka");
+        db.set_monospace_family("FiraMono");
 
         let mut font_system = FontSystem::new();
         let metrics = Metrics::new(font_size as f32, font_size as f32);
