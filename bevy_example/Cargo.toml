@@ -5,5 +5,8 @@ edition = "2024"
 
 [dependencies]
 bevy = "0.16.0"
-ratatui = "0.29.0"
+ratatui = { version = "0.29.0", default-features = false }
 soft_ratatui = { path = ".." }
+
+[target.wasm32-unknown-unknown]
+runner = "wasm-server-runner"

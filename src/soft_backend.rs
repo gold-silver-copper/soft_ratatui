@@ -39,13 +39,11 @@ pub struct SoftBackend {
 }
 
 fn add_strikeout(text: &String) -> String {
-    // Unicode combining long stroke overlay
     let strike = '\u{0336}';
     text.chars().flat_map(|c| [c, strike]).collect()
 }
 
 fn add_underline(text: &String) -> String {
-    // Unicode combining long stroke overlay
     let strike = '\u{0332}';
     text.chars().flat_map(|c| [c, strike]).collect()
 }
@@ -65,10 +63,6 @@ impl SoftBackend {
     }
 
     pub fn draw_cell(&mut self, xik: u16, yik: u16) {
-        // Prepare Pixmap to draw into
-
-        // Draw using tiny-skia
-
         let rat_cell = self.buffer.cell(Position::new(xik, yik)).unwrap();
 
         let mut rat_fg = rat_cell.fg;
@@ -126,17 +120,6 @@ impl SoftBackend {
             attrs = attrs.cache_key_flags(CacheKeyFlags::FAKE_ITALIC);
         }
 
-        /*  self.character_buffer.lines = vec![BufferLine::new(
-            &text_symbol,
-            LineEnding::None,
-            AttrsList::new(&attrs),
-            Shaping::Advanced,
-        )]; */
-
-        /* self.character_buffer
-        .line_layout(&mut self.font_system, 0)
-        .expect("shape_until_scroll invalid line"); */
-
         let line = self.character_buffer.lines.get_mut(0).unwrap();
         line.set_text(&text_symbol, LineEnding::None, AttrsList::new(&attrs));
 
@@ -148,21 +131,6 @@ impl SoftBackend {
             None,
             1,
         );
-
-        /* let boop = BufferLine::new(
-            &text_symbol,
-            LineEnding::None,
-            AttrsList::new(&attrs),
-            Shaping::Advanced,
-        )
-        .layout(
-            &mut self.font_system,
-            self.metrics.font_size,
-            None,
-            Wrap::None,
-            None,
-            1,
-        ); */
 
         for run in self.character_buffer.layout_runs() {
             for glyph in run.glyphs.iter() {
@@ -205,13 +173,12 @@ impl SoftBackend {
         }
     }
 
-    pub fn new_with_font(width: u16, height: u16, font_size: i32, font_path: &str) -> Self {
+    pub fn new_with_font(width: u16, height: u16, font_size: i32, font_data: &[u8]) -> Self {
         let mut swash_cache = SwashCache::new();
 
         let mut db = Database::new();
         // "assets/iosevka.ttf"
-        db.load_font_file(font_path)
-            .expect("FONT NOT FOUND, CHECK PATH");
+        db.load_font_data(font_data.to_vec());
         // db.set_monospace_family("Iosevka");
 
         let mut font_system = FontSystem::new();
@@ -219,6 +186,67 @@ impl SoftBackend {
 
         let boopiki = font_system.db_mut();
         *boopiki = db;
+        let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
+        let mut buffer = buffer.borrow_with(&mut font_system);
+        buffer.set_text(
+            "█\n█",
+            &Attrs::new().family(Family::Monospace),
+            Shaping::Advanced,
+        );
+        buffer.shape_until_scroll(true);
+        let boop = buffer.layout_runs().next().unwrap();
+        let physical_glyph = boop.glyphs.iter().next().unwrap().physical((0., 0.), 1.0);
+
+        let wa = swash_cache
+            .get_image(&mut font_system, physical_glyph.cache_key)
+            .clone()
+            .unwrap()
+            .placement;
+        println!("Glyph height (bbox): {:#?}", wa);
+
+        let mut character_buffer = CosmicBuffer::new(&mut font_system, metrics);
+
+        let char_width = wa.width as usize;
+        let char_height = wa.height as usize;
+        character_buffer.set_size(
+            &mut font_system,
+            Some(char_width as f32),
+            Some(char_height as f32),
+        );
+
+        let const_color = CosmicColor::rgb(255, 255, 255);
+
+        let rgb_pixmap = RgbPixmap::new(char_width * width as usize, char_height * height as usize);
+
+        let mut return_struct = Self {
+            buffer: Buffer::empty(Rect::new(0, 0, width, height)),
+            cursor: false,
+            pos: (0, 0),
+            font_system,
+            metrics,
+
+            rgb_pixmap,
+            character_buffer,
+            char_width,
+            char_height,
+            const_color,
+            blink_counter: 0,
+            blinking_fast: false,
+            blinking_slow: false,
+            redraw_list: HashSet::new(),
+
+            swash_cache,
+        };
+        _ = return_struct.clear();
+        return_struct
+    }
+
+    pub fn new_with_system_fonts(width: u16, height: u16, font_size: i32) -> Self {
+        let mut swash_cache = SwashCache::new();
+
+        let mut font_system = FontSystem::new();
+        let metrics = Metrics::new(font_size as f32, font_size as f32);
+
         let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
         let mut buffer = buffer.borrow_with(&mut font_system);
         buffer.set_text(

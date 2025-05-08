@@ -10,6 +10,8 @@ use ratatui::{
 };
 use soft_ratatui::SoftBackend;
 
+static FONT_DATA: &[u8] = include_bytes!("../../assets/iosevka.ttf");
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
@@ -91,7 +93,7 @@ fn ui_example_system(
 struct SoftTerminal(Terminal<SoftBackend>);
 impl Default for SoftTerminal {
     fn default() -> Self {
-        let mut backend = SoftBackend::new_with_font(15, 15, 16, "../assets/iosevka.ttf");
+        let mut backend = SoftBackend::new_with_font(15, 15, 16, FONT_DATA);
         //backend.set_font_size(12);
         Self(Terminal::new(backend).unwrap())
     }
