@@ -4,13 +4,13 @@ use bevy::{
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
 
+use bevy::text::DEFAULT_FONT_DATA;
 use ratatui::{
     prelude::{Stylize, Terminal},
     widgets::{Block, Borders, Paragraph, Wrap},
 };
 use soft_ratatui::SoftBackend;
-
-static FONT_DATA: &[u8] = include_bytes!("../../assets/iosevka.ttf");
+static FONT_DATA: &[u8] = include_bytes!("../../assets/tc.ttf");
 
 fn main() {
     App::new()
