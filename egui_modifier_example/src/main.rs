@@ -20,7 +20,7 @@ use ratatui::widgets::Paragraph;
 use ratatui::{Frame, Terminal};
 
 use soft_ratatui::SoftBackend;
-
+static FONT_DATA: &[u8] = include_bytes!("../../assets/iosevka.ttf");
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([1500.0, 1000.0]),
@@ -47,7 +47,7 @@ struct MyApp {
 
 impl MyApp {
     fn new() -> Self {
-        let backend = SoftBackend::new_with_font(100, 50, 12, "../assets/iosevka.ttf");
+        let backend = SoftBackend::new_with_system_fonts(100, 50, 16);
         let mut terminal = Terminal::new(backend).unwrap();
 
         Self {

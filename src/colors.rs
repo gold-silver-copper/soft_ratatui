@@ -1,5 +1,6 @@
 use ratatui::style::Color as RatColor;
 
+///Converts a Ratatui Color into a rgb [u8;3]
 pub fn rat_to_rgb(rat_col: &RatColor, is_a_fg: bool) -> [u8; 3] {
     match rat_col {
         RatColor::Reset => {
