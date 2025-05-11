@@ -16,9 +16,10 @@ Fast, portable, no-bloat. Powered by [`cosmic-text`](https://github.com/pop-os/c
 
 ## Features
 
-- Font rendering with [`cosmic-text`](https://github.com/pop-os/cosmic-text).
+- Unicode Font rendering with [`cosmic-text`](https://github.com/pop-os/cosmic-text).
 - Portable pixel rasterizer.
 - `egui` integration provided by [`egui_ratatui`](https://github.com/gold-silver-copper/egui_ratatui). Have a TUI inside your GUI!
+- [`bevy`](https://github.com/bevyengine/bevy) game engine example
 
 ---
 
