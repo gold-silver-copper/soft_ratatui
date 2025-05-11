@@ -19,6 +19,7 @@ use cosmic_text::{
 
 use cosmic_text::{Buffer as CosmicBuffer, FontSystem, SwashCache};
 
+/// SoftBackend is a Software rendering backend for Ratatui. It stores the generated image internally as rgb_pixmap.
 pub struct SoftBackend {
     pub buffer: Buffer,
     pub cursor: bool,
@@ -48,15 +49,19 @@ fn add_underline(text: &String) -> String {
 }
 
 impl SoftBackend {
+    /// Retuns the raw rgb data of the pixmap as a flat array
     pub fn get_pixmap_data(&self) -> &[u8] {
         self.rgb_pixmap.data()
     }
+    /// Retuns the pixmap in rgba format as a flat vector
     pub fn get_pixmap_data_as_rgba(&self) -> Vec<u8> {
         self.rgb_pixmap.to_rgba()
     }
+    /// Returns the width of the pixmap in pixels
     pub fn get_pixmap_width(&self) -> usize {
         self.rgb_pixmap.width()
     }
+    /// Returns the height of the pixmap in pixels
     pub fn get_pixmap_height(&self) -> usize {
         self.rgb_pixmap.height()
     }
@@ -209,8 +214,20 @@ impl SoftBackend {
     }
 
     /// Creates a new Software Backend with the given font data.
-    /// static FONT_DATA: &[u8] = include_bytes!("../../assets/tc.ttf");
-    /// let  backend = SoftBackend::new_with_font(20, 20, 16, FONT_DATA);
+    ///
+    /// (new-with-font width height font-size font-data) -> SoftBackend
+    ///
+    /// * width      : usize - Width of the terminal in cells
+    /// * height     : usize - Height of the terminal in cells
+    /// * font-size  : u32   - Font size in pixels
+    /// * font-data  : &[u8] - Byte slice of the font (e.g., included with `include_bytes!`)
+    ///
+    /// # Examples
+    /// ```rust
+    /// static FONT_DATA: &[u8] = include_bytes!("../../assets/iosevka.ttf");
+    /// let backend = SoftBackend::new_with_font(20, 20, 16, FONT_DATA);
+    /// ```
+
     pub fn new_with_font(width: u16, height: u16, font_size: i32, font_data: &[u8]) -> Self {
         let mut swash_cache = SwashCache::new();
 
@@ -281,8 +298,20 @@ impl SoftBackend {
         return_struct
     }
 
-    /// Creates a new Software Backend, using provided system fonts. Does not work with WASM / WEB .
-    /// let  backend = SoftBackend::new_with_system_fonts(20, 20, 16);
+    /// Creates a new Software Backend using provided system fonts.
+    ///
+    /// (new-with-system-fonts width height font-size) -> SoftBackend
+    ///
+    /// * width      : usize - Width of the terminal in cells
+    /// * height     : usize - Height of the terminal in cells
+    /// * font-size  : u32   - Font size in pixels
+    ///
+    /// ⚠️ Not supported on WASM/Web targets.
+    ///
+    /// # Examples
+    /// ```rust
+    /// let backend = SoftBackend::new_with_system_fonts(20, 20, 16);
+    /// ```
     pub fn new_with_system_fonts(width: u16, height: u16, font_size: i32) -> Self {
         let mut swash_cache = SwashCache::new();
 
