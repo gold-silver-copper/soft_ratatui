@@ -14,8 +14,7 @@ use ratatui::layout::{Position, Rect, Size};
 use ratatui::style::Modifier;
 
 use cosmic_text::{
-    Attrs, AttrsList, BufferLine, CacheKeyFlags, Color as CosmicColor, Family, LineEnding, Metrics,
-    Shaping, Weight, Wrap,
+    Attrs, AttrsList, CacheKeyFlags, Family, LineEnding, Metrics, Shaping, Weight, Wrap,
 };
 
 use cosmic_text::{Buffer as CosmicBuffer, FontSystem, SwashCache};
@@ -24,18 +23,18 @@ pub struct SoftBackend {
     pub buffer: Buffer,
     pub cursor: bool,
     pub pos: (u16, u16),
-    pub font_system: FontSystem,
+    font_system: FontSystem,
 
-    pub character_buffer: CosmicBuffer,
+    cosmic_buffer: CosmicBuffer,
     pub char_width: usize,
     pub char_height: usize,
-    pub const_color: CosmicColor,
+
     pub blink_counter: u16,
     pub blinking_fast: bool,
     pub blinking_slow: bool,
-    pub swash_cache: SwashCache,
+    swash_cache: SwashCache,
     pub rgb_pixmap: RgbPixmap,
-    pub redraw_list: HashSet<(u16, u16)>,
+    always_redraw_list: HashSet<(u16, u16)>,
 }
 
 fn add_strikeout(text: &String) -> String {
@@ -62,7 +61,7 @@ impl SoftBackend {
         self.rgb_pixmap.height()
     }
 
-    pub fn draw_cell(&mut self, xik: u16, yik: u16) {
+    fn draw_cell(&mut self, xik: u16, yik: u16) {
         let rat_cell = self.buffer.cell(Position::new(xik, yik)).unwrap();
 
         let mut rat_fg = rat_cell.fg;
@@ -100,13 +99,13 @@ impl SoftBackend {
         }
 
         if rat_cell.modifier.contains(Modifier::SLOW_BLINK) {
-            self.redraw_list.insert((xik, yik));
+            self.always_redraw_list.insert((xik, yik));
             if self.blinking_slow {
                 fg_color = bg_color.clone();
             }
         }
         if rat_cell.modifier.contains(Modifier::RAPID_BLINK) {
-            self.redraw_list.insert((xik, yik));
+            self.always_redraw_list.insert((xik, yik));
             if self.blinking_fast {
                 fg_color = bg_color.clone();
             }
@@ -119,13 +118,13 @@ impl SoftBackend {
         if rat_cell.modifier.contains(Modifier::ITALIC) {
             attrs = attrs.cache_key_flags(CacheKeyFlags::FAKE_ITALIC);
         }
-        let mets = self.character_buffer.metrics().font_size;
-        let line = self.character_buffer.lines.get_mut(0).unwrap();
+        let mets = self.cosmic_buffer.metrics().font_size;
+        let line = self.cosmic_buffer.lines.get_mut(0).unwrap();
         line.set_text(&text_symbol, LineEnding::None, AttrsList::new(&attrs));
 
         line.layout(&mut self.font_system, mets, None, Wrap::None, None, 1);
 
-        for run in self.character_buffer.layout_runs() {
+        for run in self.cosmic_buffer.layout_runs() {
             for glyph in run.glyphs.iter() {
                 let physical_glyph = glyph.physical((0., 0.), 1.0);
 
@@ -166,9 +165,11 @@ impl SoftBackend {
         }
     }
 
+    /// Sets a new font size for the terminal image.
+    /// This will recreate the pixmap and do a full redraw. Do not run every frame.
     pub fn set_font_size(&mut self, font_size: i32) {
         let metrics = Metrics::new(font_size as f32, font_size as f32);
-        self.character_buffer
+        self.cosmic_buffer
             .set_metrics(&mut self.font_system, metrics);
         let mut buffer = CosmicBuffer::new(&mut self.font_system, metrics);
         let mut buffer = buffer.borrow_with(&mut self.font_system);
@@ -192,7 +193,7 @@ impl SoftBackend {
 
         let char_width = wa.width as usize;
         let char_height = wa.height as usize;
-        self.character_buffer.set_size(
+        self.cosmic_buffer.set_size(
             &mut self.font_system,
             Some(char_width as f32),
             Some(char_height as f32),
@@ -207,6 +208,9 @@ impl SoftBackend {
         self.redraw();
     }
 
+    /// Creates a new Software Backend with the given font data.
+    /// static FONT_DATA: &[u8] = include_bytes!("../../assets/tc.ttf");
+    /// let  backend = SoftBackend::new_with_font(20, 20, 16, FONT_DATA);
     pub fn new_with_font(width: u16, height: u16, font_size: i32, font_data: &[u8]) -> Self {
         let mut swash_cache = SwashCache::new();
 
@@ -243,17 +247,15 @@ impl SoftBackend {
             .placement;
         // println!("Glyph height (bbox): {:#?}", wa);
 
-        let mut character_buffer = CosmicBuffer::new(&mut font_system, metrics);
+        let mut cosmic_buffer = CosmicBuffer::new(&mut font_system, metrics);
 
         let char_width = wa.width as usize;
         let char_height = wa.height as usize;
-        character_buffer.set_size(
+        cosmic_buffer.set_size(
             &mut font_system,
             Some(char_width as f32),
             Some(char_height as f32),
         );
-
-        let const_color = CosmicColor::rgb(255, 255, 255);
 
         let rgb_pixmap = RgbPixmap::new(char_width * width as usize, char_height * height as usize);
 
@@ -264,14 +266,14 @@ impl SoftBackend {
             font_system,
 
             rgb_pixmap,
-            character_buffer,
+            cosmic_buffer,
             char_width,
             char_height,
-            const_color,
+
             blink_counter: 0,
             blinking_fast: false,
             blinking_slow: false,
-            redraw_list: HashSet::new(),
+            always_redraw_list: HashSet::new(),
 
             swash_cache,
         };
@@ -279,6 +281,8 @@ impl SoftBackend {
         return_struct
     }
 
+    /// Creates a new Software Backend, using provided system fonts. Does not work with WASM / WEB .
+    /// let  backend = SoftBackend::new_with_system_fonts(20, 20, 16);
     pub fn new_with_system_fonts(width: u16, height: u16, font_size: i32) -> Self {
         let mut swash_cache = SwashCache::new();
 
@@ -303,17 +307,15 @@ impl SoftBackend {
             .placement;
         //  println!("Glyph height (bbox): {:#?}", wa);
 
-        let mut character_buffer = CosmicBuffer::new(&mut font_system, metrics);
+        let mut cosmic_buffer = CosmicBuffer::new(&mut font_system, metrics);
 
         let char_width = wa.width as usize;
         let char_height = wa.height as usize;
-        character_buffer.set_size(
+        cosmic_buffer.set_size(
             &mut font_system,
             Some(char_width as f32),
             Some(char_height as f32),
         );
-
-        let const_color = CosmicColor::rgb(255, 255, 255);
 
         let rgb_pixmap = RgbPixmap::new(char_width * width as usize, char_height * height as usize);
 
@@ -324,14 +326,14 @@ impl SoftBackend {
             font_system,
 
             rgb_pixmap,
-            character_buffer,
+            cosmic_buffer,
             char_width,
             char_height,
-            const_color,
+
             blink_counter: 0,
             blinking_fast: false,
             blinking_slow: false,
-            redraw_list: HashSet::new(),
+            always_redraw_list: HashSet::new(),
 
             swash_cache,
         };
@@ -355,8 +357,9 @@ impl SoftBackend {
         self.redraw();
     }
 
+    /// Redraws the pixmap
     pub fn redraw(&mut self) {
-        self.redraw_list = HashSet::new();
+        self.always_redraw_list = HashSet::new();
         for x in 0..self.buffer.area.width {
             for y in 0..self.buffer.area.height {
                 self.draw_cell(x, y);
@@ -364,7 +367,7 @@ impl SoftBackend {
         }
     }
 
-    pub fn update_blinking(&mut self) {
+    fn update_blinking(&mut self) {
         self.blink_counter = (self.blink_counter + 1) % 200;
 
         self.blinking_fast = matches!(self.blink_counter % 100, 0..=5);
@@ -383,7 +386,7 @@ impl Backend for SoftBackend {
             self.draw_cell(x, y);
             //   println!("{c:#?}");
         }
-        for (x, y) in self.redraw_list.clone().iter() {
+        for (x, y) in self.always_redraw_list.clone().iter() {
             self.draw_cell(*x, *y);
         }
 
@@ -425,14 +428,13 @@ impl Backend for SoftBackend {
     }
 
     fn window_size(&mut self) -> io::Result<WindowSize> {
-        // Some arbitrary window pixel size, probably doesn't need much testing.
-        const WINDOW_PIXEL_SIZE: Size = Size {
-            width: 640,
-            height: 480,
+        let window_pixels = Size {
+            width: self.get_pixmap_width() as u16,
+            height: self.get_pixmap_height() as u16,
         };
         Ok(WindowSize {
             columns_rows: self.buffer.area.as_size(),
-            pixels: WINDOW_PIXEL_SIZE,
+            pixels: window_pixels,
         })
     }
 

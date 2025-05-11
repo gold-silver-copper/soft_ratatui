@@ -3153,7 +3153,7 @@ dependencies = [
 
 [[package]]
 name = "soft_ratatui"
-version = "0.0.2"
+version = "0.0.4"
 dependencies = [
  "cosmic-text",
  "ratatui",
