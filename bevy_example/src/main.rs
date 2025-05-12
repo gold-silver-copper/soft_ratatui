@@ -9,7 +9,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Wrap},
 };
 use soft_ratatui::SoftBackend;
-static FONT_DATA: &[u8] = include_bytes!("../../assets/tc.ttf");
+static FONT_DATA: &[u8] = include_bytes!("../../assets/iosevka.ttf");
 
 fn main() {
     App::new()
