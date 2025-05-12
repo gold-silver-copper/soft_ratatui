@@ -236,15 +236,8 @@ impl SoftBackend {
         db.load_font_data(font_data.to_vec());
         //  db.set_monospace_family("Fira Mono");
 
-        let mut font_system = FontSystem::new();
+        let mut font_system = FontSystem::new_with_locale_and_db("English".to_string(), db);
         let metrics = Metrics::new(font_size as f32, font_size as f32);
-
-        let boopiki = font_system.db_mut();
-        *boopiki = db;
-
-        /*   for wut in boopiki.faces() {
-            println!("{wut:#?}");
-        } */
 
         let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
         let mut buffer = buffer.borrow_with(&mut font_system);
