@@ -11,16 +11,15 @@ Fast, portable, no-bloat. Powered by [`cosmic-text`](https://github.com/pop-os/c
 
 
 - Optimized for speed, generally faster than running ratatui inside a terminal. 120+ fps on normal workloads.
-- Full Unicode + font fallback.
-
+- Only one dependency, Unicode Font rendering powered by [`cosmic-text`](https://github.com/pop-os/cosmic-text)
+- Custom portable pixel rasterizer.
 ---
 
 ## Features
 
-- Unicode Font rendering with [`cosmic-text`](https://github.com/pop-os/cosmic-text).
-- Portable pixel rasterizer.
 - [`egui`](https://github.com/emilk/egui) integration provided by [`egui_ratatui`](https://github.com/gold-silver-copper/egui_ratatui). Have a TUI inside your GUI!
-- [`bevy`](https://github.com/bevyengine/bevy) game engine example
+- [`bevy_ratatui`](https://github.com/cxreiff/bevy_ratatui) integration allows you to turn an existing terminal app built with bevy_ratatui into a native or web app. The best way to build a terminal app!!
+- [`bevy`](https://github.com/bevyengine/bevy) game engine examples provided in the repo, so you can create your own game UI or world textures with ratatui
 - WASM compatible, deploy your ratatui application on the web!
 
 ---
