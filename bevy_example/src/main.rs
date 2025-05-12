@@ -25,8 +25,7 @@ fn setup(
     mut images: ResMut<Assets<Image>>,
 ) {
     commands.spawn(Camera2d);
-    softatui.backend_mut().redraw();
-    // Create an image that we are going to draw into
+
     let width = softatui.backend().get_pixmap_width() as u32;
     let height = softatui.backend().get_pixmap_height() as u32;
     let data = softatui.backend().get_pixmap_data_as_rgba();
@@ -71,11 +70,9 @@ fn ui_example_system(
     let width = softatui.backend().get_pixmap_width() as u32;
     let height = softatui.backend().get_pixmap_height() as u32;
     let data = softatui.backend().get_pixmap_data_as_rgba();
-    let sizeik = softatui.backend().blink_counter as i32 % 40 + 1;
 
-    //softatui.backend_mut().set_font_size(sizeik);
-
-    let imageik = Image::new(
+    let image = images.get_mut(&my_handle.0).expect("Image not found");
+    *image = Image::new(
         Extent3d {
             width,
             height,
@@ -86,8 +83,6 @@ fn ui_example_system(
         TextureFormat::Rgba8Unorm,
         RenderAssetUsages::RENDER_WORLD | RenderAssetUsages::MAIN_WORLD,
     );
-    let image = images.get_mut(&my_handle.0).expect("Image not found");
-    *image = imageik;
 }
 
 // Create resource to hold the ratatui terminal

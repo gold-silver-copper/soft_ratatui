@@ -21,6 +21,7 @@ Fast, portable, no-bloat. Powered by [`cosmic-text`](https://github.com/pop-os/c
 - Portable pixel rasterizer.
 - [`egui`](https://github.com/emilk/egui) integration provided by [`egui_ratatui`](https://github.com/gold-silver-copper/egui_ratatui). Have a TUI inside your GUI!
 - [`bevy`](https://github.com/bevyengine/bevy) game engine example
+- WASM compatible, deploy your ratatui application on the web!
 
 ---
 
@@ -28,6 +29,7 @@ Fast, portable, no-bloat. Powered by [`cosmic-text`](https://github.com/pop-os/c
 
 - Colored Emojis
 - More Examples
+- no-std support
 
 
 ---
