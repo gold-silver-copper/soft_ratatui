@@ -7,7 +7,7 @@
 
 **Software rendering backend for [`ratatui`](https://github.com/ratatui/ratatui). No GPU required. TUI everywhere.**
 
-Fast, portable, no-bloat. 
+Fast, portable, no-bloat.
 
 
 - Optimized for speed, generally faster than running ratatui inside a terminal. 120+ fps on normal workloads.
@@ -23,6 +23,7 @@ Fast, portable, no-bloat.
 - WASM compatible, deploy your ratatui application on the web!
 
 ---
+![](https://github.com/gold-silver-copper/soft_ratatui/blob/main/ratboxgif.gif)
 
 ## TODO
 
