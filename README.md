@@ -7,7 +7,7 @@
 
 **Software rendering backend for [`ratatui`](https://github.com/ratatui/ratatui). No GPU required. TUI everywhere.**
 
-Fast, portable, no-bloat. Powered by [`cosmic-text`](https://github.com/pop-os/cosmic-text).
+Fast, portable, no-bloat. 
 
 
 - Optimized for speed, generally faster than running ratatui inside a terminal. 120+ fps on normal workloads.
