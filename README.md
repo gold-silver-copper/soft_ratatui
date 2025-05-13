@@ -23,7 +23,7 @@ Fast, portable, no-bloat.
 - WASM compatible, deploy your ratatui application on the web!
 
 ---
-![](https://github.com/gold-silver-copper/soft_ratatui/blob/main/ratboxgif.gif)
+![](ratbox.avif)
 
 ## TODO
 
