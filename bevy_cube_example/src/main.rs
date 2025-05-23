@@ -12,6 +12,7 @@ use bevy::{
     },
 };
 use ratatui::{
+    Frame,
     prelude::{Stylize, Terminal},
     widgets::{Block, Borders, Paragraph, Wrap},
 };
@@ -24,12 +25,15 @@ fn main() {
         .init_resource::<SoftTerminal>()
         .add_systems(Startup, setup)
         .add_systems(Update, rotator_system)
+        .add_systems(Update, computer_test)
         .run();
 }
 
 // Marks the cube, to which the UI texture is applied.
 #[derive(Component)]
 struct Cube;
+#[derive(Resource)]
+struct MyProcGenMaterial(Handle<StandardMaterial>);
 
 fn setup(
     mut commands: Commands,
@@ -110,12 +114,13 @@ fn setup(
 
     // This material has the texture that has been rendered.
     let material_handle = materials.add(StandardMaterial {
-        base_color_texture: Some(image_handle),
+        base_color_texture: Some(image_handle.clone()),
         reflectance: 0.02,
         unlit: false,
 
         ..default()
     });
+    commands.insert_resource(MyProcGenMaterial(material_handle.clone()));
 
     // Cube with material containing the rendered UI texture.
     commands.spawn((
@@ -149,5 +154,73 @@ impl Default for SoftTerminal {
         let mut backend = SoftBackend::new_with_font(15, 15, 16, FONT_DATA);
         //backend.set_font_size(12);
         Self(Terminal::new(backend).unwrap())
+    }
+}
+
+pub fn draw_computer_screen(frame: &mut Frame) {
+    let area = frame.area();
+    let textik = format!("Hello bevy! The window area is {}", area);
+    frame.render_widget(
+        Paragraph::new(textik)
+            .block(Block::new().title("Ratatui").borders(Borders::ALL))
+            .white()
+            .on_blue()
+            .wrap(Wrap { trim: false }),
+        area,
+    );
+}
+
+pub fn new_computer_screen(frame: &mut Frame) {
+    let area = frame.area();
+    let textik = format!("Hello bevy! The window area is {}", area);
+    frame.render_widget(
+        Paragraph::new(textik)
+            .block(Block::new().title("Ratatui").borders(Borders::ALL))
+            .white()
+            .on_red()
+            .wrap(Wrap { trim: false }),
+        area,
+    );
+}
+
+fn computer_test(
+    key: Res<ButtonInput<KeyCode>>,
+    mut softatui: ResMut<SoftTerminal>,
+    proc_material: Res<MyProcGenMaterial>,
+    mut images: ResMut<Assets<Image>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    trace!("SYSTEM: computer_test");
+
+    if key.just_pressed(KeyCode::KeyK) {
+        println!("LMAO");
+        softatui.draw(new_computer_screen).expect("oops");
+
+        let width = softatui.backend().get_pixmap_width() as u32;
+        let height = softatui.backend().get_pixmap_height() as u32;
+        let data = softatui.backend().get_pixmap_data_as_rgba();
+        let material = materials
+            .get_mut(&proc_material.0)
+            .expect("material not found!");
+
+        let image = images
+            .get_mut(material.base_color_texture.as_ref().unwrap().id())
+            .expect("Image not found!");
+
+        let mut temp = Image::new(
+            Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+            bevy::render::render_resource::TextureDimension::D2,
+            data,
+            TextureFormat::Rgba8UnormSrgb,
+            RenderAssetUsages::RENDER_WORLD | RenderAssetUsages::MAIN_WORLD,
+        );
+        temp.texture_descriptor.usage = TextureUsages::TEXTURE_BINDING
+            | TextureUsages::COPY_DST
+            | TextureUsages::RENDER_ATTACHMENT;
+        *image = temp;
     }
 }
