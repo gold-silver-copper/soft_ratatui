@@ -193,7 +193,6 @@ fn computer_test(
     trace!("SYSTEM: computer_test");
 
     if key.just_pressed(KeyCode::KeyK) {
-        println!("LMAO");
         softatui.draw(new_computer_screen).expect("oops");
 
         let width = softatui.backend().get_pixmap_width() as u32;
