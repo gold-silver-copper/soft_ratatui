@@ -85,41 +85,12 @@ impl SoftBackend {
             (fg_color, bg_color) = (dim_rgb(fg_color), dim_rgb(bg_color));
         };
 
-        self.cosmic_buffer.set_text(
-            &mut self.font_system,
-            rat_cell.symbol(),
-            &Attrs::new().family(Family::Monospace),
-            Shaping::Advanced,
-            None, //todo figure out allignment
-        );
-        self.cosmic_buffer
-            .shape_until_scroll(&mut self.font_system, true);
-        let boop = self.cosmic_buffer.layout_runs().next().unwrap();
-        let physical_glyph = boop.glyphs.iter().next().unwrap().physical((0., 0.), 1.0);
-        let wa = self
-            .swash_cache
-            .get_image(&mut self.font_system, physical_glyph.cache_key)
-            .clone()
-            .unwrap()
-            .placement;
-        //  println!("Glyph height (bbox): {:#?}", wa);
-
-        let char_width = (wa.width as usize).max(self.char_width);
-        let char_height = (wa.height as usize).max(self.char_height);
-        println!("WIDTG {:#?}", char_width);
-        println!("HEIGHT {:#?}", char_height);
-
-        let begin_x = xik as usize * char_width;
-        let begin_y = yik as usize * char_height;
-        for y in 0..char_height {
-            for x in 0..char_width {
-                if (begin_x + x) < self.rgb_pixmap.width() {
-                    if (begin_y + y) < self.rgb_pixmap.height() {
-                        println!("TRY PUT BG");
-                        self.rgb_pixmap
-                            .put_pixel(begin_x + x, begin_y + y, bg_color);
-                    }
-                }
+        let begin_x = xik as usize * self.char_width;
+        let begin_y = yik as usize * self.char_height;
+        for y in 0..self.char_height {
+            for x in 0..self.char_width {
+                self.rgb_pixmap
+                    .put_pixel(begin_x + x, begin_y + y, bg_color);
             }
         }
 
@@ -158,14 +129,15 @@ impl SoftBackend {
         line.set_text(&text_symbol, LineEnding::None, AttrsList::new(&attrs));
 
         line.layout(&mut self.font_system, mets, None, Wrap::None, None, 1);
+        let pix_wid = self.get_pixmap_width() as i32;
+        let pix_hei = self.get_pixmap_height() as i32;
 
         for run in self.cosmic_buffer.layout_runs() {
             for glyph in run.glyphs.iter() {
                 let physical_glyph = glyph.physical((0., 0.), 1.0);
 
                 //TODO : Handle Content::Color (emojis?)
-                let pix_wid = self.get_pixmap_width();
-                let pix_hei = self.get_pixmap_height();
+
                 if let Some(image) = self
                     .swash_cache
                     .get_image(&mut self.font_system, physical_glyph.cache_key)
@@ -182,10 +154,10 @@ impl SoftBackend {
 
                             let real_y = run.line_y as i32 + physical_glyph.y + y + off_y as i32;
 
-                            if real_x >= 0 && real_y >= 0 {
-                                let get_x = begin_x + real_x as usize;
-                                let get_y = begin_y + real_y as usize;
-                                if get_x < pix_wid && get_y < pix_hei {
+                            let get_x = begin_x as i32 + real_x;
+                            let get_y = begin_y as i32 + real_y;
+                            if get_x < pix_wid && get_y < pix_hei {
+                                if get_x >= 0 && get_y >= 0 {
                                     //todo figure out this alpha situation
                                     //    let fg_alpha = if image.data[i] > 128 { 255 } else { 0 };
 
@@ -193,8 +165,12 @@ impl SoftBackend {
                                         [fg_color[0], fg_color[1], fg_color[2], image.data[i]],
                                         [bg_color[0], bg_color[1], bg_color[2], 255],
                                     );
-                                    println!("TRY PUT REAL");
-                                    self.rgb_pixmap.put_pixel(get_x, get_y, put_color);
+                                    println!("try put real");
+                                    self.rgb_pixmap.put_pixel(
+                                        get_x as usize,
+                                        get_y as usize,
+                                        put_color,
+                                    );
                                 }
                             }
 
