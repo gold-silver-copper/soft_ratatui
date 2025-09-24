@@ -14,8 +14,8 @@ use ratatui::layout::{Position, Rect, Size};
 use ratatui::style::Modifier;
 
 use cosmic_text::{
-    Attrs, AttrsList, CacheKeyFlags, Cursor, Family, LineEnding, Metrics, Shaping, SwashImage,
-    Weight, Wrap,
+    Attrs, AttrsList, CacheKeyFlags, Cursor, Family, LineEnding, Metrics, Shaping, SwashContent,
+    SwashImage, Weight, Wrap,
 };
 
 use cosmic_text::{Buffer as CosmicBuffer, FontSystem, SwashCache};
@@ -146,6 +146,12 @@ impl SoftBackend {
                     .swash_cache
                     .get_image(&mut self.font_system, physical_glyph.cache_key)
                 {
+                    match image.content {
+                        SwashContent::Mask => (),
+                        SwashContent::Color => ()
+                        SwashContent::SubpixelMask =>   todo!()
+                    }
+
                     let x = image.placement.left;
 
                     let y = -image.placement.top;
@@ -169,21 +175,6 @@ impl SoftBackend {
                                 let get_y = begin_y as i32 + real_y;
                                 if get_x < pix_wid && get_y < pix_hei {
                                     if get_x >= 0 && get_y >= 0 {
-                                        let alfik = if image.data[i] > 127 { 255 } else { 0 };
-                                        let alfik = if rat_cell
-                                            .symbol()
-                                            .chars()
-                                            .all(|c| is_unicode_block_drawing(c))
-                                        {
-                                            255
-                                        } else {
-                                            //     image.data[i]
-                                            0
-                                        };
-                                        let put_color = blend_rgba(
-                                            [fg_color[0], fg_color[1], fg_color[2], alfik],
-                                            [bg_color[0], bg_color[1], bg_color[2], 255],
-                                        );
                                         let put_color = if image.data[i] > 127 {
                                             [fg_color[0], fg_color[1], fg_color[2]]
                                         } else {
