@@ -7,7 +7,7 @@ pub fn rat_to_rgb(rat_col: &RatColor, is_a_fg: bool) -> [u8; 3] {
             if is_a_fg {
                 [204, 204, 255] // foreground reset color
             } else {
-                [15, 15, 112] // background reset color
+                [150, 15, 112] // background reset color
             }
         }
         RatColor::Black => [0, 0, 0],
