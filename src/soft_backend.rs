@@ -148,8 +148,8 @@ impl SoftBackend {
                 {
                     match image.content {
                         SwashContent::Mask => (),
-                        SwashContent::Color => ()
-                        SwashContent::SubpixelMask =>   todo!()
+                        SwashContent::Color => (),
+                        SwashContent::SubpixelMask => todo!(),
                     }
 
                     let x = image.placement.left;
