@@ -169,6 +169,7 @@ impl SoftBackend {
                                 let get_y = begin_y as i32 + real_y;
                                 if get_x < pix_wid && get_y < pix_hei {
                                     if get_x >= 0 && get_y >= 0 {
+                                        let alfik = if image.data[i] > 127 { 255 } else { 0 };
                                         let alfik = if rat_cell
                                             .symbol()
                                             .chars()
@@ -176,12 +177,18 @@ impl SoftBackend {
                                         {
                                             255
                                         } else {
-                                            image.data[i]
+                                            //     image.data[i]
+                                            0
                                         };
                                         let put_color = blend_rgba(
                                             [fg_color[0], fg_color[1], fg_color[2], alfik],
                                             [bg_color[0], bg_color[1], bg_color[2], 255],
                                         );
+                                        let put_color = if image.data[i] > 127 {
+                                            [fg_color[0], fg_color[1], fg_color[2]]
+                                        } else {
+                                            [bg_color[0], bg_color[1], bg_color[2]]
+                                        };
                                         self.rgb_pixmap.put_pixel(
                                             get_x as usize,
                                             get_y as usize,
