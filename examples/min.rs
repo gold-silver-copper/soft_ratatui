@@ -5,7 +5,8 @@ use ratatui::{Frame, Terminal};
 use soft_ratatui::SoftBackend;
 
 fn main() {
-    let backend = SoftBackend::new_with_system_fonts(100, 50, 16);
+    todo!("fix this font");
+    let backend = SoftBackend::new_with_font(100, 50, 16, &[0]);
     let mut terminal = Terminal::new(backend).unwrap();
     terminal.clear();
 
