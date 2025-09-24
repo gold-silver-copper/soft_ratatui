@@ -18,6 +18,8 @@ pub struct SoftBackend {
     pub buffer: Buffer,
     pub cursor: bool,
     pub pos: (u16, u16),
+    font: FontRef<'static>,
+    font_size: i32,
 
     pub char_width: usize,
     pub char_height: usize,
@@ -110,110 +112,46 @@ impl SoftBackend {
                 fg_color = bg_color.clone();
             }
         }
+        let pix_wid = self.get_pixmap_width();
+        let pix_hei = self.get_pixmap_height();
 
-        let mut attrs = Attrs::new().family(Family::Monospace);
-        // attrs = attrs.cache_key_flags(CacheKeyFlags::DISABLE_HINTING);
-        if rat_cell.modifier.contains(Modifier::BOLD) {
-            attrs = attrs.weight(Weight::BOLD);
-        }
-        if rat_cell.modifier.contains(Modifier::ITALIC) {
-            attrs = attrs.cache_key_flags(CacheKeyFlags::FAKE_ITALIC);
-        }
-        let mets = self.cosmic_buffer.metrics().font_size;
-        let line = self.cosmic_buffer.lines.get_mut(0).unwrap();
-        line.set_text(&text_symbol, LineEnding::None, AttrsList::new(&attrs));
+        let glyph: Glyph = self
+            .font
+            .glyph_id('█')
+            .with_scale_and_position(self.font_size as f32, point(0.0, 0.0));
 
-        line.layout(&mut self.font_system, mets, None, Wrap::None, None, 0);
-        let pix_wid = self.get_pixmap_width() as i32;
-        let pix_hei = self.get_pixmap_height() as i32;
-
-        for run in self.cosmic_buffer.layout_runs() {
-            for glyph in run.glyphs.iter() {
-                let physical_glyph = glyph.physical((0., 0.), 1.0);
-
-                //TODO : Handle Content::Color (emojis?)
-
-                if let Some(image) = self
-                    .swash_cache
-                    .get_image(&mut self.font_system, physical_glyph.cache_key)
-                {
-                    let x = image.placement.left;
-
-                    let y = -image.placement.top;
-                    let mut i = 0;
-
-                    for off_y in 0..image.placement.height {
-                        for off_x in 0..image.placement.width {
-                            {
-                                let mut real_x = physical_glyph.x + x + off_x as i32;
-
-                                let mut real_y =
-                                    run.line_height as i32 + physical_glyph.y + y + off_y as i32;
-
-                                real_x = real_x.max(0);
-                                real_y = real_y.max(0);
-
-                                /*  let phys_x = physical_glyph.x.max(0);
-                                let phys_y = physical_glyph.y.max(0); */
-
-                                let get_x = begin_x as i32 + real_x;
-                                let get_y = begin_y as i32 + real_y;
-                                if get_x < pix_wid && get_y < pix_hei {
-                                    if get_x >= 0 && get_y >= 0 {
-                                        let put_color = if image.data[i] > 127 {
-                                            [fg_color[0], fg_color[1], fg_color[2]]
-                                        } else {
-                                            [bg_color[0], bg_color[1], bg_color[2]]
-                                        };
-                                        self.rgb_pixmap.put_pixel(
-                                            get_x as usize,
-                                            get_y as usize,
-                                            put_color,
-                                        );
-                                    }
-                                }
-
-                                i += 1;
-                            }
-                        }
+        if let Some(image) = self.font.outline_glyph(glyph) {
+            image.draw(|x, y, c| {
+                let get_x = begin_x + x as usize;
+                let get_y = begin_y + y as usize;
+                if get_x < pix_wid && get_y < pix_hei {
+                    if get_x >= 0 && get_y >= 0 {
+                        self.rgb_pixmap.put_pixel(
+                            x as usize,
+                            y as usize,
+                            [fg_color[0], fg_color[1], fg_color[2]],
+                        );
                     }
                 }
-            }
+            });
         }
     }
 
     /// Sets a new font size for the terminal image.
     /// This will recreate the pixmap and do a full redraw. Do not run every frame.
     pub fn set_font_size(&mut self, font_size: i32) {
-        let metrics = Metrics::new(font_size as f32, font_size as f32);
-        self.cosmic_buffer
-            .set_metrics(&mut self.font_system, metrics);
-        let mut buffer = CosmicBuffer::new(&mut self.font_system, metrics);
-        let mut buffer = buffer.borrow_with(&mut self.font_system);
-        //"█\n█",
-        buffer.set_text(
-            "█\n█",
-            &Attrs::new().family(Family::Monospace),
-            Shaping::Advanced,
-        );
-        buffer.shape_until_scroll(true);
-        let boop = buffer.layout_runs().next().unwrap();
-        let physical_glyph = boop.glyphs.iter().next().unwrap().physical((0., 0.), 1.0);
+        // Get a glyph for 'q' with a scale & position.
+        let glyph: Glyph = self
+            .font
+            .glyph_id('█')
+            .with_scale_and_position(font_size as f32, point(0.0, 0.0));
+        let block = self
+            .font
+            .outline_glyph(glyph)
+            .expect("FONT MUST HAVE BLOCK DRAWING CHARACTER ████");
 
-        let wa = self
-            .swash_cache
-            .get_image(&mut self.font_system, physical_glyph.cache_key)
-            .clone()
-            .unwrap()
-            .placement;
-
-        let char_width = wa.width as usize;
-        let char_height = wa.height as usize;
-        self.cosmic_buffer.set_size(
-            &mut self.font_system,
-            Some(char_width as f32),
-            Some(char_height as f32),
-        );
+        let char_width = block.px_bounds().width().round() as usize;
+        let char_height = block.px_bounds().height().round() as usize;
         self.char_width = char_width;
         self.char_height = char_height;
         self.rgb_pixmap = RgbPixmap::new(
@@ -239,19 +177,34 @@ impl SoftBackend {
     /// let backend = SoftBackend::new_with_font(20, 20, 16, FONT_DATA);
     /// ```
 
-    pub fn new_with_font(width: u16, height: u16, font_size: i32, font_data: &[u8]) -> Self {
-        let font = FontRef::try_from_slice(font_data).expect("COULD NOT LOAD FONT");
+    pub fn new_with_font(
+        width: u16,
+        height: u16,
+        font_size: i32,
+        font_data: &'static [u8],
+    ) -> Self {
+        let font: FontRef<'static> =
+            FontRef::try_from_slice(font_data).expect("COULD NOT LOAD FONT");
 
         // Get a glyph for 'q' with a scale & position.
-        let q_glyph: Glyph = font
+        let glyph: Glyph = font
             .glyph_id('█')
             .with_scale_and_position(font_size as f32, point(0.0, 0.0));
+        let block = font
+            .outline_glyph(glyph)
+            .expect("FONT MUST HAVE BLOCK DRAWING CHARACTER ████");
+
+        let char_width = block.px_bounds().width().round() as usize;
+        let char_height = block.px_bounds().height().round() as usize;
+
         let rgb_pixmap = RgbPixmap::new(char_width * width as usize, char_height * height as usize);
 
         let mut return_struct = Self {
             buffer: Buffer::empty(Rect::new(0, 0, width, height)),
             cursor: false,
             pos: (0, 0),
+            font: font,
+            font_size: font_size,
 
             rgb_pixmap,
 
