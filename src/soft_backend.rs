@@ -14,7 +14,8 @@ use ratatui::layout::{Position, Rect, Size};
 use ratatui::style::Modifier;
 
 use cosmic_text::{
-    Attrs, AttrsList, CacheKeyFlags, Cursor, Family, LineEnding, Metrics, Shaping, Weight, Wrap,
+    Attrs, AttrsList, CacheKeyFlags, Cursor, Family, LineEnding, Metrics, Shaping, SwashImage,
+    Weight, Wrap,
 };
 
 use cosmic_text::{Buffer as CosmicBuffer, FontSystem, SwashCache};
@@ -153,29 +154,34 @@ impl SoftBackend {
                     for off_y in 0..image.placement.height {
                         for off_x in 0..image.placement.width {
                             {
-                                let real_x = physical_glyph.x + x + off_x as i32;
+                                let mut real_x = physical_glyph.x + x + off_x as i32;
 
-                                let real_y =
+                                let mut real_y =
                                     run.line_height as i32 + physical_glyph.y + y + off_y as i32;
+
+                                real_x = real_x.max(0);
+                                real_y = real_y.max(0);
+
+                                /*  let phys_x = physical_glyph.x.max(0);
+                                let phys_y = physical_glyph.y.max(0); */
 
                                 let get_x = begin_x as i32 + real_x;
                                 let get_y = begin_y as i32 + real_y;
                                 if get_x < pix_wid && get_y < pix_hei {
                                     if get_x >= 0 && get_y >= 0 {
-                                        //todo figure out this alpha situation
-                                        let fg_alpha = if image.data[i] > 10 { 255 } else { 1 };
-
-                                        let put_color = if image.data[i] > 10 {
-                                            [fg_color[0], fg_color[1], fg_color[2]]
+                                        let alfik = if rat_cell
+                                            .symbol()
+                                            .chars()
+                                            .all(|c| is_unicode_block_drawing(c))
+                                        {
+                                            255
                                         } else {
-                                            [bg_color[0], bg_color[1], bg_color[2]]
+                                            image.data[i]
                                         };
-                                        /*
                                         let put_color = blend_rgba(
-                                            [fg_color[0], fg_color[1], fg_color[2], fg_alpha],
+                                            [fg_color[0], fg_color[1], fg_color[2], alfik],
                                             [bg_color[0], bg_color[1], bg_color[2], 255],
-                                        ); */
-                                        //  println!("try put real");
+                                        );
                                         self.rgb_pixmap.put_pixel(
                                             get_x as usize,
                                             get_y as usize,
@@ -273,7 +279,6 @@ impl SoftBackend {
         buffer.shape_until_scroll(true);
 
         let runczik = buffer.layout_runs().next().unwrap();
-        let line_offset = runczik.line_height - runczik.line_y;
 
         println!("layout run {:#?}", runczik);
 
@@ -504,4 +509,19 @@ impl Backend for SoftBackend {
     fn flush(&mut self) -> io::Result<()> {
         Ok(())
     }
+}
+
+fn is_unicode_block_drawing(c: char) -> bool {
+    let code = c as u32;
+
+    // Block Elements: U+2580 - U+259F
+    (0x2580..=0x259F).contains(&code) ||
+    // Box Drawing: U+2500 - U+257F
+    (0x2500..=0x257F).contains(&code) ||
+    // Geometric Shapes: U+25A0 - U+25FF
+    (0x25A0..=0x25FF).contains(&code) ||
+    // Miscellaneous Symbols and Arrows: U+2B00 - U+2BFF
+    (0x2B00..=0x2BFF).contains(&code) ||
+    // Supplemental Arrows-C: U+1F800 - U+1F8FF
+    (0x1F800..=0x1F8FF).contains(&code)
 }
