@@ -159,10 +159,10 @@ impl SoftBackend {
                             if get_x < pix_wid && get_y < pix_hei {
                                 if get_x >= 0 && get_y >= 0 {
                                     //todo figure out this alpha situation
-                                    //    let fg_alpha = if image.data[i] > 128 { 255 } else { 0 };
+                                    let fg_alpha = if image.data[i] > 127 { 255 } else { 0 };
 
                                     let put_color = blend_rgba(
-                                        [fg_color[0], fg_color[1], fg_color[2], image.data[i]],
+                                        [fg_color[0], fg_color[1], fg_color[2], fg_alpha],
                                         [bg_color[0], bg_color[1], bg_color[2], 255],
                                     );
                                     println!("try put real");
