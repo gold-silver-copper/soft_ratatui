@@ -87,10 +87,13 @@ impl SoftBackend {
 
         let begin_x = xik as usize * self.char_width;
         let begin_y = yik as usize * self.char_height;
+
         for y in 0..self.char_height {
-            for x in 0..self.char_width {
-                self.rgb_pixmap
-                    .put_pixel(begin_x + x, begin_y + y, bg_color);
+            let y_pos = begin_y + y;
+            let mut x_pos = begin_x;
+            for _ in 0..self.char_width {
+                self.rgb_pixmap.put_pixel(x_pos, y_pos, bg_color);
+                x_pos += 1;
             }
         }
 
@@ -128,7 +131,7 @@ impl SoftBackend {
         let line = self.cosmic_buffer.lines.get_mut(0).unwrap();
         line.set_text(&text_symbol, LineEnding::None, AttrsList::new(&attrs));
 
-        line.layout(&mut self.font_system, mets, None, Wrap::None, None, 1);
+        line.layout(&mut self.font_system, mets, None, Wrap::None, None, 0);
         let pix_wid = self.get_pixmap_width() as i32;
         let pix_hei = self.get_pixmap_height() as i32;
 
@@ -147,31 +150,13 @@ impl SoftBackend {
                     let y = -image.placement.top;
                     let mut i = 0;
 
-                    let width_dif = self.char_width - image.placement.width as usize;
-                    let height_dif = self.char_height - image.placement.height as usize;
-
-                    if rat_cell.symbol() != " "
-                        && self.char_height > image.placement.height as usize
-                        && self.char_width > image.placement.width as usize
-                    {
-                        if height_dif > 0 {
-                            println!("HEIGHT DIF {:#?}", height_dif)
-                        }
-                        if width_dif > 0 {
-                            println!("width DIF {:#?}", width_dif)
-                        }
-                    }
-
-                    let wide_maxik = u32::max(self.char_width as u32, image.placement.width);
-                    let height_maxik = u32::max(self.char_height as u32, image.placement.height);
-
                     for off_y in 0..image.placement.height {
                         for off_x in 0..image.placement.width {
                             {
                                 let real_x = physical_glyph.x + x + off_x as i32;
 
                                 let real_y =
-                                    run.line_y as i32 + physical_glyph.y + y + off_y as i32;
+                                    run.line_height as i32 + physical_glyph.y + y + off_y as i32;
 
                                 let get_x = begin_x as i32 + real_x;
                                 let get_y = begin_y as i32 + real_y;
