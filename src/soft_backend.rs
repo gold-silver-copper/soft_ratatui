@@ -162,10 +162,16 @@ impl SoftBackend {
                                         //todo figure out this alpha situation
                                         let fg_alpha = if image.data[i] > 127 { 255 } else { 0 };
 
+                                        let put_color = if image.data[i] > 0 {
+                                            [fg_color[0], fg_color[1], fg_color[2]]
+                                        } else {
+                                            [bg_color[0], bg_color[1], bg_color[2]]
+                                        };
+                                        /*
                                         let put_color = blend_rgba(
                                             [fg_color[0], fg_color[1], fg_color[2], fg_alpha],
                                             [bg_color[0], bg_color[1], bg_color[2], 255],
-                                        );
+                                        ); */
                                         //  println!("try put real");
                                         self.rgb_pixmap.put_pixel(
                                             get_x as usize,
