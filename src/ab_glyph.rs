@@ -2,7 +2,7 @@
 //! It is used in the integration tests to verify the correctness of the library.
 
 use std::collections::HashSet;
-use std::io;
+use std::{char, io};
 
 use crate::colors::*;
 use crate::pixmap::RgbPixmap;
@@ -114,24 +114,23 @@ impl SoftBackend {
         }
         let pix_wid = self.get_pixmap_width();
         let pix_hei = self.get_pixmap_height();
+        let char = rat_cell.symbol().chars().next().unwrap();
 
         let glyph: Glyph = self
             .font
-            .glyph_id('█')
+            .glyph_id(char)
             .with_scale_and_position(self.font_size as f32, point(0.0, 0.0));
 
         if let Some(image) = self.font.outline_glyph(glyph) {
             image.draw(|x, y, c| {
                 let get_x = begin_x + x as usize;
                 let get_y = begin_y + y as usize;
-                if get_x < pix_wid && get_y < pix_hei {
-                    if get_x >= 0 && get_y >= 0 {
-                        self.rgb_pixmap.put_pixel(
-                            x as usize,
-                            y as usize,
-                            [fg_color[0], fg_color[1], fg_color[2]],
-                        );
-                    }
+                if get_x < pix_wid && get_y < pix_hei && c > 0.1 {
+                    self.rgb_pixmap.put_pixel(
+                        get_x,
+                        get_y,
+                        [fg_color[0], fg_color[1], fg_color[2]],
+                    );
                 }
             });
         }
