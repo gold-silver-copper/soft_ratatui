@@ -147,6 +147,24 @@ impl SoftBackend {
                     let y = -image.placement.top;
                     let mut i = 0;
 
+                    let width_dif = self.char_width - image.placement.width as usize;
+                    let height_dif = self.char_height - image.placement.height as usize;
+
+                    if rat_cell.symbol() != " "
+                        && self.char_height > image.placement.height as usize
+                        && self.char_width > image.placement.width as usize
+                    {
+                        if height_dif > 0 {
+                            println!("HEIGHT DIF {:#?}", height_dif)
+                        }
+                        if width_dif > 0 {
+                            println!("width DIF {:#?}", width_dif)
+                        }
+                    }
+
+                    let wide_maxik = u32::max(self.char_width as u32, image.placement.width);
+                    let height_maxik = u32::max(self.char_height as u32, image.placement.height);
+
                     for off_y in 0..image.placement.height {
                         for off_x in 0..image.placement.width {
                             {
@@ -160,9 +178,9 @@ impl SoftBackend {
                                 if get_x < pix_wid && get_y < pix_hei {
                                     if get_x >= 0 && get_y >= 0 {
                                         //todo figure out this alpha situation
-                                        let fg_alpha = if image.data[i] > 127 { 255 } else { 0 };
+                                        let fg_alpha = if image.data[i] > 10 { 255 } else { 1 };
 
-                                        let put_color = if image.data[i] > 0 {
+                                        let put_color = if image.data[i] > 10 {
                                             [fg_color[0], fg_color[1], fg_color[2]]
                                         } else {
                                             [bg_color[0], bg_color[1], bg_color[2]]
