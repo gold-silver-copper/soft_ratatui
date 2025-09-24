@@ -117,6 +117,7 @@ impl SoftBackend {
         }
 
         let mut attrs = Attrs::new().family(Family::Monospace);
+        attrs = attrs.cache_key_flags(CacheKeyFlags::DISABLE_HINTING);
         if rat_cell.modifier.contains(Modifier::BOLD) {
             attrs = attrs.weight(Weight::BOLD);
         }
@@ -155,8 +156,11 @@ impl SoftBackend {
                                 let get_x = begin_x + real_x as usize;
                                 let get_y = begin_y + real_y as usize;
 
+                                //todo figure out this alpha situation
+                                let fg_alpha = if image.data[i] > 128 { 255 } else { 0 };
+
                                 let put_color = blend_rgba(
-                                    [fg_color[0], fg_color[1], fg_color[2], image.data[i]],
+                                    [fg_color[0], fg_color[1], fg_color[2], fg_alpha],
                                     [bg_color[0], bg_color[1], bg_color[2], 255],
                                 );
                                 self.rgb_pixmap.put_pixel(get_x, get_y, put_color);
@@ -183,6 +187,7 @@ impl SoftBackend {
             "█\n█",
             &Attrs::new().family(Family::Monospace),
             Shaping::Advanced,
+            None, //todo figure out allignment
         );
         buffer.shape_until_scroll(true);
         let boop = buffer.layout_runs().next().unwrap();
@@ -245,6 +250,7 @@ impl SoftBackend {
             "██",
             &Attrs::new().family(Family::Monospace),
             Shaping::Advanced,
+            None, //todo figure out allignment
         );
         buffer.shape_until_scroll(true);
         let boop = buffer.layout_runs().next().unwrap();
@@ -317,6 +323,7 @@ impl SoftBackend {
             "█\n█",
             &Attrs::new().family(Family::Monospace),
             Shaping::Advanced,
+            None, //todo figure out allignment
         );
         buffer.shape_until_scroll(true);
         let boop = buffer.layout_runs().next().unwrap();
