@@ -14,6 +14,7 @@ repository = "https://github.com/gold-silver-copper/soft_ratatui"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+ab_glyph = "0.2.31"
 cosmic-text = { version = "^0.14.2", features = ["shape-run-cache"] }
 
 ratatui = { version = "0.29.0", default-features = false }
