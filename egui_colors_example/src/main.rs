@@ -6,7 +6,7 @@ use soft_ratatui::SoftBackend;
 use std::time::{Duration, Instant};
 
 use color_eyre::Result;
-use palette::{convert::FromColorUnclamped, Okhsv, Srgb};
+use palette::{Okhsv, Srgb, convert::FromColorUnclamped};
 use ratatui::prelude::Stylize;
 use ratatui::{
     buffer::Buffer,
@@ -43,7 +43,7 @@ struct MyApp {
 
 impl MyApp {
     fn new() -> Self {
-        let backend = SoftBackend::new_with_system_fonts(100, 50, 12);
+        let backend = SoftBackend::new_with_system_fonts(150, 100, 12);
         let mut terminal = Terminal::new(backend).unwrap();
         let appik = App::default();
 
