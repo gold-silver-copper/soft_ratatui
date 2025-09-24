@@ -7,34 +7,25 @@ use std::io;
 use crate::colors::*;
 use crate::pixmap::RgbPixmap;
 
-use cosmic_text::fontdb::Database;
+use ab_glyph::{Font, FontRef, Glyph, point};
 use ratatui::backend::{Backend, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
 use ratatui::style::Modifier;
-
-use cosmic_text::{
-    Attrs, AttrsList, CacheKeyFlags, Cursor, Family, LineEnding, Metrics, Shaping, SwashContent,
-    SwashImage, Weight, Wrap,
-};
-
-use cosmic_text::{Buffer as CosmicBuffer, FontSystem, SwashCache};
 
 /// SoftBackend is a Software rendering backend for Ratatui. It stores the generated image internally as rgb_pixmap.
 pub struct SoftBackend {
     pub buffer: Buffer,
     pub cursor: bool,
     pub pos: (u16, u16),
-    font_system: FontSystem,
 
-    cosmic_buffer: CosmicBuffer,
     pub char_width: usize,
     pub char_height: usize,
 
     pub blink_counter: u16,
     pub blinking_fast: bool,
     pub blinking_slow: bool,
-    swash_cache: SwashCache,
+
     pub rgb_pixmap: RgbPixmap,
     always_redraw_list: HashSet<(u16, u16)>,
 }
@@ -249,62 +240,21 @@ impl SoftBackend {
     /// ```
 
     pub fn new_with_font(width: u16, height: u16, font_size: i32, font_data: &[u8]) -> Self {
-        let mut swash_cache = SwashCache::new();
+        let font = FontRef::try_from_slice(font_data).expect("COULD NOT LOAD FONT");
 
-        let mut db = Database::new();
-        // "assets/iosevka.ttf"
-        db.load_font_data(font_data.to_vec());
-        //  db.set_monospace_family("Fira Mono");
-
-        let mut font_system = FontSystem::new_with_locale_and_db("English".to_string(), db);
-        let metrics = Metrics::new(font_size as f32, font_size as f32);
-
-        let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
-        let mut buffer = buffer.borrow_with(&mut font_system);
-        buffer.set_text(
-            "██\n██",
-            &Attrs::new().family(Family::Monospace),
-            Shaping::Advanced,
-        );
-        //     buffer.shape_until_cursor(Cursor::new(2, 0), true);
-        buffer.shape_until_scroll(true);
-
-        let runczik = buffer.layout_runs().next().unwrap();
-
-        let physical_glyph = runczik
-            .glyphs
-            .iter()
-            .next()
-            .unwrap()
-            .physical((0., 0.), 1.0);
-
-        let wa = swash_cache
-            .get_image(&mut font_system, physical_glyph.cache_key)
-            .clone()
-            .unwrap()
-            .placement;
-
-        let mut cosmic_buffer = CosmicBuffer::new(&mut font_system, metrics);
-
-        let char_width = wa.width as usize;
-
-        let char_height = wa.height as usize; //- line_offset.ceil() as usize;
-        cosmic_buffer.set_size(
-            &mut font_system,
-            Some(char_width as f32),
-            Some(char_height as f32),
-        );
-
+        // Get a glyph for 'q' with a scale & position.
+        let q_glyph: Glyph = font
+            .glyph_id('█')
+            .with_scale_and_position(font_size as f32, point(0.0, 0.0));
         let rgb_pixmap = RgbPixmap::new(char_width * width as usize, char_height * height as usize);
 
         let mut return_struct = Self {
             buffer: Buffer::empty(Rect::new(0, 0, width, height)),
             cursor: false,
             pos: (0, 0),
-            font_system,
 
             rgb_pixmap,
-            cosmic_buffer,
+
             char_width,
             char_height,
 
@@ -312,79 +262,6 @@ impl SoftBackend {
             blinking_fast: false,
             blinking_slow: false,
             always_redraw_list: HashSet::new(),
-
-            swash_cache,
-        };
-        _ = return_struct.clear();
-        return_struct
-    }
-
-    /// Creates a new Software Backend using provided system fonts.
-    ///
-    /// (new-with-system-fonts width height font-size) -> SoftBackend
-    ///
-    /// * width      : usize - Width of the terminal in cells
-    /// * height     : usize - Height of the terminal in cells
-    /// * font-size  : u32   - Font size in pixels
-    ///
-    /// ⚠️ Not supported on WASM/Web targets.
-    ///
-    /// # Examples
-    /// ```rust
-    /// let backend = SoftBackend::new_with_system_fonts(20, 20, 16);
-    /// ```
-    pub fn new_with_system_fonts(width: u16, height: u16, font_size: i32) -> Self {
-        let mut swash_cache = SwashCache::new();
-
-        let mut font_system = FontSystem::new();
-        let metrics = Metrics::new(font_size as f32, font_size as f32);
-
-        let mut buffer = CosmicBuffer::new(&mut font_system, metrics);
-        let mut buffer = buffer.borrow_with(&mut font_system);
-        buffer.set_text(
-            "█\n█",
-            &Attrs::new().family(Family::Monospace),
-            Shaping::Advanced,
-        );
-        buffer.shape_until_scroll(true);
-        let boop = buffer.layout_runs().next().unwrap();
-        let physical_glyph = boop.glyphs.iter().next().unwrap().physical((0., 0.), 1.0);
-
-        let wa = swash_cache
-            .get_image(&mut font_system, physical_glyph.cache_key)
-            .clone()
-            .unwrap()
-            .placement;
-
-        let mut cosmic_buffer = CosmicBuffer::new(&mut font_system, metrics);
-
-        let char_width = wa.width as usize;
-        let char_height = wa.height as usize;
-        cosmic_buffer.set_size(
-            &mut font_system,
-            Some(char_width as f32),
-            Some(char_height as f32),
-        );
-
-        let rgb_pixmap = RgbPixmap::new(char_width * width as usize, char_height * height as usize);
-
-        let mut return_struct = Self {
-            buffer: Buffer::empty(Rect::new(0, 0, width, height)),
-            cursor: false,
-            pos: (0, 0),
-            font_system,
-
-            rgb_pixmap,
-            cosmic_buffer,
-            char_width,
-            char_height,
-
-            blink_counter: 0,
-            blinking_fast: false,
-            blinking_slow: false,
-            always_redraw_list: HashSet::new(),
-
-            swash_cache,
         };
         _ = return_struct.clear();
         return_struct
