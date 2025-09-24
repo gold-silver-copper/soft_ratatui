@@ -147,50 +147,95 @@ impl SoftBackend {
                     .get_image(&mut self.font_system, physical_glyph.cache_key)
                 {
                     match image.content {
-                        SwashContent::Mask => (),
-                        SwashContent::Color => (),
-                        SwashContent::SubpixelMask => todo!(),
-                    }
+                        SwashContent::Mask => {
+                            let x = image.placement.left;
 
-                    let x = image.placement.left;
+                            let y = -image.placement.top;
+                            let mut i = 0;
 
-                    let y = -image.placement.top;
-                    let mut i = 0;
+                            for off_y in 0..image.placement.height {
+                                for off_x in 0..image.placement.width {
+                                    {
+                                        let mut real_x = physical_glyph.x + x + off_x as i32;
 
-                    for off_y in 0..image.placement.height {
-                        for off_x in 0..image.placement.width {
-                            {
-                                let mut real_x = physical_glyph.x + x + off_x as i32;
+                                        let mut real_y = run.line_height as i32
+                                            + physical_glyph.y
+                                            + y
+                                            + off_y as i32;
 
-                                let mut real_y =
-                                    run.line_height as i32 + physical_glyph.y + y + off_y as i32;
+                                        real_x = real_x.max(0);
+                                        real_y = real_y.max(0);
 
-                                real_x = real_x.max(0);
-                                real_y = real_y.max(0);
+                                        /*  let phys_x = physical_glyph.x.max(0);
+                                        let phys_y = physical_glyph.y.max(0); */
 
-                                /*  let phys_x = physical_glyph.x.max(0);
-                                let phys_y = physical_glyph.y.max(0); */
+                                        let get_x = begin_x as i32 + real_x;
+                                        let get_y = begin_y as i32 + real_y;
+                                        if get_x < pix_wid && get_y < pix_hei {
+                                            if get_x >= 0 && get_y >= 0 {
+                                                let put_color = if image.data[i] > 127 {
+                                                    [fg_color[0], fg_color[1], fg_color[2]]
+                                                } else {
+                                                    [bg_color[0], bg_color[1], bg_color[2]]
+                                                };
+                                                self.rgb_pixmap.put_pixel(
+                                                    get_x as usize,
+                                                    get_y as usize,
+                                                    put_color,
+                                                );
+                                            }
+                                        }
 
-                                let get_x = begin_x as i32 + real_x;
-                                let get_y = begin_y as i32 + real_y;
-                                if get_x < pix_wid && get_y < pix_hei {
-                                    if get_x >= 0 && get_y >= 0 {
-                                        let put_color = if image.data[i] > 127 {
-                                            [fg_color[0], fg_color[1], fg_color[2]]
-                                        } else {
-                                            [bg_color[0], bg_color[1], bg_color[2]]
-                                        };
-                                        self.rgb_pixmap.put_pixel(
-                                            get_x as usize,
-                                            get_y as usize,
-                                            put_color,
-                                        );
+                                        i += 1;
                                     }
                                 }
-
-                                i += 1;
                             }
                         }
+                        SwashContent::Color => {
+                            // println!("USINGCOLOR");
+                            let x = image.placement.left;
+
+                            let y = -image.placement.top;
+                            let mut i = 0;
+
+                            for off_y in 0..image.placement.height {
+                                for off_x in 0..image.placement.width {
+                                    {
+                                        let mut real_x = physical_glyph.x + x + off_x as i32;
+
+                                        let mut real_y = run.line_height as i32
+                                            + physical_glyph.y
+                                            + y
+                                            + off_y as i32;
+
+                                        real_x = real_x.max(0);
+                                        real_y = real_y.max(0);
+
+                                        /*  let phys_x = physical_glyph.x.max(0);
+                                        let phys_y = physical_glyph.y.max(0); */
+
+                                        let get_x = begin_x as i32 + real_x;
+                                        let get_y = begin_y as i32 + real_y;
+                                        if get_x < pix_wid && get_y < pix_hei {
+                                            if get_x >= 0 && get_y >= 0 {
+                                                self.rgb_pixmap.put_pixel(
+                                                    get_x as usize,
+                                                    get_y as usize,
+                                                    [
+                                                        image.data[i],
+                                                        image.data[i + 1],
+                                                        image.data[i + 2],
+                                                    ],
+                                                );
+                                            }
+                                        }
+
+                                        i += 4;
+                                    }
+                                }
+                            }
+                        }
+                        SwashContent::SubpixelMask => todo!(),
                     }
                 }
             }
@@ -221,7 +266,6 @@ impl SoftBackend {
             .clone()
             .unwrap()
             .placement;
-        // println!("Glyph height (bbox): {:#?}", wa);
 
         let char_width = wa.width as usize;
         let char_height = wa.height as usize;
@@ -278,11 +322,6 @@ impl SoftBackend {
 
         let runczik = buffer.layout_runs().next().unwrap();
 
-        println!("layout run {:#?}", runczik);
-
-        //   println!("buffer run {:#?}", buffer);
-        //    println!("physical run {:#?}", runczik.physical());
-
         let physical_glyph = runczik
             .glyphs
             .iter()
@@ -295,10 +334,6 @@ impl SoftBackend {
             .clone()
             .unwrap()
             .placement;
-        // println!("Glyph height (bbox): {:#?}", wa);
-        //
-
-        println!("graphic run{:#?}", wa);
 
         let mut cosmic_buffer = CosmicBuffer::new(&mut font_system, metrics);
 
@@ -371,7 +406,6 @@ impl SoftBackend {
             .clone()
             .unwrap()
             .placement;
-        //  println!("Glyph height (bbox): {:#?}", wa);
 
         let mut cosmic_buffer = CosmicBuffer::new(&mut font_system, metrics);
 
@@ -450,7 +484,6 @@ impl Backend for SoftBackend {
         for (x, y, c) in content {
             self.buffer[(x, y)] = c.clone();
             self.draw_cell(x, y);
-            //   println!("{c:#?}");
         }
         for (x, y) in self.always_redraw_list.clone().iter() {
             self.draw_cell(*x, *y);
