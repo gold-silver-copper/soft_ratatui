@@ -18,7 +18,7 @@ use ratatui::{
 
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([1500.0, 1000.0]),
+        viewport: egui::ViewportBuilder::default().with_inner_size([1500.0, 3000.0]),
         ..Default::default()
     };
 
@@ -43,7 +43,7 @@ struct MyApp {
 
 impl MyApp {
     fn new() -> Self {
-        let backend = SoftBackend::new_with_font(150, 100, "");
+        let backend = SoftBackend::new_with_font(100, 300, "");
         let mut terminal = Terminal::new(backend).unwrap();
         let appik = App::default();
 
