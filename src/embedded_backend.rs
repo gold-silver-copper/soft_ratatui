@@ -11,13 +11,13 @@ use embedded_graphics::Drawable;
 
 use embedded_graphics::mono_font::{MonoFont, MonoTextStyle, MonoTextStyleBuilder};
 use embedded_graphics::pixelcolor::Rgb888;
-
 use embedded_graphics::prelude::{Dimensions, Point, RgbColor};
 use embedded_graphics::text::Text;
 use embedded_graphics_unicodefonts::MONO_6X10;
 use ratatui::backend::{Backend, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
+use ratatui::style;
 use ratatui::style::Modifier;
 
 /// SoftBackend is a Software rendering backend for Ratatui. It stores the generated image internally as rgb_pixmap.
@@ -26,7 +26,11 @@ pub struct SoftBackend {
     pub cursor: bool,
     pub pos: (u16, u16),
 
-    font: MonoTextStyle<'static, Rgb888>,
+    pub font_regular: MonoFont<'static>,
+    /// Bold font.
+    pub font_bold: Option<MonoFont<'static>>,
+    /// Italic font.
+    pub font_italic: Option<MonoFont<'static>>,
 
     pub char_width: usize,
     pub char_height: usize,
@@ -37,16 +41,6 @@ pub struct SoftBackend {
 
     pub rgb_pixmap: RgbPixmap,
     always_redraw_list: HashSet<(u16, u16)>,
-}
-
-fn add_strikeout(text: &String) -> String {
-    let strike = '\u{0336}';
-    text.chars().flat_map(|c| [c, strike]).collect()
-}
-
-fn add_underline(text: &String) -> String {
-    let strike = '\u{0332}';
-    text.chars().flat_map(|c| [c, strike]).collect()
 }
 
 impl SoftBackend {
@@ -70,65 +64,68 @@ impl SoftBackend {
     fn draw_cell(&mut self, xik: u16, yik: u16) {
         let rat_cell = self.buffer.cell(Position::new(xik, yik)).unwrap();
 
-        let mut rat_fg = rat_cell.fg;
-        let rat_bg = rat_cell.bg;
-        if rat_cell.modifier.contains(Modifier::HIDDEN) {
-            rat_fg = rat_bg;
+        let mut rat_fg = rat_to_rgb(&rat_cell.fg, true);
+        let mut rat_bg = rat_to_rgb(&rat_cell.bg, false);
+
+        let mut style_builder = MonoTextStyleBuilder::new()
+            .font(&self.font_regular)
+            .text_color(Rgb888::WHITE)
+            .background_color(Rgb888::BLACK);
+
+        for modifier in rat_cell.modifier.iter() {
+            style_builder = match modifier {
+                style::Modifier::BOLD => match &self.font_bold {
+                    None => style_builder.font(&self.font_regular),
+                    Some(font) => style_builder.font(font),
+                },
+                style::Modifier::DIM => {
+                    (rat_fg, rat_bg) = (dim_rgb(rat_fg), dim_rgb(rat_bg));
+                    style_builder
+                } // TODO
+                style::Modifier::ITALIC => match &self.font_italic {
+                    None => style_builder.font(&self.font_regular),
+                    Some(font) => style_builder.font(font),
+                },
+                style::Modifier::UNDERLINED => style_builder.underline(),
+                style::Modifier::SLOW_BLINK => {
+                    self.always_redraw_list.insert((xik, yik));
+                    if self.blinking_slow {
+                        rat_fg = rat_bg;
+                    }
+                    style_builder
+                } // TODO
+                style::Modifier::RAPID_BLINK => {
+                    self.always_redraw_list.insert((xik, yik));
+                    if self.blinking_fast {
+                        rat_fg = rat_bg;
+                    }
+                    style_builder
+                } // TODO
+                style::Modifier::REVERSED => {
+                    (rat_bg, rat_fg) = (rat_fg, rat_bg);
+
+                    style_builder
+                } // TODO
+                style::Modifier::HIDDEN => {
+                    rat_fg = rat_bg;
+
+                    style_builder
+                } // TODO
+                style::Modifier::CROSSED_OUT => style_builder.strikethrough(),
+                _ => style_builder,
+            }
         }
 
-        let (mut fg_color, mut bg_color) = if rat_cell.modifier.contains(Modifier::REVERSED) {
-            (rat_to_rgb(&rat_bg, false), rat_to_rgb(&rat_fg, true))
-        } else {
-            (rat_to_rgb(&rat_fg, true), rat_to_rgb(&rat_bg, false))
-        };
-
-        if rat_cell.modifier.contains(Modifier::DIM) {
-            (fg_color, bg_color) = (dim_rgb(fg_color), dim_rgb(bg_color));
-        };
+        style_builder = style_builder
+            .text_color(Rgb888::new(rat_fg[0], rat_fg[1], rat_fg[2]))
+            .background_color(Rgb888::new(rat_bg[0], rat_bg[1], rat_bg[2]));
 
         let begin_x = xik as usize * self.char_width;
         let begin_y = yik as usize * self.char_height;
-
-        /*  for y in 0..self.char_height {
-            let y_pos = begin_y + y;
-            let mut x_pos = begin_x;
-            for _ in 0..self.char_width {
-                self.rgb_pixmap.put_pixel(x_pos, y_pos, bg_color);
-                x_pos += 1;
-            }
-        } */
-
-        let mut text_symbol: String = rat_cell.symbol().to_string();
-
-        if rat_cell.modifier.contains(Modifier::CROSSED_OUT) {
-            text_symbol = add_strikeout(&text_symbol);
-        }
-        if rat_cell.modifier.contains(Modifier::UNDERLINED) {
-            text_symbol = add_underline(&text_symbol);
-        }
-
-        if rat_cell.modifier.contains(Modifier::SLOW_BLINK) {
-            self.always_redraw_list.insert((xik, yik));
-            if self.blinking_slow {
-                fg_color = bg_color.clone();
-            }
-        }
-        if rat_cell.modifier.contains(Modifier::RAPID_BLINK) {
-            self.always_redraw_list.insert((xik, yik));
-            if self.blinking_fast {
-                fg_color = bg_color.clone();
-            }
-        }
-
-        let style = MonoTextStyleBuilder::new()
-            .font(&MONO_6X10)
-            .text_color(Rgb888::new(fg_color[0], fg_color[1], fg_color[2]))
-            .background_color(Rgb888::new(bg_color[0], bg_color[1], bg_color[2]))
-            .build();
         Text::with_baseline(
             rat_cell.symbol(),
             Point::new(begin_x as i32, begin_y as i32),
-            style,
+            style_builder.build(),
             embedded_graphics::text::Baseline::Top,
         )
         .draw(&mut self.rgb_pixmap)
@@ -164,7 +161,9 @@ impl SoftBackend {
             cursor: false,
             pos: (0, 0),
 
-            font: style,
+            font_regular: MONO_6X10,
+            font_bold: None,
+            font_italic: None,
 
             rgb_pixmap,
 
