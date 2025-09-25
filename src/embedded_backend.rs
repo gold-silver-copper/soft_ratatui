@@ -8,23 +8,23 @@ use crate::colors::*;
 use crate::pixmap::RgbPixmap;
 
 use embedded_graphics::Drawable;
+use embedded_graphics::mono_font::iso_8859_10::FONT_5X8;
 
 use embedded_graphics::mono_font::{MonoFont, MonoTextStyle, MonoTextStyleBuilder};
 use embedded_graphics::pixelcolor::Rgb888;
 use embedded_graphics::prelude::{Dimensions, Point, RgbColor};
 use embedded_graphics::text::Text;
-use embedded_graphics_unicodefonts::MONO_6X10;
+use embedded_graphics_unicodefonts::mono_6x13_atlas;
 use ratatui::backend::{Backend, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
 use ratatui::style;
-use ratatui::style::Modifier;
 
 /// SoftBackend is a Software rendering backend for Ratatui. It stores the generated image internally as rgb_pixmap.
 pub struct SoftBackend {
     pub buffer: Buffer,
     pub cursor: bool,
-    pub pos: (u16, u16),
+    pub cursor_pos: (u16, u16),
 
     pub font_regular: MonoFont<'static>,
     /// Bold font.
@@ -148,8 +148,8 @@ impl SoftBackend {
     /// ```
 
     pub fn new_with_font(width: u16, height: u16, font_data: &str) -> Self {
-        // Create a new character style
-        let style = MonoTextStyle::new(&MONO_6X10, Rgb888::BLACK);
+        let font = mono_6x13_atlas();
+        let style = MonoTextStyle::new(&font, Rgb888::BLACK);
         let a = Text::new("█", Point::new(0, 0), style).bounding_box();
         let char_width = a.size.width as usize;
         let char_height = a.size.height as usize;
@@ -159,9 +159,9 @@ impl SoftBackend {
         let mut return_struct = Self {
             buffer: Buffer::empty(Rect::new(0, 0, width, height)),
             cursor: false,
-            pos: (0, 0),
+            cursor_pos: (0, 0),
 
-            font_regular: MONO_6X10,
+            font_regular: font,
             font_bold: None,
             font_italic: None,
 
@@ -242,11 +242,11 @@ impl Backend for SoftBackend {
     }
 
     fn get_cursor_position(&mut self) -> io::Result<Position> {
-        Ok(self.pos.into())
+        Ok(self.cursor_pos.into())
     }
 
     fn set_cursor_position<P: Into<Position>>(&mut self, position: P) -> io::Result<()> {
-        self.pos = position.into().into();
+        self.cursor_pos = position.into().into();
         Ok(())
     }
 
