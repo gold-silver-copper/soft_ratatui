@@ -1,9 +1,9 @@
 /// A pixmap with RGB pixels stored in a flat vector.
 #[derive(Debug, Clone)]
 pub struct RgbPixmap {
-    width: usize,
-    height: usize,
-    data: Vec<u8>,
+    pub width: usize,
+    pub height: usize,
+    pub data: Vec<u8>,
 }
 
 impl RgbPixmap {
