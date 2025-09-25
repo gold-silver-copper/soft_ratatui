@@ -1,1 +1,5 @@
 /target
+/bevy_cube_example/target
+/bevy_example/target
+/egui_colors_example/target
+/egui_modifier_example/target
