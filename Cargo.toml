@@ -15,8 +15,8 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 ab_glyph = "0.2.31"
+bdf-parser = "0.1.0"
 cosmic-text = { version = "^0.14.2", features = ["shape-run-cache"] }
-glyph_brush_layout = "0.2.4"
 
 ratatui = { version = "0.29.0", default-features = false }
 

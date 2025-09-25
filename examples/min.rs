@@ -2,15 +2,14 @@
 use ratatui::text::Text;
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 use ratatui::{Frame, Terminal};
-use soft_ratatui::SoftBackend;
+use soft_ratatui::{RgbPixmap, SoftBackend};
 
 fn main() {
     todo!("fix this font");
-    let backend = SoftBackend::new_with_font(100, 50, 16, &[0]);
+    let backend = SoftBackend::new_with_font(100, 50, &[0]);
     let mut terminal = Terminal::new(backend).unwrap();
     terminal.clear();
 
-    // terminal.draw(draw).expect("failed to draw frame");
     terminal.draw(|frame| {
         let area = frame.area();
         let textik = format!("Hello bevy! The window area is {}", area);
