@@ -90,7 +90,7 @@ fn ui_example_system(
 struct SoftTerminal(Terminal<SoftBackend>);
 impl Default for SoftTerminal {
     fn default() -> Self {
-        let mut backend = SoftBackend::new_with_font(15, 15, 16, FONT_DATA);
+        let mut backend = SoftBackend::new_with_font(15, 15, "");
         //backend.set_font_size(12);
         Self(Terminal::new(backend).unwrap())
     }

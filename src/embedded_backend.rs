@@ -81,7 +81,7 @@ impl SoftBackend {
                 style::Modifier::DIM => {
                     (rat_fg, rat_bg) = (dim_rgb(rat_fg), dim_rgb(rat_bg));
                     style_builder
-                } // TODO
+                }
                 style::Modifier::ITALIC => match &self.font_italic {
                     None => style_builder.font(&self.font_regular),
                     Some(font) => style_builder.font(font),
@@ -93,24 +93,24 @@ impl SoftBackend {
                         rat_fg = rat_bg;
                     }
                     style_builder
-                } // TODO
+                }
                 style::Modifier::RAPID_BLINK => {
                     self.always_redraw_list.insert((xik, yik));
                     if self.blinking_fast {
                         rat_fg = rat_bg;
                     }
                     style_builder
-                } // TODO
+                }
                 style::Modifier::REVERSED => {
                     (rat_bg, rat_fg) = (rat_fg, rat_bg);
 
                     style_builder
-                } // TODO
+                }
                 style::Modifier::HIDDEN => {
                     rat_fg = rat_bg;
 
                     style_builder
-                } // TODO
+                }
                 style::Modifier::CROSSED_OUT => style_builder.strikethrough(),
                 _ => style_builder,
             }
