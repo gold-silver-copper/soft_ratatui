@@ -7,7 +7,9 @@ use std::{char, io};
 use crate::colors::*;
 use crate::pixmap::RgbPixmap;
 
-use ab_glyph::{Font, FontRef, Glyph, point};
+use ab_glyph::{Font, FontRef, Glyph, PxScale, PxScaleFont, ScaleFont, point};
+
+use glyph_brush_layout::{GlyphPositioner, SectionText};
 use ratatui::backend::{Backend, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
@@ -18,7 +20,7 @@ pub struct SoftBackend {
     pub buffer: Buffer,
     pub cursor: bool,
     pub pos: (u16, u16),
-    font: FontRef<'static>,
+    font: PxScaleFont<FontRef<'static>>,
     font_size: i32,
 
     pub char_width: usize,
@@ -116,16 +118,13 @@ impl SoftBackend {
         let pix_hei = self.get_pixmap_height();
         let char = rat_cell.symbol().chars().next().unwrap();
 
-        let glyph: Glyph = self
-            .font
-            .glyph_id(char)
-            .with_scale_and_position(self.font_size as f32, point(0.0, 0.0));
+        let glyph: Glyph = self.font.scaled_glyph(char);
 
         if let Some(image) = self.font.outline_glyph(glyph) {
             image.draw(|x, y, c| {
                 let get_x = begin_x + x as usize;
                 let get_y = begin_y + y as usize;
-                if get_x < pix_wid && get_y < pix_hei && c > 0.1 {
+                if get_x < pix_wid && get_y < pix_hei && c > 0.3 {
                     self.rgb_pixmap.put_pixel(
                         get_x,
                         get_y,
@@ -139,11 +138,12 @@ impl SoftBackend {
     /// Sets a new font size for the terminal image.
     /// This will recreate the pixmap and do a full redraw. Do not run every frame.
     pub fn set_font_size(&mut self, font_size: i32) {
+        let b = self.font.clone();
+        let a = b.with_scale(font_size as f32);
+        self.font = a;
+
         // Get a glyph for 'q' with a scale & position.
-        let glyph: Glyph = self
-            .font
-            .glyph_id('█')
-            .with_scale_and_position(font_size as f32, point(0.0, 0.0));
+        let glyph: Glyph = self.font.scaled_glyph('█');
         let block = self
             .font
             .outline_glyph(glyph)
@@ -185,11 +185,14 @@ impl SoftBackend {
         let font: FontRef<'static> =
             FontRef::try_from_slice(font_data).expect("COULD NOT LOAD FONT");
 
+        let scaled_font: PxScaleFont<FontRef<'static>> = PxScaleFont {
+            font: font,
+            scale: PxScale::from(font_size as f32),
+        };
+
         // Get a glyph for 'q' with a scale & position.
-        let glyph: Glyph = font
-            .glyph_id('█')
-            .with_scale_and_position(font_size as f32, point(0.0, 0.0));
-        let block = font
+        let glyph: Glyph = scaled_font.scaled_glyph('█');
+        let block = scaled_font
             .outline_glyph(glyph)
             .expect("FONT MUST HAVE BLOCK DRAWING CHARACTER ████");
 
@@ -202,7 +205,7 @@ impl SoftBackend {
             buffer: Buffer::empty(Rect::new(0, 0, width, height)),
             cursor: false,
             pos: (0, 0),
-            font: font,
+            font: scaled_font,
             font_size: font_size,
 
             rgb_pixmap,
