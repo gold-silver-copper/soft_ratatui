@@ -1,3 +1,12 @@
+use core::convert::Infallible;
+use embedded_graphics::{
+    Pixel,
+    draw_target::DrawTarget,
+    geometry::{OriginDimensions, Size},
+    pixelcolor::{PixelColor, Rgb888},
+    prelude::*,
+};
+
 /// A pixmap with RGB pixels stored in a flat vector.
 #[derive(Debug, Clone)]
 pub struct RgbPixmap {
@@ -71,5 +80,34 @@ impl RgbPixmap {
     /// Retuns the raw rgb data of the pixmap as a flat array
     pub fn data(&self) -> &[u8] {
         &self.data
+    }
+}
+
+impl DrawTarget for RgbPixmap {
+    type Color = Rgb888;
+    type Error = Infallible;
+
+    fn draw_iter<I>(&mut self, pixels: I) -> Result<(), Self::Error>
+    where
+        I: IntoIterator<Item = Pixel<Self::Color>>,
+    {
+        for Pixel(coord, color) in pixels {
+            // Only draw pixels inside bounds
+
+            if coord.x >= 0 && coord.y >= 0 {
+                self.put_pixel(
+                    coord.x as usize,
+                    coord.y as usize,
+                    [color.r(), color.g(), color.b()],
+                );
+            }
+        }
+        Ok(())
+    }
+}
+
+impl OriginDimensions for RgbPixmap {
+    fn size(&self) -> Size {
+        Size::new(self.width as u32, self.height as u32)
     }
 }

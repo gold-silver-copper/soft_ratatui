@@ -6,7 +6,7 @@ use soft_ratatui::{RgbPixmap, SoftBackend};
 
 fn main() {
     todo!("fix this font");
-    let backend = SoftBackend::new_with_font(100, 50, &[0]);
+    let backend = SoftBackend::new_with_font(100, 50, "");
     let mut terminal = Terminal::new(backend).unwrap();
     terminal.clear();
 

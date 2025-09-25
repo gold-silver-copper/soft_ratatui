@@ -19,7 +19,7 @@ pub struct SoftBackend {
     pub cursor: bool,
     pub pos: (u16, u16),
 
-    font: BdfFont,
+    font: Font,
 
     pub char_width: usize,
     pub char_height: usize,
@@ -117,19 +117,23 @@ impl SoftBackend {
         let char = rat_cell.symbol().chars().next().unwrap();
 
         if let Some(glyph) = self.font.glyphs.get(char) {
+            let y_iter = glyph.bounding_box.size.y - glyph.bounding_box.offset.y;
             for x in 0..glyph.bounding_box.size.x {
-                for y in 0..glyph.bounding_box.size.y {
+                for y in 0..y_iter {
                     let get_x = (begin_x as i32 + x + glyph.bounding_box.offset.x) as usize;
-                    let get_y = (begin_y as i32 + y + glyph.bounding_box.offset.y) as usize;
+                    let get_y = (begin_y as i32 + y) as usize;
 
-                    if glyph.pixel(x as usize, y as usize) {
-                        if get_x < pix_wid && get_y < pix_hei {
-                            self.rgb_pixmap.put_pixel(
-                                get_x,
-                                get_y,
-                                [fg_color[0], fg_color[1], fg_color[2]],
-                            );
+                    match glyph.pixel(x as usize, y as usize) {
+                        Some(true) => {
+                            if get_x < pix_wid && get_y < pix_hei {
+                                self.rgb_pixmap.put_pixel(
+                                    get_x,
+                                    get_y,
+                                    [fg_color[0], fg_color[1], fg_color[2]],
+                                );
+                            }
                         }
+                        _ => {}
                     }
                 }
             }
@@ -151,11 +155,12 @@ impl SoftBackend {
     /// let backend = SoftBackend::new_with_font(20, 20, 16, FONT_DATA);
     /// ```
 
-    pub fn new_with_font(width: u16, height: u16, font_data: &'static [u8]) -> Self {
-        let bdf_font = BdfFont::parse(font_data).unwrap();
+    pub fn new_with_font(width: u16, height: u16, font_data: &str) -> Self {
+        let bdf_font = Font::parse(font_data).unwrap();
         let block = bdf_font.glyphs.get('█').unwrap();
         let char_width = block.bounding_box.size.x as usize;
-        let char_height = block.bounding_box.size.y as usize;
+        let char_height = (block.bounding_box.size.y) as usize;
+        println!("block box {:#?}", block);
 
         let rgb_pixmap = RgbPixmap::new(char_width * width as usize, char_height * height as usize);
 
@@ -279,19 +284,4 @@ impl Backend for SoftBackend {
     fn flush(&mut self) -> io::Result<()> {
         Ok(())
     }
-}
-
-fn is_unicode_block_drawing(c: char) -> bool {
-    let code = c as u32;
-
-    // Block Elements: U+2580 - U+259F
-    (0x2580..=0x259F).contains(&code) ||
-    // Box Drawing: U+2500 - U+257F
-    (0x2500..=0x257F).contains(&code) ||
-    // Geometric Shapes: U+25A0 - U+25FF
-    (0x25A0..=0x25FF).contains(&code) ||
-    // Miscellaneous Symbols and Arrows: U+2B00 - U+2BFF
-    (0x2B00..=0x2BFF).contains(&code) ||
-    // Supplemental Arrows-C: U+1F800 - U+1F8FF
-    (0x1F800..=0x1F8FF).contains(&code)
 }
