@@ -92,6 +92,7 @@ impl DrawTarget for RgbPixmap {
         I: IntoIterator<Item = Pixel<Self::Color>>,
     {
         for Pixel(coord, color) in pixels {
+            //   if coord.x >= 0&& coord.y >=0 {}
             self.put_pixel(
                 coord.x as usize,
                 coord.y as usize,
