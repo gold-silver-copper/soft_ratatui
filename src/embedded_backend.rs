@@ -21,7 +21,7 @@ use ratatui::layout::{Position, Rect, Size};
 use ratatui::style;
 
 /// SoftBackend is a Software rendering backend for Ratatui. It stores the generated image internally as rgb_pixmap.
-pub struct SoftBackend {
+pub struct SoftBackend<RasterBackend> {
     pub buffer: Buffer,
     pub cursor: bool,
     pub cursor_pos: (u16, u16),
@@ -32,12 +32,7 @@ pub struct SoftBackend {
     pub blinking_slow: bool,
     pub rgb_pixmap: RgbPixmap,
     always_redraw_list: FxHashSet<(u16, u16)>,
-
-    pub font_regular: MonoFont<'static>,
-    /// Bold font.
-    pub font_bold: Option<MonoFont<'static>>,
-    /// Italic font.
-    pub font_italic: Option<MonoFont<'static>>,
+    pub raster_backend: RasterBackend,
 }
 
 pub struct EmbeddedGraphics {
@@ -48,7 +43,7 @@ pub struct EmbeddedGraphics {
     pub font_italic: Option<MonoFont<'static>>,
 }
 
-impl SoftBackend {
+impl SoftBackend<EmbeddedGraphics> {
     /// Retuns the raw rgb data of the pixmap as a flat array
     pub fn get_pixmap_data(&self) -> &[u8] {
         self.rgb_pixmap.data()
@@ -73,13 +68,13 @@ impl SoftBackend {
         let mut rat_bg = rat_to_rgb(&rat_cell.bg, false);
 
         let mut style_builder = MonoTextStyleBuilder::new()
-            .font(&self.font_regular)
+            .font(&self.raster_backend.font_regular)
             .text_color(Rgb888::WHITE)
             .background_color(Rgb888::BLACK);
 
         for modifier in rat_cell.modifier.iter() {
             style_builder = match modifier {
-                style::Modifier::BOLD => match &self.font_bold {
+                style::Modifier::BOLD => match &self.raster_backend.font_bold {
                     None => style_builder,
                     Some(font) => style_builder.font(font),
                 },
@@ -87,7 +82,7 @@ impl SoftBackend {
                     (rat_fg, rat_bg) = (dim_rgb(rat_fg), dim_rgb(rat_bg));
                     style_builder
                 }
-                style::Modifier::ITALIC => match &self.font_italic {
+                style::Modifier::ITALIC => match &self.raster_backend.font_italic {
                     None => style_builder,
                     Some(font) => style_builder.font(font),
                 },
@@ -167,10 +162,11 @@ impl SoftBackend {
             buffer: Buffer::empty(Rect::new(0, 0, width, height)),
             cursor: false,
             cursor_pos: (0, 0),
-
-            font_regular: font_regular,
-            font_bold,
-            font_italic,
+            raster_backend: EmbeddedGraphics {
+                font_regular: font_regular,
+                font_bold,
+                font_italic,
+            },
 
             rgb_pixmap,
 
@@ -220,7 +216,7 @@ impl SoftBackend {
     }
 }
 
-impl Backend for SoftBackend {
+impl Backend for SoftBackend<EmbeddedGraphics> {
     fn draw<'a, I>(&mut self, content: I) -> io::Result<()>
     where
         I: Iterator<Item = (u16, u16, &'a Cell)>,
