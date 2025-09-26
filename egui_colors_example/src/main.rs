@@ -15,6 +15,10 @@ use ratatui::{
     text::Text,
     widgets::Widget,
 };
+mod mono_cozette_hidpi_all_atlas;
+use mono_cozette_hidpi_all_atlas::mono_cozette_hidpi_all_atlas;
+mod mono_cozette_all_atlas;
+use mono_cozette_all_atlas::mono_cozette_all_atlas;
 use soft_ratatui::SoftBackend;
 use std::time::{Duration, Instant};
 
@@ -45,10 +49,10 @@ struct MyApp {
 
 impl MyApp {
     fn new() -> Self {
-        let font_regular = mono_8x13_atlas();
-        let font_italic = mono_8x13_italic_atlas();
-        let font_bold = mono_8x13_bold_atlas();
-        let backend = SoftBackend::new(100, 80, font_regular, Some(font_bold), Some(font_italic));
+        let font_regular = mono_cozette_all_atlas();
+        let font_italic = mono_cozette_all_atlas();
+        let font_bold = mono_cozette_all_atlas();
+        let backend = SoftBackend::new(100, 400, font_regular, Some(font_bold), Some(font_italic));
         let mut terminal = Terminal::new(backend).unwrap();
         let appik = App::default();
 
