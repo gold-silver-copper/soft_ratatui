@@ -1,7 +1,5 @@
 //! Shows how to render UI to a texture. Useful for displaying UI in 3D space.
 
-use std::f32::consts::PI;
-
 use bevy::{
     color::palettes::css::GOLD,
     prelude::*,
@@ -11,13 +9,16 @@ use bevy::{
         render_resource::{Extent3d, TextureDimension, TextureFormat, TextureUsages},
     },
 };
+use embedded_graphics_unicodefonts::{
+    mono_8x13_atlas, mono_8x13_bold_atlas, mono_8x13_italic_atlas,
+};
 use ratatui::{
     Frame,
     prelude::{Stylize, Terminal},
     widgets::{Block, Borders, Paragraph, Wrap},
 };
 use soft_ratatui::SoftBackend;
-static FONT_DATA: &[u8] = include_bytes!("../../assets/iosevka.ttf");
+use std::f32::consts::PI;
 
 fn main() {
     App::new()
@@ -151,7 +152,10 @@ fn rotator_system(time: Res<Time>, mut query: Query<&mut Transform, With<Cube>>)
 struct SoftTerminal(Terminal<SoftBackend>);
 impl Default for SoftTerminal {
     fn default() -> Self {
-        let mut backend = SoftBackend::new_with_font(15, 15, 16, FONT_DATA);
+        let font_regular = mono_8x13_atlas();
+        let font_italic = mono_8x13_italic_atlas();
+        let font_bold = mono_8x13_bold_atlas();
+        let backend = SoftBackend::new(100, 50, font_regular, Some(font_bold), Some(font_italic));
         //backend.set_font_size(12);
         Self(Terminal::new(backend).unwrap())
     }

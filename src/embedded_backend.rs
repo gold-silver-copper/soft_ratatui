@@ -1,7 +1,7 @@
 //! This module provides the `SoftBackend` implementation for the [`Backend`] trait.
 //! It is used in the integration tests to verify the correctness of the library.
 
-use std::collections::HashSet;
+use rustc_hash::FxHashSet;
 use std::io;
 
 use crate::colors::*;
@@ -39,7 +39,7 @@ pub struct SoftBackend {
     pub blinking_slow: bool,
 
     pub rgb_pixmap: RgbPixmap,
-    always_redraw_list: HashSet<(u16, u16)>,
+    always_redraw_list: FxHashSet<(u16, u16)>,
 }
 
 impl SoftBackend {
@@ -74,7 +74,7 @@ impl SoftBackend {
         for modifier in rat_cell.modifier.iter() {
             style_builder = match modifier {
                 style::Modifier::BOLD => match &self.font_bold {
-                    None => style_builder.font(&self.font_regular),
+                    None => style_builder,
                     Some(font) => style_builder.font(font),
                 },
                 style::Modifier::DIM => {
@@ -82,7 +82,7 @@ impl SoftBackend {
                     style_builder
                 }
                 style::Modifier::ITALIC => match &self.font_italic {
-                    None => style_builder.font(&self.font_regular),
+                    None => style_builder,
                     Some(font) => style_builder.font(font),
                 },
                 style::Modifier::UNDERLINED => style_builder.underline(),
@@ -175,7 +175,7 @@ impl SoftBackend {
             blink_counter: 0,
             blinking_fast: false,
             blinking_slow: false,
-            always_redraw_list: HashSet::new(),
+            always_redraw_list: FxHashSet::default(),
         };
         _ = return_struct.clear();
         return_struct
@@ -199,7 +199,7 @@ impl SoftBackend {
 
     /// Redraws the pixmap
     pub fn redraw(&mut self) {
-        self.always_redraw_list = HashSet::new();
+        self.always_redraw_list = FxHashSet::default();
         for x in 0..self.buffer.area.width {
             for y in 0..self.buffer.area.height {
                 self.draw_cell(x, y);

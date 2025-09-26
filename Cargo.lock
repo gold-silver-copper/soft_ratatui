@@ -293,6 +293,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustc-hash"
+version = "2.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "357703d41365b4b27c590e3ed91eabb1b663f07c4c084095e60cbed4362dff0d"
+
+[[package]]
 name = "rustversion"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -306,11 +312,12 @@ checksum = "28d3b2b1366ec20994f1fd18c3c594f05c5dd4bc44d8bb0c1c632c8d6829481f"
 
 [[package]]
 name = "soft_ratatui"
-version = "0.0.8"
+version = "0.0.9"
 dependencies = [
  "embedded-graphics",
  "embedded-graphics-unicodefonts",
  "ratatui",
+ "rustc-hash",
 ]
 
 [[package]]

@@ -1,13 +1,13 @@
+use color_eyre::Result;
 use eframe::egui::{self, TextureHandle};
+use embedded_graphics_unicodefonts::{
+    mono_8x13_atlas, mono_8x13_bold_atlas, mono_8x13_italic_atlas,
+};
+use palette::{Okhsv, Srgb, convert::FromColorUnclamped};
+use ratatui::prelude::Stylize;
 /// A minimal example of a Ratatui application.
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 use ratatui::{Frame, Terminal};
-use soft_ratatui::SoftBackend;
-use std::time::{Duration, Instant};
-
-use color_eyre::Result;
-use palette::{Okhsv, Srgb, convert::FromColorUnclamped};
-use ratatui::prelude::Stylize;
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Position, Rect},
@@ -15,6 +15,8 @@ use ratatui::{
     text::Text,
     widgets::Widget,
 };
+use soft_ratatui::SoftBackend;
+use std::time::{Duration, Instant};
 
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
@@ -43,7 +45,10 @@ struct MyApp {
 
 impl MyApp {
     fn new() -> Self {
-        let backend = SoftBackend::new_with_font(100, 300, "");
+        let font_regular = mono_8x13_atlas();
+        let font_italic = mono_8x13_italic_atlas();
+        let font_bold = mono_8x13_bold_atlas();
+        let backend = SoftBackend::new(100, 80, font_regular, Some(font_bold), Some(font_italic));
         let mut terminal = Terminal::new(backend).unwrap();
         let appik = App::default();
 
