@@ -1,4 +1,4 @@
-mod mono_cozette_all;
-mod mono_cozette_all_atlas;
-pub use mono_cozette_all::*;
-pub use mono_cozette_all_atlas::*;
+mod mono_cozette_hidpi_all;
+mod mono_cozette_hidpi_all_atlas;
+pub use mono_cozette_hidpi_all::*;
+pub use mono_cozette_hidpi_all_atlas::*;
