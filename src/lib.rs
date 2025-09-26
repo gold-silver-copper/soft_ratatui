@@ -8,6 +8,8 @@ mod pixmap;
 
 #[cfg(feature = "cozette")]
 pub mod cozette;
+#[cfg(feature = "scientifica")]
+pub mod scientifica;
 //pub use cozette;
 #[cfg(feature = "unicodefonts")]
 pub use embedded_graphics_unicodefonts;
