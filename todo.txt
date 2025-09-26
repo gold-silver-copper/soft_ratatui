@@ -1,0 +1,5 @@
+Add section about generating new fonts from bdf and using them
+
+Add section thanking people and similar projects
+
+Showcase projects using it
