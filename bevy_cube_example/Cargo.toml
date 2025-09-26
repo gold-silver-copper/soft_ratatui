@@ -7,6 +7,6 @@ edition = "2024"
 bevy = "0.16.0"
 ratatui = { version = "0.29.0", default-features = false }
 soft_ratatui = { path = ".." }
-
+embedded-graphics-unicodefonts = "0.2.0"
 [target.wasm32-unknown-unknown]
 runner = "wasm-server-runner"

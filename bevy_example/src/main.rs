@@ -3,13 +3,14 @@ use bevy::{
     prelude::*,
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
-
+use embedded_graphics_unicodefonts::{
+    mono_8x13_atlas, mono_8x13_bold_atlas, mono_8x13_italic_atlas,
+};
 use ratatui::{
     prelude::{Stylize, Terminal},
     widgets::{Block, Borders, Paragraph, Wrap},
 };
 use soft_ratatui::SoftBackend;
-static FONT_DATA: &[u8] = include_bytes!("../../assets/iosevka.ttf");
 
 fn main() {
     App::new()
@@ -90,7 +91,10 @@ fn ui_example_system(
 struct SoftTerminal(Terminal<SoftBackend>);
 impl Default for SoftTerminal {
     fn default() -> Self {
-        let mut backend = SoftBackend::new_with_font(15, 15, "");
+        let font_regular = mono_8x13_atlas();
+        let font_italic = mono_8x13_italic_atlas();
+        let font_bold = mono_8x13_bold_atlas();
+        let backend = SoftBackend::new(100, 50, font_regular, Some(font_bold), Some(font_italic));
         //backend.set_font_size(12);
         Self(Terminal::new(backend).unwrap())
     }
