@@ -11,6 +11,9 @@
 use std::{error::Error, iter::once, result};
 
 use eframe::egui::{self, TextureHandle};
+use embedded_graphics_unicodefonts::{
+    mono_8x13_atlas, mono_8x13_bold_atlas, mono_8x13_italic_atlas,
+};
 use itertools::Itertools;
 use ratatui::layout::{Constraint, Layout};
 use ratatui::style::{Color, Modifier, Style, Stylize};
@@ -47,7 +50,10 @@ struct MyApp {
 
 impl MyApp {
     fn new() -> Self {
-        let backend = SoftBackend::new_with_font(100, 50, "");
+        let font_regular = mono_8x13_atlas();
+        let font_italic = mono_8x13_italic_atlas();
+        let font_bold = mono_8x13_bold_atlas();
+        let backend = SoftBackend::new(100, 50, font_regular, Some(font_bold), Some(font_italic));
         let mut terminal = Terminal::new(backend).unwrap();
 
         Self {

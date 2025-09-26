@@ -10,3 +10,4 @@ itertools = "0.14.0"
 palette = "0.7.6"
 ratatui = "0.29.0"
 soft_ratatui = { path = ".." }
+embedded-graphics-unicodefonts = "0.2.0"

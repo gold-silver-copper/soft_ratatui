@@ -2,19 +2,18 @@
 //! It is used in the integration tests to verify the correctness of the library.
 
 use std::collections::HashSet;
-use std::{char, io};
+use std::io;
 
 use crate::colors::*;
 use crate::pixmap::RgbPixmap;
 
 use embedded_graphics::Drawable;
-use embedded_graphics::mono_font::iso_8859_10::FONT_5X8;
 
-use embedded_graphics::mono_font::{MonoFont, MonoTextStyle, MonoTextStyleBuilder};
+use embedded_graphics::mono_font::{MonoFont, MonoTextStyleBuilder};
 use embedded_graphics::pixelcolor::Rgb888;
-use embedded_graphics::prelude::{Dimensions, Point, RgbColor};
+use embedded_graphics::prelude::{Point, RgbColor};
 use embedded_graphics::text::Text;
-use embedded_graphics_unicodefonts::mono_6x13_atlas;
+
 use ratatui::backend::{Backend, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
@@ -147,12 +146,15 @@ impl SoftBackend {
     /// let backend = SoftBackend::new_with_font(20, 20, 16, FONT_DATA);
     /// ```
 
-    pub fn new_with_font(width: u16, height: u16, font_data: &str) -> Self {
-        let font = mono_6x13_atlas();
-        let style = MonoTextStyle::new(&font, Rgb888::BLACK);
-        let a = Text::new("█", Point::new(0, 0), style).bounding_box();
-        let char_width = a.size.width as usize;
-        let char_height = a.size.height as usize;
+    pub fn new(
+        width: u16,
+        height: u16,
+        font_regular: MonoFont<'static>,
+        font_bold: Option<MonoFont<'static>>,
+        font_italic: Option<MonoFont<'static>>,
+    ) -> Self {
+        let char_width = font_regular.character_size.width as usize;
+        let char_height = font_regular.character_size.height as usize;
 
         let rgb_pixmap = RgbPixmap::new(char_width * width as usize, char_height * height as usize);
 
@@ -161,9 +163,9 @@ impl SoftBackend {
             cursor: false,
             cursor_pos: (0, 0),
 
-            font_regular: font,
-            font_bold: None,
-            font_italic: None,
+            font_regular: font_regular,
+            font_bold,
+            font_italic,
 
             rgb_pixmap,
 
