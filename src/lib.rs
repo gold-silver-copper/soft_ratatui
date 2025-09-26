@@ -6,12 +6,8 @@ mod colors;
 
 mod pixmap;
 
-#[cfg(feature = "cozette")]
-pub mod cozette;
-#[cfg(feature = "scientifica")]
-pub mod scientifica;
-//pub use cozette;
+/*#[cfg(feature = "cozette")]
+pub mod cozette; */
+
 #[cfg(feature = "unicodefonts")]
 pub use embedded_graphics_unicodefonts;
-#[cfg(feature = "cozette_hidpi")]
-pub mod cozette_hidpi;
