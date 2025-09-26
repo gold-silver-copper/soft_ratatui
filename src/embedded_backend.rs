@@ -25,22 +25,27 @@ pub struct SoftBackend {
     pub buffer: Buffer,
     pub cursor: bool,
     pub cursor_pos: (u16, u16),
+    pub char_width: usize,
+    pub char_height: usize,
+    pub blink_counter: u16,
+    pub blinking_fast: bool,
+    pub blinking_slow: bool,
+    pub rgb_pixmap: RgbPixmap,
+    always_redraw_list: FxHashSet<(u16, u16)>,
 
     pub font_regular: MonoFont<'static>,
     /// Bold font.
     pub font_bold: Option<MonoFont<'static>>,
     /// Italic font.
     pub font_italic: Option<MonoFont<'static>>,
+}
 
-    pub char_width: usize,
-    pub char_height: usize,
-
-    pub blink_counter: u16,
-    pub blinking_fast: bool,
-    pub blinking_slow: bool,
-
-    pub rgb_pixmap: RgbPixmap,
-    always_redraw_list: FxHashSet<(u16, u16)>,
+pub struct EmbeddedGraphics {
+    pub font_regular: MonoFont<'static>,
+    /// Bold font.
+    pub font_bold: Option<MonoFont<'static>>,
+    /// Italic font.
+    pub font_italic: Option<MonoFont<'static>>,
 }
 
 impl SoftBackend {
