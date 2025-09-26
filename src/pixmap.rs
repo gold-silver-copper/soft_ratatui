@@ -3,7 +3,7 @@ use embedded_graphics::{
     Pixel,
     draw_target::DrawTarget,
     geometry::{OriginDimensions, Size},
-    pixelcolor::{PixelColor, Rgb888},
+    pixelcolor::Rgb888,
     prelude::*,
 };
 
