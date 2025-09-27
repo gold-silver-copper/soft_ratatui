@@ -1,7 +1,6 @@
 //! This module provides the `SoftBackend` implementation for the [`Backend`] trait.
 //! It is used in the integration tests to verify the correctness of the library.
 
-use embedded_graphics::text::renderer::TextRenderer;
 use rustc_hash::FxHashSet;
 use std::io;
 
@@ -13,7 +12,7 @@ use embedded_graphics::Drawable;
 use embedded_graphics::mono_font::{MonoFont, MonoTextStyleBuilder};
 use embedded_graphics::pixelcolor::Rgb888;
 use embedded_graphics::prelude::{Point, RgbColor};
-use embedded_graphics::text::{Baseline, Text};
+use embedded_graphics::text::Text;
 
 use crate::SoftBackend;
 use ratatui::backend::{Backend, WindowSize};
