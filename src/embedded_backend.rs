@@ -15,26 +15,11 @@ use embedded_graphics::pixelcolor::Rgb888;
 use embedded_graphics::prelude::{Point, RgbColor};
 use embedded_graphics::text::{Baseline, Text};
 
+use crate::SoftBackend;
 use ratatui::backend::{Backend, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
 use ratatui::style;
-
-/// SoftBackend is a Software rendering backend for Ratatui. It stores the generated image internally as rgb_pixmap.
-pub struct SoftBackend<RasterBackend> {
-    pub buffer: Buffer,
-    pub cursor: bool,
-    pub cursor_pos: (u16, u16),
-    pub char_width: usize,
-    pub char_height: usize,
-    pub blink_counter: u16,
-    pub blinking_fast: bool,
-    pub blinking_slow: bool,
-    pub rgb_pixmap: RgbPixmap,
-    always_redraw_list: FxHashSet<(u16, u16)>,
-    pub raster_backend: RasterBackend,
-}
-
 pub struct EmbeddedGraphics {
     pub font_regular: MonoFont<'static>,
     /// Bold font.
