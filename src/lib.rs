@@ -21,3 +21,7 @@ pub use embedded_graphics_unicodefonts;
 pub use cosmic_backend::CosmicText;
 #[cfg(feature = "cosmic-text")]
 mod cosmic_backend;
+#[cfg(feature = "bdf-parser")]
+pub use bdf_backend::Bdf;
+#[cfg(feature = "bdf-parser")]
+mod bdf_backend;
