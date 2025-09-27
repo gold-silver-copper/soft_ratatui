@@ -1,4 +1,5 @@
 use core::convert::Infallible;
+#[cfg(feature = "embedded-graphics")]
 use embedded_graphics::{
     Pixel,
     draw_target::DrawTarget,
@@ -82,7 +83,7 @@ impl RgbPixmap {
         &self.data
     }
 }
-
+#[cfg(feature = "embedded-graphics")]
 impl DrawTarget for RgbPixmap {
     type Color = Rgb888;
     type Error = Infallible;
