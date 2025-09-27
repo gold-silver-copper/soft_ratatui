@@ -20,11 +20,14 @@ embedded-graphics = {version = "0.8.1",optional = true}
 
 embedded-graphics-unicodefonts = {version = "0.2.0",optional = true}
 cosmic-text = { version = "0.14.2", optional = true }
+bdf-parser = {  git = "https://github.com/embedded-graphics/bdf", optional = true }
 [features]
-default = ["embedded-graphics","unicodefonts","cosmic-text"]
+default = ["embedded-graphics","unicodefonts","cosmic-text","bdf-parser"]
 unicodefonts = ["dep:embedded-graphics-unicodefonts"]
 embedded-graphics = ["dep:embedded-graphics"]
 cosmic-text = ["dep:cosmic-text"]
+bdf-parser = ["dep:bdf-parser"]
+#cosmic-text = ["dep:bdf-parser"]
 
 
 [dev-dependencies]
