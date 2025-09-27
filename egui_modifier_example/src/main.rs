@@ -53,7 +53,7 @@ impl MyApp {
         let font_regular = mono_8x13_atlas();
         let font_italic = mono_8x13_italic_atlas();
         let font_bold = mono_8x13_bold_atlas();
-        let backend = SoftBackend::<Bdf>::new(100, 50, (6, 13), FONT_DATA);
+        let backend = SoftBackend::<Bdf>::new(100, 50, (6, 13), FONT_DATA, None, None);
         let mut terminal = Terminal::new(backend).unwrap();
 
         Self {

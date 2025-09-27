@@ -10,12 +10,15 @@ use bdf_parser::*;
 use ratatui::backend::{Backend, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
+use ratatui::style;
 use ratatui::style::Modifier;
 use rustc_hash::FxHashSet;
 
 /// SoftBackend is a Software rendering backend for Ratatui. It stores the generated image internally as rgb_pixmap.
 pub struct Bdf {
-    font: Font,
+    font_regular: Font,
+    font_italic: Option<Font>,
+    font_bold: Option<Font>,
 }
 
 fn add_strikeout(text: &String) -> String {
@@ -49,22 +52,47 @@ impl SoftBackend<Bdf> {
     fn draw_cell(&mut self, xik: u16, yik: u16) {
         let rat_cell = self.buffer.cell(Position::new(xik, yik)).unwrap();
 
-        let mut rat_fg = rat_cell.fg;
-        let rat_bg = rat_cell.bg;
-        if rat_cell.modifier.contains(Modifier::HIDDEN) {
-            rat_fg = rat_bg;
+        let mut rat_fg = rat_to_rgb(&rat_cell.fg, true);
+        let mut rat_bg = rat_to_rgb(&rat_cell.bg, false);
+        let mut font_to_use = &self.raster_backend.font_regular;
+        let mut underline = false;
+        let mut crossed_out = false;
+        for modifier in rat_cell.modifier.iter() {
+            match modifier {
+                style::Modifier::BOLD => match &self.raster_backend.font_bold {
+                    None => {}
+                    Some(font) => font_to_use = font,
+                },
+                style::Modifier::DIM => {
+                    (rat_fg, rat_bg) = (dim_rgb(rat_fg), dim_rgb(rat_bg));
+                }
+                style::Modifier::ITALIC => match &self.raster_backend.font_italic {
+                    None => {}
+                    Some(font) => font_to_use = font,
+                },
+                style::Modifier::UNDERLINED => underline = true,
+                style::Modifier::SLOW_BLINK => {
+                    self.always_redraw_list.insert((xik, yik));
+                    if self.blinking_slow {
+                        rat_fg = rat_bg;
+                    }
+                }
+                style::Modifier::RAPID_BLINK => {
+                    self.always_redraw_list.insert((xik, yik));
+                    if self.blinking_fast {
+                        rat_fg = rat_bg;
+                    }
+                }
+                style::Modifier::REVERSED => {
+                    (rat_bg, rat_fg) = (rat_fg, rat_bg);
+                }
+                style::Modifier::HIDDEN => {
+                    rat_fg = rat_bg;
+                }
+                style::Modifier::CROSSED_OUT => crossed_out = true,
+                _ => {}
+            }
         }
-
-        let (mut fg_color, mut bg_color) = if rat_cell.modifier.contains(Modifier::REVERSED) {
-            (rat_to_rgb(&rat_bg, false), rat_to_rgb(&rat_fg, true))
-        } else {
-            (rat_to_rgb(&rat_fg, true), rat_to_rgb(&rat_bg, false))
-        };
-
-        if rat_cell.modifier.contains(Modifier::DIM) {
-            (fg_color, bg_color) = (dim_rgb(fg_color), dim_rgb(bg_color));
-        };
-
         let begin_x = xik as usize * self.char_width;
         let begin_y = yik as usize * self.char_height;
 
@@ -72,38 +100,32 @@ impl SoftBackend<Bdf> {
             let y_pos = begin_y + y;
             let mut x_pos = begin_x;
             for _ in 0..self.char_width {
-                self.rgb_pixmap.put_pixel(x_pos, y_pos, bg_color);
+                self.rgb_pixmap.put_pixel(x_pos, y_pos, rat_bg);
                 x_pos += 1;
             }
         }
 
-        let mut text_symbol: String = rat_cell.symbol().to_string();
-
-        if rat_cell.modifier.contains(Modifier::CROSSED_OUT) {
-            text_symbol = add_strikeout(&text_symbol);
-        }
-        if rat_cell.modifier.contains(Modifier::UNDERLINED) {
-            text_symbol = add_underline(&text_symbol);
-        }
-
-        if rat_cell.modifier.contains(Modifier::SLOW_BLINK) {
-            self.always_redraw_list.insert((xik, yik));
-            if self.blinking_slow {
-                fg_color = bg_color.clone();
+        if underline {
+            let mut x_pos = begin_x;
+            for _ in 0..self.char_width {
+                self.rgb_pixmap.put_pixel(x_pos, begin_y, rat_fg);
+                x_pos += 1;
             }
         }
-        if rat_cell.modifier.contains(Modifier::RAPID_BLINK) {
-            self.always_redraw_list.insert((xik, yik));
-            if self.blinking_fast {
-                fg_color = bg_color.clone();
+        if crossed_out {
+            let y_pos = begin_y + self.char_height / 2;
+            let mut x_pos = begin_x;
+            for _ in 0..self.char_width {
+                self.rgb_pixmap.put_pixel(x_pos, y_pos, rat_fg);
+                x_pos += 1;
             }
         }
 
         let char = rat_cell.symbol().chars().next().unwrap();
 
-        let ascent = self.raster_backend.font.metrics.ascent as i32;
+        let ascent = font_to_use.metrics.ascent as i32;
 
-        if let Some(glyph) = self.raster_backend.font.glyphs.get(char) {
+        if let Some(glyph) = font_to_use.glyphs.get(char) {
             // glyph bitmap size (top-down rows in BDF BITMAP)
             let gw = glyph.bounding_box.size.x;
             let gh = glyph.bounding_box.size.y;
@@ -146,12 +168,10 @@ impl SoftBackend<Bdf> {
                     }
                     let dst_x = dst_x_i32 as usize;
                     let dst_y = dst_y_i32 as usize;
-
-                    self.rgb_pixmap.put_pixel(
-                        dst_x,
-                        dst_y,
-                        [fg_color[0], fg_color[1], fg_color[2]],
-                    );
+                    // signed bounds check before casting to usize
+                    if dst_x < self.rgb_pixmap.width && dst_y < self.rgb_pixmap.height {
+                        self.rgb_pixmap.put_pixel(dst_x, dst_y, rat_fg);
+                    }
                 }
             }
         }
@@ -172,20 +192,39 @@ impl SoftBackend<Bdf> {
     /// let backend = SoftBackend::new_with_font(20, 20, 16, FONT_DATA);
     /// ```
 
-    pub fn new(width: u16, height: u16, font_size: (usize, usize), font_data: &str) -> Self {
-        let bdf_font = Font::parse(font_data).expect("COULD NOT PARSE BDF FONT DATA");
+    pub fn new(
+        width: u16,
+        height: u16,
+        font_size: (usize, usize),
+        font_regular: &str,
+        font_bold: Option<&str>,
+        font_italic: Option<&str>,
+    ) -> Self {
+        let bdf_font_regular = Font::parse(font_regular).expect("COULD NOT PARSE BDF FONT DATA");
         let char_width = font_size.0;
         let char_height = font_size.1;
-        let a = bdf_font.metrics;
-        println!("metrics {:#?}", a);
+
         let rgb_pixmap = RgbPixmap::new(char_width * width as usize, char_height * height as usize);
+
+        let bdf_font_italic = match font_italic {
+            Some(x) => Some(Font::parse(x).expect("INVALID ITALIC FONT")),
+            _ => None,
+        };
+        let bdf_font_bold = match font_bold {
+            Some(x) => Some(Font::parse(x).expect("INVALID BOLD FONT")),
+            _ => None,
+        };
 
         let mut return_struct = Self {
             buffer: Buffer::empty(Rect::new(0, 0, width, height)),
             cursor: false,
             cursor_pos: (0, 0),
 
-            raster_backend: Bdf { font: bdf_font },
+            raster_backend: Bdf {
+                font_regular: bdf_font_regular,
+                font_italic: bdf_font_italic,
+                font_bold: bdf_font_bold,
+            },
 
             rgb_pixmap,
 
