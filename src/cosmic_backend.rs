@@ -129,8 +129,6 @@ impl SoftBackend<CosmicText> {
             None,
             0,
         );
-        let pix_wid = self.get_pixmap_width() as i32;
-        let pix_hei = self.get_pixmap_height() as i32;
 
         for run in self.raster_backend.cosmic_buffer.layout_runs() {
             for glyph in run.glyphs.iter() {
@@ -157,11 +155,21 @@ impl SoftBackend<CosmicText> {
                                 let get_x = begin_x + real_x as usize;
                                 let get_y = begin_y + real_y as usize;
 
-                                let put_color = if image.data[i] > 0 {
-                                    [fg_color[0], fg_color[1], fg_color[2]]
-                                } else {
-                                    [bg_color[0], bg_color[1], bg_color[2]]
+                                //This is used to set the alpha tolerance of block characters to zero
+                                let put_color = match override_char(&text_symbol) {
+                                    (true, val) => {
+                                        if image.data[i] > val {
+                                            [fg_color[0], fg_color[1], fg_color[2]]
+                                        } else {
+                                            [bg_color[0], bg_color[1], bg_color[2]]
+                                        }
+                                    }
+                                    (false, _) => blend_rgba(
+                                        [fg_color[0], fg_color[1], fg_color[2], image.data[i]],
+                                        [bg_color[0], bg_color[1], bg_color[2], 255],
+                                    ),
                                 };
+
                                 self.rgb_pixmap.put_pixel(get_x, get_y, put_color);
                             }
 
@@ -235,7 +243,7 @@ impl SoftBackend<CosmicText> {
     /// let backend = SoftBackend::new_with_font(20, 20, 16, FONT_DATA);
     /// ```
 
-    pub fn new_with_font(width: u16, height: u16, font_size: i32, font_data: &[u8]) -> Self {
+    pub fn new(width: u16, height: u16, font_size: i32, font_data: &[u8]) -> Self {
         let mut swash_cache = SwashCache::new();
 
         let mut db = Database::new();
@@ -409,17 +417,16 @@ impl Backend for SoftBackend<CosmicText> {
     }
 }
 
-fn is_unicode_block_drawing(c: char) -> bool {
-    let code = c as u32;
-
-    // Block Elements: U+2580 - U+259F
-    (0x2580..=0x259F).contains(&code) ||
-    // Box Drawing: U+2500 - U+257F
-    (0x2500..=0x257F).contains(&code) ||
-    // Geometric Shapes: U+25A0 - U+25FF
-    (0x25A0..=0x25FF).contains(&code) ||
-    // Miscellaneous Symbols and Arrows: U+2B00 - U+2BFF
-    (0x2B00..=0x2BFF).contains(&code) ||
-    // Supplemental Arrows-C: U+1F800 - U+1F8FF
-    (0x1F800..=0x1F8FF).contains(&code)
+fn override_char(c: &str) -> (bool, u8) {
+    let code = c.chars().next().unwrap() as u32;
+    //block shades
+    if (0x2591..=0x2593).contains(&code) {
+        (false, 0)
+    }
+    //block drawing
+    else if (0x2580..=0x259F).contains(&code) {
+        (true, 0)
+    } else {
+        (false, 127)
+    }
 }
