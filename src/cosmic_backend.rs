@@ -149,37 +149,22 @@ impl SoftBackend<CosmicText> {
 
                     for off_y in 0..image.placement.height {
                         for off_x in 0..image.placement.width {
-                            {
-                                let mut real_x = physical_glyph.x + x + off_x as i32;
+                            let real_x = physical_glyph.x + x + off_x as i32;
 
-                                let mut real_y =
-                                    run.line_height as i32 + physical_glyph.y + y + off_y as i32;
+                            let real_y = run.line_y as i32 + physical_glyph.y + y + off_y as i32;
 
-                                real_x = real_x.max(0);
-                                real_y = real_y.max(0);
+                            if real_x >= 0 && real_y >= 0 {
+                                let get_x = begin_x + real_x as usize;
+                                let get_y = begin_y + real_y as usize;
 
-                                /*  let phys_x = physical_glyph.x.max(0);
-                                let phys_y = physical_glyph.y.max(0); */
-
-                                let get_x = begin_x as i32 + real_x;
-                                let get_y = begin_y as i32 + real_y;
-                                if get_x < pix_wid && get_y < pix_hei {
-                                    if get_x >= 0 && get_y >= 0 {
-                                        let put_color = if image.data[i] > 127 {
-                                            [fg_color[0], fg_color[1], fg_color[2]]
-                                        } else {
-                                            [bg_color[0], bg_color[1], bg_color[2]]
-                                        };
-                                        self.rgb_pixmap.put_pixel(
-                                            get_x as usize,
-                                            get_y as usize,
-                                            put_color,
-                                        );
-                                    }
-                                }
-
-                                i += 1;
+                                let put_color = blend_rgba(
+                                    [fg_color[0], fg_color[1], fg_color[2], image.data[i]],
+                                    [bg_color[0], bg_color[1], bg_color[2], 255],
+                                );
+                                self.rgb_pixmap.put_pixel(get_x, get_y, put_color);
                             }
+
+                            i += 1;
                         }
                     }
                 }
