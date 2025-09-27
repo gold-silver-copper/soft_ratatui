@@ -4,13 +4,19 @@ use embedded_graphics_unicodefonts::{
 use ratatui::Terminal;
 /// A minimal example of a Ratatui application.
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
-use soft_ratatui::SoftBackend;
+use soft_ratatui::{EmbeddedGraphics, SoftBackend};
 
 fn main() {
     let font_regular = mono_8x13_atlas();
     let font_italic = mono_8x13_italic_atlas();
     let font_bold = mono_8x13_bold_atlas();
-    let backend = SoftBackend::new(100, 50, font_regular, Some(font_bold), Some(font_italic));
+    let backend = SoftBackend::<EmbeddedGraphics>::new(
+        100,
+        50,
+        font_regular,
+        Some(font_bold),
+        Some(font_italic),
+    );
     let mut terminal = Terminal::new(backend).unwrap();
     terminal.clear();
 
