@@ -98,8 +98,7 @@ impl SoftBackend<Bdf> {
                 fg_color = bg_color.clone();
             }
         }
-        let pix_wid = self.get_pixmap_width();
-        let pix_hei = self.get_pixmap_height();
+
         let char = rat_cell.symbol().chars().next().unwrap();
 
         /*      let y_iter = glyph.bounding_box.size.y - glyph.bounding_box.offset.y;
@@ -109,33 +108,21 @@ impl SoftBackend<Bdf> {
         if let Some(glyph) = self.raster_backend.font.glyphs.get(char) {
             for x in 0..self.char_width {
                 for y in 0..self.char_height {
-                    let y_off = if glyph.bounding_box.size.y >= 13 {
-                        0
-                    } else {
-                        13 - glyph.bounding_box.size.y
-                    };
-
-                    let get_x = x as i32;
+                    let get_x = x as i32 - glyph.bounding_box.offset.x;
                     let get_y = y as i32;
-                    if char == '─' {
-                        println!("glyph {:#?}", glyph);
-                    }
 
-                    if get_x >= 0 && get_y >= 0 {
-                        let put_x = begin_x + x;
-                        let put_y = begin_y + y + y_off as usize;
-                        if put_x < pix_wid && put_y < pix_hei {
-                            match glyph.pixel(get_x as usize, get_y as usize) {
-                                Some(true) => {
-                                    self.rgb_pixmap.put_pixel(
-                                        put_x,
-                                        put_y,
-                                        [fg_color[0], fg_color[1], fg_color[2]],
-                                    );
-                                }
-                                _ => {}
-                            }
+                    let put_x = begin_x + x;
+                    let put_y = begin_y + y;
+
+                    match glyph.pixel(get_x as usize, get_y as usize) {
+                        Some(true) => {
+                            self.rgb_pixmap.put_pixel(
+                                put_x,
+                                put_y,
+                                [fg_color[0], fg_color[1], fg_color[2]],
+                            );
                         }
+                        _ => {}
                     }
                 }
             }
@@ -161,6 +148,8 @@ impl SoftBackend<Bdf> {
         let bdf_font = Font::parse(font_data).expect("COULD NOT PARSE BDF FONT DATA");
         let char_width = font_size.0;
         let char_height = font_size.1;
+
+        // let a = bdf_font.
 
         let rgb_pixmap = RgbPixmap::new(char_width * width as usize, char_height * height as usize);
 
