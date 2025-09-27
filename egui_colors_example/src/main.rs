@@ -3,10 +3,11 @@ use eframe::egui::{self, TextureHandle};
 use embedded_graphics_unicodefonts::{
     mono_8x13_atlas, mono_8x13_bold_atlas, mono_8x13_italic_atlas,
 };
-use palette::{convert::FromColorUnclamped, Okhsv, Srgb};
+use palette::{Okhsv, Srgb, convert::FromColorUnclamped};
 use ratatui::prelude::Stylize;
 /// A minimal example of a Ratatui application.
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
+use ratatui::{Frame, Terminal};
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Position, Rect},
@@ -14,10 +15,9 @@ use ratatui::{
     text::Text,
     widgets::Widget,
 };
-use ratatui::{Frame, Terminal};
+static FONT_DATA: &str = include_str!("../../assets/cozette.bdf");
 
-use soft_ratatui::cozette::mono_cozette_all_atlas;
-use soft_ratatui::SoftBackend;
+use soft_ratatui::{Bdf, SoftBackend};
 use std::time::{Duration, Instant};
 
 fn main() -> eframe::Result {
@@ -40,16 +40,14 @@ fn main() -> eframe::Result {
 }
 
 struct MyApp {
-    pub terminal: Terminal<SoftBackend>,
+    pub terminal: Terminal<SoftBackend<Bdf>>,
     pub text_ref: Option<TextureHandle>,
     pub appik: App,
 }
 
 impl MyApp {
     fn new() -> Self {
-        let font_regular = mono_cozette_all_atlas();
-
-        let backend = SoftBackend::new(100, 100, font_regular, None, None);
+        let backend = SoftBackend::<Bdf>::new(100, 200, (6, 13), FONT_DATA, None, None);
         let mut terminal = Terminal::new(backend).unwrap();
         let appik = App::default();
 
@@ -147,7 +145,7 @@ impl App {
     /// Run the app
     ///
     /// This is the main event loop for the app.
-    pub fn run(&mut self, terminal: &mut Terminal<SoftBackend>) {
+    pub fn run(&mut self, terminal: &mut Terminal<SoftBackend<Bdf>>) {
         terminal.draw(|frame| frame.render_widget(self, frame.area()));
     }
 

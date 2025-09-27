@@ -11,7 +11,7 @@ use ratatui::backend::{Backend, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
 use ratatui::style;
-use ratatui::style::Modifier;
+
 use rustc_hash::FxHashSet;
 
 /// SoftBackend is a Software rendering backend for Ratatui. It stores the generated image internally as rgb_pixmap.
@@ -19,16 +19,6 @@ pub struct Bdf {
     font_regular: Font,
     font_italic: Option<Font>,
     font_bold: Option<Font>,
-}
-
-fn add_strikeout(text: &String) -> String {
-    let strike = '\u{0336}';
-    text.chars().flat_map(|c| [c, strike]).collect()
-}
-
-fn add_underline(text: &String) -> String {
-    let strike = '\u{0332}';
-    text.chars().flat_map(|c| [c, strike]).collect()
 }
 
 impl SoftBackend<Bdf> {
@@ -106,9 +96,10 @@ impl SoftBackend<Bdf> {
         }
 
         if underline {
+            let y_pos = begin_y + self.char_height - 1;
             let mut x_pos = begin_x;
             for _ in 0..self.char_width {
-                self.rgb_pixmap.put_pixel(x_pos, begin_y, rat_fg);
+                self.rgb_pixmap.put_pixel(x_pos, y_pos, rat_fg);
                 x_pos += 1;
             }
         }
