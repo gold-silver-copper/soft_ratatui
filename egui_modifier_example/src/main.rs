@@ -22,8 +22,8 @@ use ratatui::widgets::Paragraph;
 /// A minimal example of a Ratatui application.
 use ratatui::{Frame, Terminal};
 
-use soft_ratatui::SoftBackend;
-static FONT_DATA: &[u8] = include_bytes!("../../assets/iosevka.ttf");
+use soft_ratatui::{Bdf, SoftBackend};
+static FONT_DATA: &str = include_str!("../../assets/cozette.bdf");
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([1500.0, 1000.0]),
@@ -44,7 +44,7 @@ fn main() -> eframe::Result {
 }
 
 struct MyApp {
-    pub terminal: Terminal<SoftBackend>,
+    pub terminal: Terminal<SoftBackend<Bdf>>,
     pub text_ref: Option<TextureHandle>,
 }
 
@@ -53,7 +53,7 @@ impl MyApp {
         let font_regular = mono_8x13_atlas();
         let font_italic = mono_8x13_italic_atlas();
         let font_bold = mono_8x13_bold_atlas();
-        let backend = SoftBackend::new(100, 50, font_regular, Some(font_bold), Some(font_italic));
+        let backend = SoftBackend::<Bdf>::new(100, 50, (6, 13), FONT_DATA);
         let mut terminal = Terminal::new(backend).unwrap();
 
         Self {
