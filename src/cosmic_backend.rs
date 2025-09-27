@@ -157,10 +157,11 @@ impl SoftBackend<CosmicText> {
                                 let get_x = begin_x + real_x as usize;
                                 let get_y = begin_y + real_y as usize;
 
-                                let put_color = blend_rgba(
-                                    [fg_color[0], fg_color[1], fg_color[2], image.data[i]],
-                                    [bg_color[0], bg_color[1], bg_color[2], 255],
-                                );
+                                let put_color = if image.data[i] > 0 {
+                                    [fg_color[0], fg_color[1], fg_color[2]]
+                                } else {
+                                    [bg_color[0], bg_color[1], bg_color[2]]
+                                };
                                 self.rgb_pixmap.put_pixel(get_x, get_y, put_color);
                             }
 
