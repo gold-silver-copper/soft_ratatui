@@ -105,25 +105,70 @@ impl SoftBackend<Bdf> {
         for x in 0..glyph.bounding_box.size.x {
             for y in 0..y_iter { */
 
+        // Replace 10 with whatever you read from the font properties (FONT_ASCENT).
+        let ascent: i32 = 10;
+        let descent: i32 = 3;
+        let cell_h = ascent + descent; // 13
+
         if let Some(glyph) = self.raster_backend.font.glyphs.get(char) {
-            for x in 0..self.char_width {
-                for y in 0..self.char_height {
-                    let get_x = x as i32 - glyph.bounding_box.offset.x;
-                    let get_y = y as i32;
+            // glyph bitmap size (top-down rows in BDF BITMAP)
+            let gw = glyph.bounding_box.size.x as i32;
+            let gh = glyph.bounding_box.size.y as i32;
+            let off_x = glyph.bounding_box.offset.x; // BBX x offset (signed)
+            let off_y = glyph.bounding_box.offset.y; // BBX y offset (signed), *lower-left corner y relative to origin*
 
-                    let put_x = begin_x + x;
-                    let put_y = begin_y + y;
+            let base_x = begin_x as i32; // top-left x of the cell in destination
+            let base_y = begin_y as i32; // top-left y of the cell in destination
 
-                    match glyph.pixel(get_x as usize, get_y as usize) {
-                        Some(true) => {
-                            self.rgb_pixmap.put_pixel(
-                                put_x,
-                                put_y,
-                                [fg_color[0], fg_color[1], fg_color[2]],
-                            );
-                        }
-                        _ => {}
+            // For BDF: BITMAP rows are listed top-to-bottom. We'll assume glyph.pixel(x,y)
+            // expects y=0 as the top row of the glyph bitmap. If that's not true,
+            // see note below about flipping `sample_sy`.
+            let y_is_top_down = true;
+
+            // Iterate over the glyph bitmap (sx: left->right, sy: top->bottom)
+            for sy in 0..gh {
+                let sample_sy = if y_is_top_down {
+                    sy as usize
+                } else {
+                    // flip if glyph.pixel expects bottom-up indexing
+                    (gh - 1 - sy) as usize
+                };
+
+                for sx in 0..gw {
+                    let sample_sx = sx as usize;
+
+                    // only render pixels that are actually set in the glyph
+                    if !matches!(glyph.pixel(sample_sx, sample_sy), Some(true)) {
+                        continue;
                     }
+
+                    // Map the glyph bitmap row (sy) to a y coordinate relative to the baseline:
+                    // BDF: the lower-left corner of the bitmap sits at y = off_y (relative to origin/baseline).
+                    // The glyph top row (sy = 0) has relative y:
+                    //    y_rel = off_y + (gh - 1 - sy)
+                    // We want destination (top-down) row index:
+                    //    dst_y = base_y + (ascent - 1) - y_rel
+                    //
+                    // Simplified algebra gives:
+                    //    dst_y = base_y + ascent - off_y - gh + sy
+                    //
+                    // (This places sy so that a glyph whose lower-left is on the baseline (off_y = 0)
+                    //  will end with its bottom row on the baseline row: dst_y == base_y + ascent - 1.)
+                    let dst_x_i32 = base_x + sx + off_x;
+                    let dst_y_i32 = base_y + ascent - off_y - gh + sy;
+
+                    // signed bounds check before casting to usize
+                    if dst_x_i32 < 0 || dst_y_i32 < 0 {
+                        continue;
+                    }
+                    let dst_x = dst_x_i32 as usize;
+                    let dst_y = dst_y_i32 as usize;
+
+                    self.rgb_pixmap.put_pixel(
+                        dst_x,
+                        dst_y,
+                        [fg_color[0], fg_color[1], fg_color[2]],
+                    );
                 }
             }
         }
@@ -148,9 +193,8 @@ impl SoftBackend<Bdf> {
         let bdf_font = Font::parse(font_data).expect("COULD NOT PARSE BDF FONT DATA");
         let char_width = font_size.0;
         let char_height = font_size.1;
-
-        // let a = bdf_font.
-
+        let a = bdf_font.metrics;
+        println!("metrics {:#?}", a);
         let rgb_pixmap = RgbPixmap::new(char_width * width as usize, char_height * height as usize);
 
         let mut return_struct = Self {
