@@ -101,38 +101,21 @@ impl SoftBackend<Bdf> {
 
         let char = rat_cell.symbol().chars().next().unwrap();
 
-        /*      let y_iter = glyph.bounding_box.size.y - glyph.bounding_box.offset.y;
-        for x in 0..glyph.bounding_box.size.x {
-            for y in 0..y_iter { */
-
-        // Replace 10 with whatever you read from the font properties (FONT_ASCENT).
-        let ascent: i32 = 10;
-        let descent: i32 = 3;
-        let cell_h = ascent + descent; // 13
+        let ascent = self.raster_backend.font.metrics.ascent as i32;
 
         if let Some(glyph) = self.raster_backend.font.glyphs.get(char) {
             // glyph bitmap size (top-down rows in BDF BITMAP)
-            let gw = glyph.bounding_box.size.x as i32;
-            let gh = glyph.bounding_box.size.y as i32;
+            let gw = glyph.bounding_box.size.x;
+            let gh = glyph.bounding_box.size.y;
             let off_x = glyph.bounding_box.offset.x; // BBX x offset (signed)
             let off_y = glyph.bounding_box.offset.y; // BBX y offset (signed), *lower-left corner y relative to origin*
 
             let base_x = begin_x as i32; // top-left x of the cell in destination
             let base_y = begin_y as i32; // top-left y of the cell in destination
 
-            // For BDF: BITMAP rows are listed top-to-bottom. We'll assume glyph.pixel(x,y)
-            // expects y=0 as the top row of the glyph bitmap. If that's not true,
-            // see note below about flipping `sample_sy`.
-            let y_is_top_down = true;
-
             // Iterate over the glyph bitmap (sx: left->right, sy: top->bottom)
             for sy in 0..gh {
-                let sample_sy = if y_is_top_down {
-                    sy as usize
-                } else {
-                    // flip if glyph.pixel expects bottom-up indexing
-                    (gh - 1 - sy) as usize
-                };
+                let sample_sy = sy as usize;
 
                 for sx in 0..gw {
                     let sample_sx = sx as usize;
