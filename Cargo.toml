@@ -20,20 +20,23 @@ embedded-graphics = {version = "0.8.1",optional = true}
 
 embedded-graphics-unicodefonts = {version = "0.2.0",optional = true}
 cosmic-text = { version = "0.14.2", optional = true }
-bdf-parser = {  git = "https://github.com/embedded-graphics/bdf", optional = true }
+copper-bdf-parser = {  version = "0.1.1", optional = true }
 [features]
 default = ["embedded-graphics","unicodefonts"]
 unicodefonts = ["dep:embedded-graphics-unicodefonts"]
 embedded-graphics = ["dep:embedded-graphics"]
 cosmic-text = ["dep:cosmic-text"]
-bdf-parser = ["dep:bdf-parser"]
+bdf-parser = ["dep:copper-bdf-parser"]
 #cosmic-text = ["dep:bdf-parser"]
 
-
-[dev-dependencies]
-
-embedded-graphics-unicodefonts = "0.2.0"
-
+[[example]]
+name = "bdf"
+path = "examples/bdf.rs"
+required-features = ["bdf-parser"]
+[[example]]
+name = "cosmic"
+path = "examples/cosmic.rs"
+required-features = ["cosmic-text"]
 [profile.release]
 #opt-level = 1
 #lto = true # Enable link-time optimization
