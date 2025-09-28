@@ -17,7 +17,7 @@ use ratatui::{
     prelude::{Stylize, Terminal},
     widgets::{Block, Borders, Paragraph, Wrap},
 };
-use soft_ratatui::SoftBackend;
+use soft_ratatui::{EmbeddedGraphics, SoftBackend};
 use std::f32::consts::PI;
 
 fn main() {
@@ -110,7 +110,7 @@ fn setup(
             parent.spawn(ImageNode::new(image_handle.clone()));
         });
 
-    let cube_size = 4.0;
+    let cube_size = 1.0;
     let cube_handle = meshes.add(Cuboid::new(cube_size, cube_size, cube_size));
 
     // This material has the texture that has been rendered.
@@ -134,7 +134,7 @@ fn setup(
     // The main pass camera.
     commands.spawn((
         Camera3d::default(),
-        Transform::from_xyz(0.0, 0.0, 15.0).looking_at(Vec3::ZERO, Vec3::Y),
+        Transform::from_xyz(0.0, 0.0, 4.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 }
 
@@ -149,13 +149,19 @@ fn rotator_system(time: Res<Time>, mut query: Query<&mut Transform, With<Cube>>)
 
 // Create resource to hold the ratatui terminal
 #[derive(Resource, Deref, DerefMut)]
-struct SoftTerminal(Terminal<SoftBackend>);
+struct SoftTerminal(Terminal<SoftBackend<EmbeddedGraphics>>);
 impl Default for SoftTerminal {
     fn default() -> Self {
         let font_regular = mono_8x13_atlas();
         let font_italic = mono_8x13_italic_atlas();
         let font_bold = mono_8x13_bold_atlas();
-        let backend = SoftBackend::new(100, 50, font_regular, Some(font_bold), Some(font_italic));
+        let backend = SoftBackend::<EmbeddedGraphics>::new(
+            30,
+            30,
+            font_regular,
+            Some(font_bold),
+            Some(font_italic),
+        );
         //backend.set_font_size(12);
         Self(Terminal::new(backend).unwrap())
     }

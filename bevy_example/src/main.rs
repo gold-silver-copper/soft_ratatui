@@ -10,7 +10,7 @@ use ratatui::{
     prelude::{Stylize, Terminal},
     widgets::{Block, Borders, Paragraph, Wrap},
 };
-use soft_ratatui::SoftBackend;
+use soft_ratatui::{EmbeddedGraphics, SoftBackend};
 
 fn main() {
     App::new()
@@ -88,13 +88,19 @@ fn ui_example_system(
 
 // Create resource to hold the ratatui terminal
 #[derive(Resource, Deref, DerefMut)]
-struct SoftTerminal(Terminal<SoftBackend>);
+struct SoftTerminal(Terminal<SoftBackend<EmbeddedGraphics>>);
 impl Default for SoftTerminal {
     fn default() -> Self {
         let font_regular = mono_8x13_atlas();
         let font_italic = mono_8x13_italic_atlas();
         let font_bold = mono_8x13_bold_atlas();
-        let backend = SoftBackend::new(100, 50, font_regular, Some(font_bold), Some(font_italic));
+        let backend = SoftBackend::<EmbeddedGraphics>::new(
+            100,
+            50,
+            font_regular,
+            Some(font_bold),
+            Some(font_italic),
+        );
         //backend.set_font_size(12);
         Self(Terminal::new(backend).unwrap())
     }
