@@ -11,9 +11,7 @@
 use std::{error::Error, iter::once, result};
 
 use eframe::egui::{self, TextureHandle};
-use embedded_graphics_unicodefonts::{
-    mono_8x13_atlas, mono_8x13_bold_atlas, mono_8x13_italic_atlas,
-};
+
 use itertools::Itertools;
 use ratatui::layout::{Constraint, Layout};
 use ratatui::style::{Color, Modifier, Style, Stylize};
@@ -22,8 +20,8 @@ use ratatui::widgets::Paragraph;
 /// A minimal example of a Ratatui application.
 use ratatui::{Frame, Terminal};
 
-use soft_ratatui::{Bdf, SoftBackend};
-static FONT_DATA: &str = include_str!("../../assets/cozette.bdf");
+use soft_ratatui::{CosmicText, SoftBackend};
+static FONT_DATA: &[u8] = include_bytes!("../../assets/iosevka.ttf");
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([1500.0, 1000.0]),
@@ -44,16 +42,13 @@ fn main() -> eframe::Result {
 }
 
 struct MyApp {
-    pub terminal: Terminal<SoftBackend<Bdf>>,
+    pub terminal: Terminal<SoftBackend<CosmicText>>,
     pub text_ref: Option<TextureHandle>,
 }
 
 impl MyApp {
     fn new() -> Self {
-        let font_regular = mono_8x13_atlas();
-        let font_italic = mono_8x13_italic_atlas();
-        let font_bold = mono_8x13_bold_atlas();
-        let backend = SoftBackend::<Bdf>::new(100, 50, (6, 13), FONT_DATA, None, None);
+        let backend = SoftBackend::<CosmicText>::new(100, 50, 13, FONT_DATA);
         let mut terminal = Terminal::new(backend).unwrap();
 
         Self {
