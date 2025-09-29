@@ -159,10 +159,8 @@ impl SoftBackend<Bdf> {
                     }
                     let dst_x = dst_x_i32 as usize;
                     let dst_y = dst_y_i32 as usize;
-                    // signed bounds check before casting to usize
-                    if dst_x < self.rgb_pixmap.width && dst_y < self.rgb_pixmap.height {
-                        self.rgb_pixmap.put_pixel(dst_x, dst_y, rat_fg);
-                    }
+
+                    self.rgb_pixmap.put_pixel(dst_x, dst_y, rat_fg);
                 }
             }
         }
