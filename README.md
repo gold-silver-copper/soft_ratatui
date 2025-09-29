@@ -7,7 +7,7 @@
 
 **Software rendering backend for [`ratatui`](https://github.com/ratatui/ratatui). No GPU required. TUI everywhere.**
 
-![](ratbox.avif)
+![](new.avif)
 
 
 Fast, portable, no-bloat.
