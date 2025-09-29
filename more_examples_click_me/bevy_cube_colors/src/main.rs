@@ -39,7 +39,7 @@ use std::{
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins((DefaultPlugins.set(ImagePlugin::default_nearest())))
         .insert_resource(Time::<Fixed>::from_hz(40.0))
         .init_resource::<SoftTerminal>()
         .init_resource::<Stuff>()

@@ -9,7 +9,7 @@ use soft_ratatui::{EmbeddedGraphics, SoftBackend};
 static FONT_DATA: &str = include_str!("../../../assets/cozette.bdf");
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins((DefaultPlugins.set(ImagePlugin::default_nearest())))
         .init_resource::<SoftTerminal>()
         .init_resource::<Stuff>()
         .add_systems(Startup, setup)
