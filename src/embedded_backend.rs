@@ -31,20 +31,18 @@ pub struct EmbeddedGraphics {
 }
 
 impl RasterBackend for EmbeddedGraphics {
-    fn draw_cell(&self, xik: u16, yik: u16, rat_cell: &Cell) {
-        let rat_cell = backend.buffer.cell(Position::new(xik, yik)).unwrap();
-
+    fn draw_cell(&mut self, xik: u16, yik: u16, rat_cell: &Cell) {
         let mut rat_fg = rat_to_rgb(&rat_cell.fg, true);
         let mut rat_bg = rat_to_rgb(&rat_cell.bg, false);
 
         let mut style_builder = MonoTextStyleBuilder::new()
-            .font(&self.raster_backend.font_regular)
+            .font(&self.font_regular)
             .text_color(Rgb888::WHITE)
             .background_color(Rgb888::BLACK);
 
         for modifier in rat_cell.modifier.iter() {
             style_builder = match modifier {
-                style::Modifier::BOLD => match &self.raster_backend.font_bold {
+                style::Modifier::BOLD => match &self.font_bold {
                     None => style_builder,
                     Some(font) => style_builder.font(font),
                 },
