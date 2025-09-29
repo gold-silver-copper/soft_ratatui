@@ -32,7 +32,7 @@ pub struct EmbeddedGraphics {
 
 impl RasterBackend for EmbeddedGraphics {
     fn draw_cell(
-        &self,
+        &mut self,
         xik: u16,
         yik: u16,
         rat_cell: &Cell,

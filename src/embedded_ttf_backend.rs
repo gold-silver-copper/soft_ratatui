@@ -31,7 +31,7 @@ pub struct EmbeddedTTF {
 }
 impl RasterBackend for EmbeddedTTF {
     fn draw_cell(
-        &self,
+        &mut self,
         xik: u16,
         yik: u16,
         rat_cell: &Cell,

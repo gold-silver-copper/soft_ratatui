@@ -6,20 +6,20 @@ use std::io;
 use crate::SoftBackend;
 use crate::colors::*;
 use crate::pixmap::RgbPixmap;
+use crate::soft_backend::RasterBackend;
 use cosmic_text::fontdb::Database;
+use cosmic_text::{
+    Attrs, AttrsList, CacheKeyFlags, Family, LineEnding, Metrics, Shaping, Weight, Wrap,
+};
 use ratatui::backend::{Backend, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
 use ratatui::style::Modifier;
 
-use cosmic_text::{
-    Attrs, AttrsList, CacheKeyFlags, Family, LineEnding, Metrics, Shaping, Weight, Wrap,
-};
-
 use cosmic_text::{Buffer as CosmicBuffer, FontSystem, SwashCache};
 use rustc_hash::FxHashSet;
 
-/// Uses cosmic-text for rendering, not recommended as it has anti aliasing issues which are not good for a terminal
+/// Uses cosmic-text for rendering, not recommended as it has anti aliasing issues which are not good for a terminal (also i messed up the offsets i think lol)
 pub struct CosmicText {
     font_system: FontSystem,
 
@@ -37,28 +37,19 @@ fn add_underline(text: &String) -> String {
     let strike = '\u{0332}';
     text.chars().flat_map(|c| [c, strike]).collect()
 }
-
-impl SoftBackend<CosmicText> {
-    /// Retuns the raw rgb data of the pixmap as a flat array
-    pub fn get_pixmap_data(&self) -> &[u8] {
-        self.rgb_pixmap.data()
-    }
-    /// Retuns the pixmap in rgba format as a flat vector
-    pub fn get_pixmap_data_as_rgba(&self) -> Vec<u8> {
-        self.rgb_pixmap.to_rgba()
-    }
-    /// Returns the width of the pixmap in pixels
-    pub fn get_pixmap_width(&self) -> usize {
-        self.rgb_pixmap.width()
-    }
-    /// Returns the height of the pixmap in pixels
-    pub fn get_pixmap_height(&self) -> usize {
-        self.rgb_pixmap.height()
-    }
-
-    fn draw_cell(&mut self, xik: u16, yik: u16) {
-        let rat_cell = self.buffer.cell(Position::new(xik, yik)).unwrap();
-
+impl RasterBackend for CosmicText {
+    fn draw_cell(
+        &mut self,
+        xik: u16,
+        yik: u16,
+        rat_cell: &Cell,
+        always_redraw_list: &mut FxHashSet<(u16, u16)>,
+        blinking_fast: bool,
+        blinking_slow: bool,
+        char_width: usize,
+        char_height: usize,
+        rgb_pixmap: &mut RgbPixmap,
+    ) {
         let mut rat_fg = rat_cell.fg;
         let rat_bg = rat_cell.bg;
         if rat_cell.modifier.contains(Modifier::HIDDEN) {
@@ -75,14 +66,14 @@ impl SoftBackend<CosmicText> {
             (fg_color, bg_color) = (dim_rgb(fg_color), dim_rgb(bg_color));
         };
 
-        let begin_x = xik as usize * self.char_width;
-        let begin_y = yik as usize * self.char_height;
+        let begin_x = xik as usize * char_width;
+        let begin_y = yik as usize * char_height;
 
-        for y in 0..self.char_height {
+        for y in 0..char_height {
             let y_pos = begin_y + y;
             let mut x_pos = begin_x;
-            for _ in 0..self.char_width {
-                self.rgb_pixmap.put_pixel(x_pos, y_pos, bg_color);
+            for _ in 0..char_width {
+                rgb_pixmap.put_pixel(x_pos, y_pos, bg_color);
                 x_pos += 1;
             }
         }
@@ -97,14 +88,14 @@ impl SoftBackend<CosmicText> {
         }
 
         if rat_cell.modifier.contains(Modifier::SLOW_BLINK) {
-            self.always_redraw_list.insert((xik, yik));
-            if self.blinking_slow {
+            always_redraw_list.insert((xik, yik));
+            if blinking_slow {
                 fg_color = bg_color.clone();
             }
         }
         if rat_cell.modifier.contains(Modifier::RAPID_BLINK) {
-            self.always_redraw_list.insert((xik, yik));
-            if self.blinking_fast {
+            always_redraw_list.insert((xik, yik));
+            if blinking_fast {
                 fg_color = bg_color.clone();
             }
         }
@@ -117,29 +108,22 @@ impl SoftBackend<CosmicText> {
         if rat_cell.modifier.contains(Modifier::ITALIC) {
             attrs = attrs.cache_key_flags(CacheKeyFlags::FAKE_ITALIC);
         }
-        let mets = self.raster_backend.cosmic_buffer.metrics().font_size;
-        let line = self.raster_backend.cosmic_buffer.lines.get_mut(0).unwrap();
+        let mets = self.cosmic_buffer.metrics().font_size;
+        let line = self.cosmic_buffer.lines.get_mut(0).unwrap();
         line.set_text(&text_symbol, LineEnding::None, AttrsList::new(&attrs));
 
-        line.layout(
-            &mut self.raster_backend.font_system,
-            mets,
-            None,
-            Wrap::None,
-            None,
-            0,
-        );
+        line.layout(&mut self.font_system, mets, None, Wrap::None, None, 0);
 
-        for run in self.raster_backend.cosmic_buffer.layout_runs() {
+        for run in self.cosmic_buffer.layout_runs() {
             for glyph in run.glyphs.iter() {
                 let physical_glyph = glyph.physical((0., 0.), 1.0);
 
                 //TODO : Handle Content::Color (emojis?)
 
-                if let Some(image) = self.raster_backend.swash_cache.get_image(
-                    &mut self.raster_backend.font_system,
-                    physical_glyph.cache_key,
-                ) {
+                if let Some(image) = self
+                    .swash_cache
+                    .get_image(&mut self.font_system, physical_glyph.cache_key)
+                {
                     let x = image.placement.left;
 
                     let y = -image.placement.top;
@@ -170,7 +154,7 @@ impl SoftBackend<CosmicText> {
                                     ),
                                 };
 
-                                self.rgb_pixmap.put_pixel(get_x, get_y, put_color);
+                                rgb_pixmap.put_pixel(get_x, get_y, put_color);
                             }
 
                             i += 1;
@@ -180,7 +164,8 @@ impl SoftBackend<CosmicText> {
             }
         }
     }
-
+}
+impl SoftBackend<CosmicText> {
     /// Sets a new font size for the terminal image.
     /// This will recreate the pixmap and do a full redraw. Do not run every frame.
     pub fn set_font_size(&mut self, font_size: i32) {
@@ -314,106 +299,6 @@ impl SoftBackend<CosmicText> {
         };
         _ = return_struct.clear();
         return_struct
-    }
-
-    /// Returns a reference to the internal buffer of the `SoftBackend`.
-    pub const fn buffer(&self) -> &Buffer {
-        &self.buffer
-    }
-
-    /// Resizes the `SoftBackend` to the specified width and height.
-    pub fn resize(&mut self, width: u16, height: u16) {
-        self.buffer.resize(Rect::new(0, 0, width, height));
-        let rgb_pixmap = RgbPixmap::new(
-            self.char_width as usize * width as usize,
-            self.char_height as usize * height as usize,
-        );
-        self.rgb_pixmap = rgb_pixmap;
-        self.redraw();
-    }
-
-    /// Redraws the pixmap
-    pub fn redraw(&mut self) {
-        self.always_redraw_list = FxHashSet::default();
-        for x in 0..self.buffer.area.width {
-            for y in 0..self.buffer.area.height {
-                self.draw_cell(x, y);
-            }
-        }
-    }
-
-    fn update_blinking(&mut self) {
-        self.blink_counter = (self.blink_counter + 1) % 200;
-
-        self.blinking_fast = matches!(self.blink_counter % 100, 0..=5);
-        self.blinking_slow = matches!(self.blink_counter, 20..=25);
-    }
-}
-
-impl Backend for SoftBackend<CosmicText> {
-    fn draw<'a, I>(&mut self, content: I) -> io::Result<()>
-    where
-        I: Iterator<Item = (u16, u16, &'a Cell)>,
-    {
-        self.update_blinking();
-        for (x, y, c) in content {
-            self.buffer[(x, y)] = c.clone();
-            self.draw_cell(x, y);
-        }
-        for (x, y) in self.always_redraw_list.clone().iter() {
-            self.draw_cell(*x, *y);
-        }
-
-        Ok(())
-    }
-
-    fn hide_cursor(&mut self) -> io::Result<()> {
-        self.cursor = false;
-
-        Ok(())
-    }
-
-    fn show_cursor(&mut self) -> io::Result<()> {
-        self.cursor = true;
-        Ok(())
-    }
-
-    fn get_cursor_position(&mut self) -> io::Result<Position> {
-        Ok(self.cursor_pos.into())
-    }
-
-    fn set_cursor_position<P: Into<Position>>(&mut self, position: P) -> io::Result<()> {
-        self.cursor_pos = position.into().into();
-        Ok(())
-    }
-
-    fn clear(&mut self) -> io::Result<()> {
-        self.buffer.reset();
-        let clear_cell = Cell::EMPTY;
-        let colorik = rat_to_rgb(&clear_cell.bg, false);
-
-        self.rgb_pixmap.fill([colorik[0], colorik[1], colorik[2]]);
-
-        Ok(())
-    }
-
-    fn size(&self) -> io::Result<Size> {
-        Ok(self.buffer.area.as_size())
-    }
-
-    fn window_size(&mut self) -> io::Result<WindowSize> {
-        let window_pixels = Size {
-            width: self.get_pixmap_width() as u16,
-            height: self.get_pixmap_height() as u16,
-        };
-        Ok(WindowSize {
-            columns_rows: self.buffer.area.as_size(),
-            pixels: window_pixels,
-        })
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
     }
 }
 
