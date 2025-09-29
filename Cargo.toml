@@ -24,7 +24,7 @@ copper-bdf-parser = {  version = "0.1.1", optional = true }
 embedded-ttf = { version = "0.2.2", optional = true }
 rusttype = { version = "0.9.3", optional = true }
 [features]
-default = ["unicodefonts","bdf-parser"]
+default = ["unicodefonts",]
 unicodefonts = ["embedded-graphics","dep:embedded-graphics-unicodefonts"]
 embedded-graphics = ["dep:embedded-graphics"]
 cosmic-text = ["dep:cosmic-text"]
