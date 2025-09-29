@@ -15,7 +15,7 @@ use ratatui::{
     text::Text,
     widgets::Widget,
 };
-static FONT_DATA: &str = include_str!("../../assets/cozette.bdf");
+static FONT_DATA: &str = include_str!("../../../assets/cozette.bdf");
 
 use soft_ratatui::{Bdf, SoftBackend};
 use std::time::{Duration, Instant};
@@ -163,7 +163,7 @@ impl Widget for &mut App {
         let [title, fps] = Layout::horizontal([Min(0), Length(8)]).areas(top);
         Text::from("colors_rgb example. Press q to quit")
             .centered()
-            .black()
+            .white()
             .render(title, buf);
         self.fps_widget.render(fps, buf);
         self.colors_widget.render(colors, buf);
@@ -193,7 +193,7 @@ impl Widget for &mut FpsWidget {
         self.calculate_fps();
         if let Some(fps) = self.fps {
             let text = format!("{fps:.1} fps");
-            Text::from(text).black().slow_blink().render(area, buf);
+            Text::from(text).white().slow_blink().render(area, buf);
         }
     }
 }
