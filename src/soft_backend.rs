@@ -31,7 +31,18 @@ pub struct SoftBackend<R: RasterBackend> {
 }
 /// Trait for raster backends (TTF, embedded-graphics, etc.)
 pub trait RasterBackend {
-    fn draw_cell(&mut self, x: u16, y: u16, rat_cell: &Cell);
+    fn draw_cell(
+        &self,
+        x: u16,
+        y: u16,
+        rat_cell: &Cell,
+        always_redraw_list: &mut FxHashSet<(u16, u16)>,
+        blinking_fast: bool,
+        blinking_slow: bool,
+        char_width: usize,
+        char_height: usize,
+        rgb_pixmap: &mut RgbPixmap,
+    );
     // add anything else that differs between variants
 }
 
@@ -43,11 +54,31 @@ impl<R: RasterBackend> Backend for SoftBackend<R> {
         self.update_blinking();
         for (x, y, c) in content {
             self.buffer[(x, y)] = c.clone();
-            self.raster_backend.draw_cell(x, y, c);
+            self.raster_backend.draw_cell(
+                x,
+                y,
+                c,
+                &mut self.always_redraw_list,
+                self.blinking_fast,
+                self.blinking_slow,
+                self.char_width,
+                self.char_height,
+                &mut self.rgb_pixmap,
+            );
         }
         for (x, y) in self.always_redraw_list.clone().iter() {
-            self.raster_backend
-                .draw_cell(*x, *y, &self.buffer[(*x, *y)]);
+            let c = &self.buffer[(*x, *y)];
+            self.raster_backend.draw_cell(
+                *x,
+                *y,
+                c,
+                &mut self.always_redraw_list,
+                self.blinking_fast,
+                self.blinking_slow,
+                self.char_width,
+                self.char_height,
+                &mut self.rgb_pixmap,
+            );
         }
 
         Ok(())
@@ -142,7 +173,18 @@ impl<R: RasterBackend> SoftBackend<R> {
         self.always_redraw_list = FxHashSet::default();
         for x in 0..self.buffer.area.width {
             for y in 0..self.buffer.area.height {
-                self.raster_backend.draw_cell(x, y, &self.buffer[(x, y)]);
+                let c = &self.buffer[(x, y)];
+                self.raster_backend.draw_cell(
+                    x,
+                    y,
+                    c,
+                    &mut self.always_redraw_list,
+                    self.blinking_fast,
+                    self.blinking_slow,
+                    self.char_width,
+                    self.char_height,
+                    &mut self.rgb_pixmap,
+                );
             }
         }
     }

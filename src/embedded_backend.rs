@@ -31,7 +31,18 @@ pub struct EmbeddedGraphics {
 }
 
 impl RasterBackend for EmbeddedGraphics {
-    fn draw_cell(&mut self, xik: u16, yik: u16, rat_cell: &Cell) {
+    fn draw_cell(
+        &self,
+        xik: u16,
+        yik: u16,
+        rat_cell: &Cell,
+        always_redraw_list: &mut FxHashSet<(u16, u16)>,
+        blinking_fast: bool,
+        blinking_slow: bool,
+        char_width: usize,
+        char_height: usize,
+        rgb_pixmap: &mut RgbPixmap,
+    ) {
         let mut rat_fg = rat_to_rgb(&rat_cell.fg, true);
         let mut rat_bg = rat_to_rgb(&rat_cell.bg, false);
 
@@ -50,21 +61,21 @@ impl RasterBackend for EmbeddedGraphics {
                     (rat_fg, rat_bg) = (dim_rgb(rat_fg), dim_rgb(rat_bg));
                     style_builder
                 }
-                style::Modifier::ITALIC => match &self.raster_backend.font_italic {
+                style::Modifier::ITALIC => match &self.font_italic {
                     None => style_builder,
                     Some(font) => style_builder.font(font),
                 },
                 style::Modifier::UNDERLINED => style_builder.underline(),
                 style::Modifier::SLOW_BLINK => {
-                    self.always_redraw_list.insert((xik, yik));
-                    if self.blinking_slow {
+                    always_redraw_list.insert((xik, yik));
+                    if blinking_slow {
                         rat_fg = rat_bg;
                     }
                     style_builder
                 }
                 style::Modifier::RAPID_BLINK => {
-                    self.always_redraw_list.insert((xik, yik));
-                    if self.blinking_fast {
+                    always_redraw_list.insert((xik, yik));
+                    if blinking_fast {
                         rat_fg = rat_bg;
                     }
                     style_builder
@@ -88,15 +99,15 @@ impl RasterBackend for EmbeddedGraphics {
             .text_color(Rgb888::new(rat_fg[0], rat_fg[1], rat_fg[2]))
             .background_color(Rgb888::new(rat_bg[0], rat_bg[1], rat_bg[2]));
 
-        let begin_x = xik as usize * self.char_width;
-        let begin_y = yik as usize * self.char_height;
+        let begin_x = xik as usize * char_width;
+        let begin_y = yik as usize * char_height;
         Text::with_baseline(
             rat_cell.symbol(),
             Point::new(begin_x as i32, begin_y as i32),
             style_builder.build(),
             embedded_graphics::text::Baseline::Top,
         )
-        .draw(&mut self.rgb_pixmap)
+        .draw(rgb_pixmap)
         .unwrap();
     }
 }
