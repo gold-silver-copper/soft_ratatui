@@ -6,11 +6,6 @@ use std::io;
 
 use crate::colors::*;
 
-use embedded_graphics::Drawable;
-
-use embedded_graphics::pixelcolor::Rgb888;
-use embedded_graphics::prelude::{Dimensions, Point, RgbColor};
-use embedded_graphics::text::Text;
 use ratatui::backend::{Backend, WindowSize};
 
 use ratatui::layout::{Position, Rect, Size};

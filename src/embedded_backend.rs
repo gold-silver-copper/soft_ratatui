@@ -2,7 +2,6 @@
 //! It is used in the integration tests to verify the correctness of the library.
 
 use rustc_hash::FxHashSet;
-use std::io;
 
 use crate::colors::*;
 use crate::pixmap::RgbPixmap;
@@ -16,9 +15,9 @@ use embedded_graphics::prelude::{Point, RgbColor};
 use embedded_graphics::text::Text;
 
 use crate::SoftBackend;
-use ratatui::backend::{Backend, WindowSize};
+use ratatui::backend::Backend;
 use ratatui::buffer::{Buffer, Cell};
-use ratatui::layout::{Position, Rect, Size};
+use ratatui::layout::Rect;
 use ratatui::style;
 
 /// PREFERRED: uses the embedded-graphics library for rendering, best when paired with embedded-graphics-unicodefonts (enabled by default)

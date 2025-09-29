@@ -1,7 +1,6 @@
 //! This module provides the `SoftBackend` implementation for the [`Backend`] trait.
 //! It is used in the integration tests to verify the correctness of the library.
 
-use std::io;
 
 use crate::SoftBackend;
 use crate::colors::*;
@@ -11,9 +10,9 @@ use cosmic_text::fontdb::Database;
 use cosmic_text::{
     Attrs, AttrsList, CacheKeyFlags, Family, LineEnding, Metrics, Shaping, Weight, Wrap,
 };
-use ratatui::backend::{Backend, WindowSize};
+use ratatui::backend::Backend;
 use ratatui::buffer::{Buffer, Cell};
-use ratatui::layout::{Position, Rect, Size};
+use ratatui::layout::Rect;
 use ratatui::style::Modifier;
 
 use cosmic_text::{Buffer as CosmicBuffer, FontSystem, SwashCache};

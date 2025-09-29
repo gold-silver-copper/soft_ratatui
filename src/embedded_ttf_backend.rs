@@ -6,7 +6,6 @@ use crate::pixmap::RgbPixmap;
 use crate::soft_backend::RasterBackend;
 use embedded_ttf::FontTextStyleBuilder;
 use rustc_hash::FxHashSet;
-use std::io;
 
 use embedded_graphics::Drawable;
 
@@ -15,9 +14,9 @@ use crate::SoftBackend;
 use embedded_graphics::pixelcolor::Rgb888;
 use embedded_graphics::prelude::{Dimensions, Point, RgbColor};
 use embedded_graphics::text::Text;
-use ratatui::backend::{Backend, WindowSize};
+use ratatui::backend::Backend;
 use ratatui::buffer::{Buffer, Cell};
-use ratatui::layout::{Position, Rect, Size};
+use ratatui::layout::Rect;
 use ratatui::style;
 
 /// Uses embedded-ttf + embedded-graphics for rendering, generally better than cosmic-text
