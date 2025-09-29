@@ -6,7 +6,7 @@ use std::{char, io};
 use crate::SoftBackend;
 use crate::colors::*;
 use crate::pixmap::RgbPixmap;
-use bdf_parser::*;
+use copper_bdf_parser::*;
 use ratatui::backend::{Backend, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};

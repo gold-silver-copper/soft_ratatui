@@ -8,7 +8,7 @@
 /// release.
 ///
 /// [`latest`]: https://github.com/ratatui/ratatui/tree/latest
-use std::{error::Error, iter::once, result};
+use std::iter::once;
 
 use eframe::egui::{self, TextureHandle};
 
@@ -48,8 +48,8 @@ struct MyApp {
 
 impl MyApp {
     fn new() -> Self {
-        let backend = SoftBackend::<CosmicText>::new(100, 50, 30, FONT_DATA);
-        let mut terminal = Terminal::new(backend).unwrap();
+        let backend = SoftBackend::<CosmicText>::new(100, 50, 17, FONT_DATA);
+        let terminal = Terminal::new(backend).unwrap();
 
         Self {
             terminal,

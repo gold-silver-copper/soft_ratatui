@@ -3,11 +3,10 @@ use eframe::egui::{self, TextureHandle};
 use embedded_graphics_unicodefonts::{
     mono_8x13_atlas, mono_8x13_bold_atlas, mono_8x13_italic_atlas,
 };
-use palette::{Okhsv, Srgb, convert::FromColorUnclamped};
+use palette::{convert::FromColorUnclamped, Okhsv, Srgb};
 use ratatui::prelude::Stylize;
 /// A minimal example of a Ratatui application.
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
-use ratatui::{Frame, Terminal};
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Position, Rect},
@@ -15,6 +14,7 @@ use ratatui::{
     text::Text,
     widgets::Widget,
 };
+use ratatui::{Frame, Terminal};
 static FONT_DATA: &str = include_str!("../../assets/cozette.bdf");
 
 use soft_ratatui::{Bdf, SoftBackend};
@@ -47,7 +47,7 @@ struct MyApp {
 
 impl MyApp {
     fn new() -> Self {
-        let backend = SoftBackend::<Bdf>::new(100, 200, (6, 13), FONT_DATA, None, None);
+        let backend = SoftBackend::<Bdf>::new(100, 100, (6, 13), FONT_DATA, None, None);
         let mut terminal = Terminal::new(backend).unwrap();
         let appik = App::default();
 
@@ -166,6 +166,7 @@ impl Widget for &mut App {
         let [title, fps] = Layout::horizontal([Min(0), Length(8)]).areas(top);
         Text::from("colors_rgb example. Press q to quit")
             .centered()
+            .black()
             .render(title, buf);
         self.fps_widget.render(fps, buf);
         self.colors_widget.render(colors, buf);
@@ -195,7 +196,7 @@ impl Widget for &mut FpsWidget {
         self.calculate_fps();
         if let Some(fps) = self.fps {
             let text = format!("{fps:.1} fps");
-            Text::from(text).slow_blink().render(area, buf);
+            Text::from(text).black().slow_blink().render(area, buf);
         }
     }
 }

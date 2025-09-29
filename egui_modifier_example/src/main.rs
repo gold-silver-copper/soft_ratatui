@@ -23,6 +23,8 @@ use ratatui::{Frame, Terminal};
 use soft_ratatui::rusttype::Font;
 use soft_ratatui::{EmbeddedTTF, SoftBackend};
 static FONT_DATA: &[u8] = include_bytes!("../../assets/iosevka.ttf");
+static FONT_BOLD_DATA: &[u8] = include_bytes!("../../assets/iosevka_bold.ttf");
+static FONT_ITALIC_DATA: &[u8] = include_bytes!("../../assets/iosevka_italic.ttf");
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([1500.0, 1000.0]),
@@ -49,10 +51,18 @@ struct MyApp {
 
 impl MyApp {
     fn new() -> Self {
-        let font_regular =
-            Font::try_from_bytes(include_bytes!("../../assets/iosevka.ttf")).unwrap();
-        let backend = SoftBackend::<EmbeddedTTF>::new(100, 50, 30, font_regular, None, None);
-        let mut terminal = Terminal::new(backend).unwrap();
+        let font_regular = Font::try_from_bytes(FONT_DATA).unwrap();
+        let font_bold = Font::try_from_bytes(FONT_BOLD_DATA).unwrap();
+        let font_italic = Font::try_from_bytes(FONT_ITALIC_DATA).unwrap();
+        let backend = SoftBackend::<EmbeddedTTF>::new(
+            100,
+            50,
+            17,
+            font_regular,
+            Some(font_bold),
+            Some(font_italic),
+        );
+        let terminal = Terminal::new(backend).unwrap();
 
         Self {
             terminal,

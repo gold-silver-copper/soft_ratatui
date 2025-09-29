@@ -1,5 +1,5 @@
 use core::convert::Infallible;
-#[cfg(feature = "embedded-graphics")]
+#[cfg(any(feature = "embedded-graphics", feature = "embedded-ttf"))]
 use embedded_graphics::{
     Pixel,
     draw_target::DrawTarget,
@@ -83,7 +83,7 @@ impl RgbPixmap {
         &self.data
     }
 }
-#[cfg(feature = "embedded-graphics")]
+#[cfg(any(feature = "embedded-graphics", feature = "embedded-ttf"))]
 impl DrawTarget for RgbPixmap {
     type Color = Rgb888;
     type Error = Infallible;
@@ -103,7 +103,7 @@ impl DrawTarget for RgbPixmap {
         Ok(())
     }
 }
-#[cfg(feature = "embedded-graphics")]
+#[cfg(any(feature = "embedded-graphics", feature = "embedded-ttf"))]
 impl OriginDimensions for RgbPixmap {
     fn size(&self) -> Size {
         Size::new(self.width as u32, self.height as u32)
