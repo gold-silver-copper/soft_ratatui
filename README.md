@@ -82,7 +82,7 @@ fn main() {
 
 ## Cool BDF fonts
 
-- [`speen`](https://github.com/fcambus/spleen) (works best, many sizes)
+- [`spleen`](https://github.com/fcambus/spleen) (works best, many sizes)
 - [`cozette`](https://github.com/the-moonwitch/Cozette) (very pretty)
 
 ## License
