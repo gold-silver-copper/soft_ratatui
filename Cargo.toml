@@ -1,6 +1,6 @@
 [package]
 name = "soft_ratatui"
-version = "0.0.10"
+version = "0.0.11"
 edition = "2024"
 authors = ["gold-silver-copper"]
 
@@ -45,6 +45,12 @@ required-features = ["cosmic-text"]
 name = "ttf"
 path = "examples/ttf.rs"
 required-features = ["embedded-ttf"]
+
+
+[package.metadata.docs.rs]
+# Enable all features for documentation
+all-features = true
+
 [profile.release]
 #opt-level = 1
 #lto = true # Enable link-time optimization
