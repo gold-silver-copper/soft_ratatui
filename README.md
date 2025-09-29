@@ -42,6 +42,11 @@ soft_ratatui is highly modular. Enable only the backends and features you need t
 - [`ratatui-wgpu`](https://github.com/Jesterhearts/ratatui-wgpu) - A wgpu based rendering backend for ratatui.
 - [`bevy_ratatui_camera`](https://github.com/cxreiff/bevy_ratatui_camera) - A bevy plugin for rendering your bevy app to the terminal using ratatui.
 
+## Cool BDF fonts
+
+-[`speen`](https://github.com/fcambus/spleen) (works best, many sizes)
+-[`cozette`](https://github.com/the-moonwitch/Cozette) (very pretty, has some minor block drawing issues [not my fault!! they are fixing it on their end rn!!])
+
 ## License
 
 Dual-licensed under **MIT** or **Apache 2.0**.
