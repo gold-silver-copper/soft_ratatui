@@ -584,7 +584,6 @@ name = "bevy_example"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "embedded-graphics-unicodefonts",
  "ratatui",
  "soft_ratatui",
 ]
@@ -3919,7 +3918,7 @@ dependencies = [
 
 [[package]]
 name = "soft_ratatui"
-version = "0.0.9"
+version = "0.0.12"
 dependencies = [
  "embedded-graphics",
  "embedded-graphics-unicodefonts",

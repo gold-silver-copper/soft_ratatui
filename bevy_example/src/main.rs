@@ -22,7 +22,7 @@ fn main() {
 }
 fn setup(
     mut commands: Commands,
-    mut softatui: ResMut<SoftTerminal>,
+    softatui: ResMut<SoftTerminal>,
     mut images: ResMut<Assets<Image>>,
 ) {
     commands.spawn(Camera2d);

@@ -9,13 +9,25 @@
 
 Fast, portable, no-bloat.
 
-
-- Optimized for speed, generally faster than running ratatui inside a terminal. 120+ fps on normal workloads.
+- Optimized for speed, generally faster than running ratatui inside a terminal with crossterm. 120+ fps on normal workloads.
 - Choose your own rendering backend: embedded-graphics, embedded-ttf, cosmic-text, bdf-parser
-- Custom portable pixel rasterizer.
----
+- Custom portable pixel rasterizer, outputs RGB/RGBA pixmaps
 
-## Features
+
+## Feature Flags
+
+soft_ratatui is highly modular. Enable only the backends and features you need to reduce binary size and dependencies.
+
+| Feature | Enables | Description |
+|---------|---------|-------------|
+| `unicodefonts` | [`embedded_graphics_unicodefonts`] | Embedded-graphics fonts with Unicode support. Automatically enables `embedded-graphics`. Enabled by default. |
+| `embedded-graphics` | [`EmbeddedGraphics`] | Uses embedded-graphics font atlases for TUI rendering. |
+| `bdf-parser` | [`Bdf`] | Bitmap Distribution Format font support. |
+| `embedded-ttf` | [`EmbeddedTTF`] | TrueType font rendering via RustType. Automatically enables `embedded-graphics`. |
+| `cosmic-text` | [`CosmicText`] | Advanced text shaping, layout, and Unicode support using CosmicText engine. |
+
+
+## Integrations
 
 - [`egui`](https://github.com/emilk/egui) integration provided by [`egui_ratatui`](https://github.com/gold-silver-copper/egui_ratatui). Have a TUI inside your GUI!
 - [`bevy_ratatui`](https://github.com/cxreiff/bevy_ratatui) integration allows you to turn an existing terminal app built with bevy_ratatui into a native or web app. The best way to build a terminal app!!
@@ -43,4 +55,4 @@ Pick whichever suits you.
 
 ## Status
 
-Mostly complete, comments and suggestions are appreciated.
+Comments and suggestions are appreciated.
