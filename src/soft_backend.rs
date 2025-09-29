@@ -32,7 +32,7 @@ pub struct SoftBackend<R: RasterBackend> {
 /// Trait for raster backends (TTF, embedded-graphics, etc.)
 pub trait RasterBackend {
     fn draw_cell(
-        &self,
+        &mut self,
         x: u16,
         y: u16,
         rat_cell: &Cell,
@@ -43,7 +43,6 @@ pub trait RasterBackend {
         char_height: usize,
         rgb_pixmap: &mut RgbPixmap,
     );
-    // add anything else that differs between variants
 }
 
 impl<R: RasterBackend> Backend for SoftBackend<R> {
