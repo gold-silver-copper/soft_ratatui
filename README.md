@@ -6,12 +6,15 @@
 [![Downloads](https://img.shields.io/crates/d/soft_ratatui.svg)](https://crates.io/crates/soft_ratatui)
 
 **Software rendering backend for [`ratatui`](https://github.com/ratatui/ratatui). No GPU required. TUI everywhere.**
+---
+![](ratbox.avif)
+---
 
 Fast, portable, no-bloat.
 
 - Optimized for speed, generally faster than running ratatui inside a terminal with crossterm. 120+ fps on normal workloads.
 - Choose your own rendering backend: embedded-graphics, embedded-ttf, cosmic-text, bdf-parser
-- Custom portable pixel rasterizer, outputs RGB/RGBA pixmaps
+- Custom portable pixel rasterizer, outputs RGB/RGBA pixmaps, color-to-alpha support
 
 
 ## Feature Flags
@@ -34,15 +37,13 @@ soft_ratatui is highly modular. Enable only the backends and features you need t
 - [`bevy`](https://github.com/bevyengine/bevy) game engine examples provided in the repo, so you can create your own game UI or world textures with ratatui
 - WASM compatible, deploy your ratatui application on the web!
 
----
-![](ratbox.avif)
 
-## TODO
+## See also
 
-- Colored Emojis
-- More Examples
-- no-std support
-
+- [`mousefood`](https://github.com/j-g00da/mousefood) - a no-std embedded-graphics backend for Ratatui!
+- [`ratzilla`](https://github.com/orhun/ratzilla) - Build terminal-themed web applications with Rust and WebAssembly.
+- [`ratatui-wgpu`](https://github.com/Jesterhearts/ratatui-wgpu) - A wgpu based rendering backend for ratatui.
+- [`bevy_ratatui_camera`](https://github.com/cxreiff/bevy_ratatui_camera) - A bevy plugin for rendering your bevy app to the terminal using ratatui.
 
 ---
 
