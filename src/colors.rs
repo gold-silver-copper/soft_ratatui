@@ -15,7 +15,7 @@ pub fn rat_to_rgb(rat_col: &RatColor, is_a_fg: bool) -> [u8; 3] {
         RatColor::Green => [0, 100, 0],
         RatColor::Yellow => [255, 215, 0],
         RatColor::Blue => [0, 0, 139],
-        RatColor::Magenta => [99, 9, 99],
+        RatColor::Magenta => [255, 0, 255],
         RatColor::Cyan => [0, 0, 255],
         RatColor::Gray => [128, 128, 128],
         RatColor::DarkGray => [64, 64, 64],

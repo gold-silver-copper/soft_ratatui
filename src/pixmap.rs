@@ -33,7 +33,22 @@ impl RgbPixmap {
             let r = chunk[0];
             let g = chunk[1];
             let b = chunk[2];
-            rgba_data.extend_from_slice(&[r, g, b, 255]); // Alpha = 255
+            rgba_data.extend_from_slice(&[r, g, b, 255]); // Alpha = 255 for no transparency
+        }
+        rgba_data
+    }
+    /// Outputs the RGBpixmap as a RGBA flat vector, with a color set to transparent, useful for stuff
+    pub fn to_rgba_with_color_as_transparent(&self, color: &(u8, u8, u8)) -> Vec<u8> {
+        let mut rgba_data = Vec::with_capacity(self.width * self.height * 4);
+        for chunk in self.data.chunks_exact(3) {
+            let r = chunk[0];
+            let g = chunk[1];
+            let b = chunk[2];
+            if &(r, g, b) == color {
+                rgba_data.extend_from_slice(&[r, g, b, 0]);
+            } else {
+                rgba_data.extend_from_slice(&[r, g, b, 255]);
+            }
         }
         rgba_data
     }
@@ -41,12 +56,10 @@ impl RgbPixmap {
     /// Sets the RGB value of a pixel at (x, y).
 
     pub fn put_pixel(&mut self, x: usize, y: usize, color: [u8; 3]) {
-        debug_assert!(
-            x < self.width && y < self.height,
-            "Pixel coordinates out of bounds"
-        );
-        let index = 3 * (y * self.width + x);
-        self.data[index..index + 3].copy_from_slice(&color);
+        if x < self.width && y < self.height {
+            let index = 3 * (y * self.width + x);
+            self.data[index..index + 3].copy_from_slice(&color);
+        }
     }
 
     /// Returns the RGB value of a pixel at (x, y).
