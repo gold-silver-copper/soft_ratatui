@@ -44,8 +44,8 @@ soft_ratatui is highly modular. Enable only the backends and features you need t
 
 ## Cool BDF fonts
 
--[`speen`](https://github.com/fcambus/spleen) (works best, many sizes)
--[`cozette`](https://github.com/the-moonwitch/Cozette) (very pretty, has some minor block drawing issues [not my fault!! they are fixing it on their end rn!!])
+- [`speen`](https://github.com/fcambus/spleen) (works best, many sizes)
+- [`cozette`](https://github.com/the-moonwitch/Cozette) (very pretty)
 
 ## License
 
