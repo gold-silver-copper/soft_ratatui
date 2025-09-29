@@ -5,6 +5,7 @@ Add section thanking people and similar projects
 Showcase projects using it
 
 add feature flags for unicode and cozette
+update bevy_ratatui
 
 //write library that lets u use ttf fonts with embedded graphics?
 

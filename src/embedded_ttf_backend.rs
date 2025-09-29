@@ -11,7 +11,7 @@ use crate::pixmap::RgbPixmap;
 use embedded_graphics::Drawable;
 
 use crate::SoftBackend;
-use embedded_graphics::mono_font::{MonoFont, MonoTextStyleBuilder};
+
 use embedded_graphics::pixelcolor::Rgb888;
 use embedded_graphics::prelude::{Dimensions, Point, RgbColor};
 use embedded_graphics::text::Text;
@@ -19,7 +19,8 @@ use ratatui::backend::{Backend, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
 use ratatui::style;
-use rusttype::Font;
+
+/// Uses embedded-ttf + embedded-graphics for rendering, generally better than cosmic-text
 pub struct EmbeddedTTF {
     pub font_regular: rusttype::Font<'static>,
     /// Bold font.
@@ -190,6 +191,26 @@ impl SoftBackend<EmbeddedTTF> {
         };
         _ = return_struct.clear();
         return_struct
+    }
+    /// Sets a new font size for the terminal image.
+    /// This will recreate the pixmap and do a full redraw. Do not run every frame.
+    pub fn set_font_size(&mut self, font_size: u32) {
+        let style = FontTextStyleBuilder::new(self.raster_backend.font_regular.clone())
+            .font_size(font_size)
+            .text_color(Rgb888::WHITE)
+            .build();
+        let textik = Text::new("█", Point::new(0, 0), style);
+        let char_width = textik.bounding_box().size.width as usize;
+        let char_height = textik.bounding_box().size.height as usize;
+
+        self.char_width = char_width;
+        self.char_height = char_height;
+        self.rgb_pixmap = RgbPixmap::new(
+            self.char_width * self.buffer.area.width as usize,
+            self.char_height * self.buffer.area.height as usize,
+        );
+
+        self.redraw();
     }
 
     /// Returns a reference to the internal buffer of the `SoftBackend`.

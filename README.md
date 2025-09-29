@@ -11,7 +11,7 @@ Fast, portable, no-bloat.
 
 
 - Optimized for speed, generally faster than running ratatui inside a terminal. 120+ fps on normal workloads.
-- Only one dependency, Unicode Font rendering powered by [`cosmic-text`](https://github.com/pop-os/cosmic-text)
+- Choose your own rendering backend: embedded-graphics, embedded-ttf, cosmic-text, bdf-parser
 - Custom portable pixel rasterizer.
 ---
 

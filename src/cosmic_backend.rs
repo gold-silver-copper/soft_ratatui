@@ -19,7 +19,7 @@ use cosmic_text::{
 use cosmic_text::{Buffer as CosmicBuffer, FontSystem, SwashCache};
 use rustc_hash::FxHashSet;
 
-/// SoftBackend is a Software rendering backend for Ratatui. It stores the generated image internally as rgb_pixmap.
+/// Uses cosmic-text for rendering, not reccomended as it has anti aliasing issues which are not good for a terminal
 pub struct CosmicText {
     font_system: FontSystem,
 

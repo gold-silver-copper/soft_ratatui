@@ -14,7 +14,7 @@ use ratatui::style;
 
 use rustc_hash::FxHashSet;
 
-/// SoftBackend is a Software rendering backend for Ratatui. It stores the generated image internally as rgb_pixmap.
+/// Uses bdf-parser for rendering from a .bdf (bitmap font)
 pub struct Bdf {
     font_regular: Font,
     font_italic: Option<Font>,
