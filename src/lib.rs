@@ -14,11 +14,16 @@ mod embedded_backend;
 #[cfg(feature = "embedded-graphics")]
 pub use embedded_backend::EmbeddedGraphics;
 
-#[cfg(feature = "unicodefonts")]
-pub use embedded_graphics_unicodefonts;
-
 #[cfg(feature = "cosmic-text")]
 pub use cosmic_backend::CosmicText;
+#[cfg(feature = "unicodefonts")]
+pub use embedded_graphics_unicodefonts;
+#[cfg(feature = "embedded-ttf")]
+pub use embedded_ttf;
+#[cfg(feature = "embedded-ttf")]
+mod embedded_ttf_backend;
+#[cfg(feature = "embedded-ttf")]
+pub use embedded_ttf_backend::EmbeddedTTF;
 #[cfg(feature = "cosmic-text")]
 mod cosmic_backend;
 #[cfg(feature = "bdf-parser")]

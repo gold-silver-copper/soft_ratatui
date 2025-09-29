@@ -21,12 +21,16 @@ embedded-graphics = {version = "0.8.1",optional = true}
 embedded-graphics-unicodefonts = {version = "0.2.0",optional = true}
 cosmic-text = { version = "0.14.2", optional = true }
 copper-bdf-parser = {  version = "0.1.1", optional = true }
+embedded-ttf = { version = "0.2.2", optional = true }
+rusttype = { version = "0.9.3", optional = true }
 [features]
-default = ["embedded-graphics","unicodefonts"]
+default = ["embedded-graphics","unicodefonts","embedded-ttf"]
 unicodefonts = ["dep:embedded-graphics-unicodefonts"]
 embedded-graphics = ["dep:embedded-graphics"]
 cosmic-text = ["dep:cosmic-text"]
 bdf-parser = ["dep:copper-bdf-parser"]
+embedded-ttf = ["dep:embedded-ttf","dep:rusttype"]
+
 #cosmic-text = ["dep:bdf-parser"]
 
 [[example]]
