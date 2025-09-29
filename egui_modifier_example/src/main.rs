@@ -22,7 +22,7 @@ use ratatui::{Frame, Terminal};
 
 use soft_ratatui::rusttype::Font;
 use soft_ratatui::{EmbeddedTTF, SoftBackend};
-static FONT_DATA: &[u8] = include_bytes!("../../assets/iosevka.ttf");
+static FONT_DATA: &[u8] = include_bytes!("../../assets/cozettevector.ttf");
 static FONT_BOLD_DATA: &[u8] = include_bytes!("../../assets/iosevka_bold.ttf");
 static FONT_ITALIC_DATA: &[u8] = include_bytes!("../../assets/iosevka_italic.ttf");
 fn main() -> eframe::Result {
@@ -57,7 +57,7 @@ impl MyApp {
         let backend = SoftBackend::<EmbeddedTTF>::new(
             100,
             50,
-            17,
+            16,
             font_regular,
             Some(font_bold),
             Some(font_italic),
