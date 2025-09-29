@@ -20,8 +20,7 @@ use ratatui::widgets::Paragraph;
 /// A minimal example of a Ratatui application.
 use ratatui::{Frame, Terminal};
 
-use soft_ratatui::rusttype::Font;
-use soft_ratatui::{EmbeddedTTF, SoftBackend};
+use soft_ratatui::{CosmicText, SoftBackend};
 static FONT_DATA: &[u8] = include_bytes!("../../assets/iosevka.ttf");
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
@@ -43,15 +42,13 @@ fn main() -> eframe::Result {
 }
 
 struct MyApp {
-    pub terminal: Terminal<SoftBackend<EmbeddedTTF>>,
+    pub terminal: Terminal<SoftBackend<CosmicText>>,
     pub text_ref: Option<TextureHandle>,
 }
 
 impl MyApp {
     fn new() -> Self {
-        let font_regular =
-            Font::try_from_bytes(include_bytes!("../../assets/iosevka.ttf")).unwrap();
-        let backend = SoftBackend::<EmbeddedTTF>::new(100, 50, 30, font_regular, None, None);
+        let backend = SoftBackend::<CosmicText>::new(100, 50, 30, FONT_DATA);
         let mut terminal = Terminal::new(backend).unwrap();
 
         Self {

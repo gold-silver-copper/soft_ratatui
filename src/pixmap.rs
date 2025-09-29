@@ -103,7 +103,7 @@ impl DrawTarget for RgbPixmap {
         Ok(())
     }
 }
-
+#[cfg(feature = "embedded-graphics")]
 impl OriginDimensions for RgbPixmap {
     fn size(&self) -> Size {
         Size::new(self.width as u32, self.height as u32)
