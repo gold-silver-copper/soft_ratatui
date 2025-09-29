@@ -54,7 +54,6 @@ impl RgbPixmap {
     }
 
     /// Sets the RGB value of a pixel at (x, y).
-
     pub fn put_pixel(&mut self, x: usize, y: usize, color: [u8; 3]) {
         if x < self.width && y < self.height {
             let index = 3 * (y * self.width + x);
@@ -63,7 +62,6 @@ impl RgbPixmap {
     }
 
     /// Returns the RGB value of a pixel at (x, y).
-
     pub fn get_pixel(&self, x: usize, y: usize) -> [u8; 3] {
         debug_assert!(
             x < self.width && y < self.height,

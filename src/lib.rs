@@ -1,13 +1,8 @@
 pub use pixmap::RgbPixmap;
-
 mod soft_backend;
 pub use soft_backend::SoftBackend;
 mod colors;
-
 mod pixmap;
-
-/*#[cfg(feature = "cozette")]
-pub mod cozette; */
 
 #[cfg(feature = "embedded-graphics")]
 mod embedded_backend;

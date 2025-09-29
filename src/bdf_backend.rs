@@ -166,21 +166,22 @@ impl SoftBackend<Bdf> {
         }
     }
 
-    /// Creates a new Software Backend with the given font data.
+    /// Creates a new Software Backend with the specified font configuration.
     ///
-    /// (new-with-font width height font-size font-data) -> SoftBackend
-    ///
-    /// * width      : usize - Width of the terminal in cells
-    /// * height     : usize - Height of the terminal in cells
-    /// * font-size  : u32   - Font size in pixels
-    /// * font-data  : &[u8] - Byte slice of the font (e.g., included with `include_bytes!`)
+    /// # Arguments
+    /// * `width` - Width of the terminal in character cells
+    /// * `height` - Height of the terminal in character cells
+    /// * `font_size` - Tuple of `(char_width, char_height)` specifying font dimensions in pixels
+    /// * `font_regular` - BDF font data for regular text style
+    /// * `font_bold` - Optional BDF font data for bold text style
+    /// * `font_italic` - Optional BDF font data for italic text style
     ///
     /// # Examples
     /// ```rust
-    /// static FONT_DATA: &[u8] = include_bytes!("../../assets/iosevka.ttf");
-    /// let backend = SoftBackend::new_with_font(20, 20, 16, FONT_DATA);
+    /// let regular_font = include_str!("../assets/6x13.bdf"); // BDF font data
+    /// let bold_font = include_str!("../assets/6x13_bold.bdf");    // Optional bold BDF font data
+    /// let backend = SoftBackend::<Bdf>::new(80, 24, (8, 16), regular_font, Some(bold_font), None);
     /// ```
-
     pub fn new(
         width: u16,
         height: u16,

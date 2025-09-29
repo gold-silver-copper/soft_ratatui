@@ -136,19 +136,26 @@ impl SoftBackend<EmbeddedTTF> {
         .unwrap();
     }
 
-    /// Creates a new Software Backend with the given font data.
+    /// Creates a new software backend with the given TrueType font(s).
     ///
-    /// (new-with-font width height font-size font-data) -> SoftBackend
+    /// (new width height font-size font-regular font-bold font-italic) -> SoftBackend
     ///
-    /// * width      : usize - Width of the terminal in cells
-    /// * height     : usize - Height of the terminal in cells
-    /// * font-size  : u32   - Font size in pixels
-    /// * font-data  : &[u8] - Byte slice of the font (e.g., included with `include_bytes!`)
+    /// * width        : u16                        - Width of the terminal in cells
+    /// * height       : u16                        - Height of the terminal in cells
+    /// * font-size    : u32                        - Font size in pixels
+    /// * font-regular : rusttype::Font<'static>    - Required base TrueType font
+    /// * font-bold    : Option<rusttype::Font<'static>>   - Optional bold font
+    /// * font-italic  : Option<rusttype::Font<'static>>   - Optional italic font
+    ///
+    /// The character cell size (in pixels) is derived automatically from the given font and font size.
+    /// The underlying pixel buffer is allocated to fit the full terminal area in pixels.
     ///
     /// # Examples
     /// ```rust
-    /// static FONT_DATA: &[u8] = include_bytes!("../../assets/iosevka.ttf");
-    /// let backend = SoftBackend::new_with_font(20, 20, 16, FONT_DATA);
+    /// use rusttype::Font;
+    ///
+    /// let font_regular = Font::try_from_bytes(include_bytes!("../assets/iosevka.ttf")).unwrap();
+    /// let backend = SoftBackend::<EmbeddedTTF>::new(80, 60, 16, font_regular, None, None);
     /// ```
 
     pub fn new(
