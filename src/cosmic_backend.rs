@@ -19,7 +19,7 @@ use cosmic_text::{
 use cosmic_text::{Buffer as CosmicBuffer, FontSystem, SwashCache};
 use rustc_hash::FxHashSet;
 
-/// Uses cosmic-text for rendering, not reccomended as it has anti aliasing issues which are not good for a terminal
+/// Uses cosmic-text for rendering, not recommended as it has anti aliasing issues which are not good for a terminal
 pub struct CosmicText {
     font_system: FontSystem,
 
@@ -240,7 +240,7 @@ impl SoftBackend<CosmicText> {
     /// # Examples
     /// ```rust
     /// static FONT_DATA: &[u8] = include_bytes!("../../assets/iosevka.ttf");
-    /// let backend = SoftBackend::new_with_font(20, 20, 16, FONT_DATA);
+    /// let backend = SoftBackend::<CosmicText>::new_with_font(20, 20, 16, FONT_DATA);
     /// ```
 
     pub fn new(width: u16, height: u16, font_size: i32, font_data: &[u8]) -> Self {

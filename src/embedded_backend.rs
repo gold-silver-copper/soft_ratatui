@@ -19,6 +19,8 @@ use ratatui::backend::{Backend, WindowSize};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
 use ratatui::style;
+
+/// PREFERRED: uses the embedded-graphics library for rendering, best when paired with embedded-graphics-unicodefonts (enabled by default)
 pub struct EmbeddedGraphics {
     pub font_regular: MonoFont<'static>,
     /// Bold font.
@@ -116,19 +118,22 @@ impl SoftBackend<EmbeddedGraphics> {
         .unwrap();
     }
 
-    /// Creates a new Software Backend with the given font data.
+    /// Creates a new software backend with the given monospaced font(s).
     ///
-    /// (new-with-font width height font-size font-data) -> SoftBackend
+    /// (new width height font-regular font-bold font-italic) -> SoftBackend
     ///
-    /// * width      : usize - Width of the terminal in cells
-    /// * height     : usize - Height of the terminal in cells
-    /// * font-size  : u32   - Font size in pixels
-    /// * font-data  : &[u8] - Byte slice of the font (e.g., included with `include_bytes!`)
+    /// * width        : u16                  - Width of the terminal in cells
+    /// * height       : u16                  - Height of the terminal in cells
+    /// * font-regular : MonoFont<'static>    - Required base monospaced font
+    /// * font-bold    : Option<MonoFont<'static>>   - Optional bold font
+    /// * font-italic  : Option<MonoFont<'static>>   - Optional italic font
     ///
     /// # Examples
     /// ```rust
-    /// static FONT_DATA: &[u8] = include_bytes!("../../assets/iosevka.ttf");
-    /// let backend = SoftBackend::new_with_font(20, 20, 16, FONT_DATA);
+    /// use embedded_graphics_unicodefonts::{mono_8x13_atlas, mono_8x13_bold_atlas, mono_8x13_italic_atlas};
+    /// use embedded_graphics::mono_font::{ascii::FONT_8X13, MonoFont};
+    ///
+    ///  let backend = SoftBackend::<EmbeddedGraphics>::new(100,50,font_regular,Some(font_bold),Some(font_italic));
     /// ```
 
     pub fn new(
