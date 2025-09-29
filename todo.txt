@@ -10,3 +10,4 @@ update bevy_ratatui
 //write library that lets u use ttf fonts with embedded graphics?
 
 cargo run -- cozette.bdf --suffix "_all"  --output ../../src --range 0x0000..0x10FFFF
+ffmpeg -i input.mov -c:v libaom-av1 -crf 23 -cpu-used 6 -an output.avif

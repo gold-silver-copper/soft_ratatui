@@ -12,9 +12,8 @@ use color_eyre::Result;
 use embedded_graphics_unicodefonts::{
     mono_8x13_atlas, mono_8x13_bold_atlas, mono_8x13_italic_atlas,
 };
+use itertools::Itertools;
 use palette::{Okhsv, Srgb, convert::FromColorUnclamped};
-use ratatui::prelude::Stylize;
-use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 use ratatui::{Frame, Terminal};
 use ratatui::{
     buffer::Buffer,
@@ -23,9 +22,18 @@ use ratatui::{
     text::Text,
     widgets::Widget,
 };
+use ratatui::{
+    prelude::Stylize,
+    style::{Modifier, Style},
+};
+use ratatui::{
+    text::Line,
+    widgets::{Block, Borders, Paragraph, Wrap},
+};
 use soft_ratatui::{Bdf, EmbeddedGraphics, SoftBackend};
 use std::{
     f32::consts::PI,
+    iter::once,
     time::{Duration, Instant},
 };
 
@@ -167,8 +175,8 @@ impl Default for SoftTerminal {
         let font_italic = mono_8x13_italic_atlas();
         let font_bold = mono_8x13_bold_atlas();
         let backend = SoftBackend::<EmbeddedGraphics>::new(
-            20,
-            20,
+            40,
+            40,
             font_regular,
             Some(font_bold),
             Some(font_italic),
@@ -214,6 +222,16 @@ fn computer_test(
 ) {
     if key.pressed(KeyCode::KeyK) {
         myapp.run(&mut softatui.0);
+    }
+    if key.just_pressed(KeyCode::KeyL) {
+        softatui.resize(Rect::new(0, 0, 5, 5)).unwrap();
+        println!("width {:#?}", softatui.backend().get_pixmap_width());
+        softatui.clear();
+    }
+    if key.pressed(KeyCode::KeyL) {
+        softatui.resize(Rect::new(0, 0, 5, 5)).expect("what");
+        softatui.draw(draw).unwrap();
+        softatui.clear();
     }
 
     //  softatui.draw(new_computer_screen).expect("oops");
@@ -424,6 +442,55 @@ impl ColorsWidget {
                 row.push(color);
             }
             self.colors.push(row);
+        }
+    }
+}
+
+fn draw(frame: &mut Frame) {
+    let vertical = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]);
+    let [text_area, main_area] = vertical.areas(frame.area());
+    frame.render_widget(
+        Paragraph::new("Note: not all terminals support all modifiers")
+            .style(Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)),
+        text_area,
+    );
+    let layout = Layout::vertical([Constraint::Length(1); 50])
+        .split(main_area)
+        .iter()
+        .flat_map(|area| {
+            Layout::horizontal([Constraint::Percentage(20); 5])
+                .split(*area)
+                .to_vec()
+        })
+        .collect_vec();
+
+    let colors = [
+        Color::Black,
+        Color::DarkGray,
+        Color::Gray,
+        Color::White,
+        Color::Red,
+    ];
+    let all_modifiers = once(Modifier::empty())
+        .chain(Modifier::all().iter())
+        .collect_vec();
+    let mut index = 0;
+    for bg in &colors {
+        for fg in &colors {
+            for modifier in &all_modifiers {
+                let modifier_name = format!("{modifier:11?}");
+                let padding = (" ").repeat(12 - modifier_name.len());
+                let paragraph = Paragraph::new(Line::from(vec![
+                    modifier_name.fg(*fg).bg(*bg).add_modifier(*modifier),
+                    padding.fg(*fg).bg(*bg).add_modifier(*modifier),
+                    // This is a hack to work around a bug in VHS which is used for rendering the
+                    // examples to gifs. The bug is that the background color of a paragraph seems
+                    // to bleed into the next character.
+                    ".".black().on_black(),
+                ]));
+                frame.render_widget(paragraph, layout[index]);
+                index += 1;
+            }
         }
     }
 }
