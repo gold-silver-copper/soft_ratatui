@@ -110,11 +110,7 @@ fn show_rand(
         RenderAssetUsages::RENDER_WORLD | RenderAssetUsages::MAIN_WORLD,
     );
 }
-use rand::{SeedableRng, rngs::ThreadRng};
-use rand::{
-    distr::{Distribution, Uniform},
-    rngs::OsRng,
-};
+
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{self, Span};
