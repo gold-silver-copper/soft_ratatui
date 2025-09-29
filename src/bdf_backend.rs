@@ -143,7 +143,11 @@ impl RasterBackend for Bdf {
                     let dst_y_i32 = base_y + ascent - off_y - gh + sy;
 
                     // signed bounds check before casting to usize
-                    if dst_x_i32 < 0 || dst_y_i32 < 0 {
+                    if dst_x_i32 < base_x
+                        || dst_y_i32 < base_y
+                        || dst_x_i32 >= base_x + char_width as i32
+                        || dst_y_i32 >= base_y + char_height as i32
+                    {
                         continue;
                     }
                     let dst_x = dst_x_i32 as usize;
