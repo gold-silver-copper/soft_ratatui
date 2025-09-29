@@ -2,15 +2,11 @@ use crate::pixmap::RgbPixmap;
 use ratatui::buffer::{Buffer, Cell};
 use rustc_hash::FxHashSet;
 
-use embedded_ttf::FontTextStyleBuilder;
-
 use std::io;
 
 use crate::colors::*;
 
 use embedded_graphics::Drawable;
-
-use crate::SoftBackend;
 
 use embedded_graphics::pixelcolor::Rgb888;
 use embedded_graphics::prelude::{Dimensions, Point, RgbColor};
@@ -18,7 +14,7 @@ use embedded_graphics::text::Text;
 use ratatui::backend::{Backend, WindowSize};
 
 use ratatui::layout::{Position, Rect, Size};
-use ratatui::style;
+
 /// SoftBackend is a Software rendering backend for Ratatui. It stores the generated image internally as rgb_pixmap.
 pub struct SoftBackend<R: RasterBackend> {
     pub buffer: Buffer,
@@ -35,7 +31,7 @@ pub struct SoftBackend<R: RasterBackend> {
 }
 /// Trait for raster backends (TTF, embedded-graphics, etc.)
 pub trait RasterBackend {
-    fn draw_cell(&mut self, x: u16, y: u16, cell: &Cell);
+    fn draw_cell(&mut self, x: u16, y: u16, rat_cell: &Cell);
     // add anything else that differs between variants
 }
 
@@ -47,10 +43,11 @@ impl<R: RasterBackend> Backend for SoftBackend<R> {
         self.update_blinking();
         for (x, y, c) in content {
             self.buffer[(x, y)] = c.clone();
-            self.raster_backend.draw_cell(self, x, y);
+            self.raster_backend.draw_cell(x, y, c);
         }
         for (x, y) in self.always_redraw_list.clone().iter() {
-            self.raster_backend.draw_cell(self, *x, *y);
+            self.raster_backend
+                .draw_cell(*x, *y, &self.buffer[(*x, *y)]);
         }
 
         Ok(())
@@ -89,8 +86,8 @@ impl<R: RasterBackend> Backend for SoftBackend<R> {
 
     fn window_size(&mut self) -> io::Result<WindowSize> {
         let window_pixels = Size {
-            width: self.raster_backend.get_pixmap_width(self) as u16,
-            height: self.raster_backend.get_pixmap_height(self) as u16,
+            width: self.get_pixmap_width() as u16,
+            height: self.get_pixmap_height() as u16,
         };
         Ok(WindowSize {
             columns_rows: self.buffer.area.as_size(),
@@ -100,5 +97,60 @@ impl<R: RasterBackend> Backend for SoftBackend<R> {
 
     fn flush(&mut self) -> io::Result<()> {
         Ok(())
+    }
+}
+
+impl<R: RasterBackend> SoftBackend<R> {
+    /// Returns the raw RGB data of the pixmap as a flat array.
+    pub fn get_pixmap_data(&self) -> &[u8] {
+        self.rgb_pixmap.data()
+    }
+
+    /// Returns the pixmap in RGBA format as a flat vector.
+    pub fn get_pixmap_data_as_rgba(&self) -> Vec<u8> {
+        self.rgb_pixmap.to_rgba()
+    }
+
+    /// Returns the width of the pixmap in pixels.
+    pub fn get_pixmap_width(&self) -> usize {
+        self.rgb_pixmap.width()
+    }
+
+    /// Returns the height of the pixmap in pixels.
+    pub fn get_pixmap_height(&self) -> usize {
+        self.rgb_pixmap.height()
+    }
+
+    /// Returns a reference to the internal buffer of the `SoftBackend`.
+    pub const fn buffer(&self) -> &Buffer {
+        &self.buffer
+    }
+
+    /// Resizes the `SoftBackend` to the specified width and height.
+    pub fn resize(&mut self, width: u16, height: u16) {
+        self.buffer.resize(Rect::new(0, 0, width, height));
+        let rgb_pixmap = RgbPixmap::new(
+            self.char_width as usize * width as usize,
+            self.char_height as usize * height as usize,
+        );
+        self.rgb_pixmap = rgb_pixmap;
+        self.redraw();
+    }
+
+    /// Redraws the pixmap
+    pub fn redraw(&mut self) {
+        self.always_redraw_list = FxHashSet::default();
+        for x in 0..self.buffer.area.width {
+            for y in 0..self.buffer.area.height {
+                self.raster_backend.draw_cell(x, y, &self.buffer[(x, y)]);
+            }
+        }
+    }
+
+    fn update_blinking(&mut self) {
+        self.blink_counter = (self.blink_counter + 1) % 200;
+
+        self.blinking_fast = matches!(self.blink_counter % 100, 0..=5);
+        self.blinking_slow = matches!(self.blink_counter, 20..=25);
     }
 }
