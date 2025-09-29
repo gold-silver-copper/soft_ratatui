@@ -53,7 +53,7 @@ struct Stuff {
 impl Default for Stuff {
     fn default() -> Self {
         Self {
-            myapp: MyApp::new("soft_ratatui", true),
+            myapp: MyApp::new("soft_ratatui", false),
         }
     }
 }
@@ -202,8 +202,8 @@ impl RandomSignal {
 impl Iterator for RandomSignal {
     type Item = u64;
     fn next(&mut self) -> Option<u64> {
-        self.counter += self.counter ^ 2;
-        Some(self.counter + 1)
+        self.counter += 1;
+        Some((self.counter ^ 2) % 100)
     }
 }
 
@@ -485,7 +485,7 @@ pub fn render(frame: &mut Frame, app: &mut MyApp) {
 
 fn draw_first_tab(frame: &mut Frame, app: &mut MyApp, area: Rect) {
     let chunks = Layout::vertical([
-        Constraint::Length(9),
+        Constraint::Length(13),
         Constraint::Min(8),
         Constraint::Length(7),
     ])
@@ -497,8 +497,8 @@ fn draw_first_tab(frame: &mut Frame, app: &mut MyApp, area: Rect) {
 
 fn draw_gauges(frame: &mut Frame, app: &mut MyApp, area: Rect) {
     let chunks = Layout::vertical([
-        Constraint::Length(2),
-        Constraint::Length(3),
+        Constraint::Length(5),
+        Constraint::Length(6),
         Constraint::Length(2),
     ])
     .margin(1)
@@ -507,14 +507,21 @@ fn draw_gauges(frame: &mut Frame, app: &mut MyApp, area: Rect) {
     frame.render_widget(block, area);
 
     let label = format!("{:.2}%", app.progress * 100.0);
+
+    /* // Bottom part with border and text
+    frame.render_widget(
+        Gauge::default()
+            .block(Block::bordered().border_type(ratatui::widgets::BorderType::QuadrantInside))
+            .gauge_style(Color::Blue)
+            .on_dark_gray()
+            .ratio(50.0 / 100.0)
+            .label("50/100"),
+        bar_chunks[0],
+    ); */
     let gauge = Gauge::default()
-        .block(Block::new().title("Gauge:"))
-        .gauge_style(
-            Style::default()
-                .fg(Color::Magenta)
-                .bg(Color::Black)
-                .add_modifier(Modifier::ITALIC | Modifier::BOLD),
-        )
+        .block(Block::bordered().title("Gauge:"))
+        .gauge_style(Color::Magenta)
+        //   .on_dark_gray()
         .use_unicode(app.enhanced_graphics)
         .label(label)
         .ratio(app.progress);
@@ -522,13 +529,14 @@ fn draw_gauges(frame: &mut Frame, app: &mut MyApp, area: Rect) {
 
     let sparkline = Sparkline::default()
         .block(Block::new().title("Sparkline:"))
-        .style(Style::default().fg(Color::Green))
-        .data(&app.sparkline.points)
-        .bar_set(if app.enhanced_graphics {
-            symbols::bar::NINE_LEVELS
-        } else {
-            symbols::bar::THREE_LEVELS
-        });
+        .black()
+        .on_cyan()
+        .style(Style::default().green().on_white())
+        .max(100)
+        .absent_value_style(Style::default().fg(Color::Red))
+        .absent_value_symbol(symbols::shade::FULL)
+        //   .style(Style::default().fg(Color::Green))
+        .data(&app.sparkline.points);
     frame.render_widget(sparkline, chunks[1]);
 
     let line_gauge = LineGauge::default()
