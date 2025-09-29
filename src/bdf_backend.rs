@@ -1,16 +1,15 @@
 //! This module provides the `SoftBackend` implementation for the [`Backend`] trait.
 //! It is used in the integration tests to verify the correctness of the library.
 
-use std::{char, io};
 
 use crate::SoftBackend;
 use crate::colors::*;
 use crate::pixmap::RgbPixmap;
 use crate::soft_backend::RasterBackend;
 use copper_bdf_parser::*;
-use ratatui::backend::{Backend, WindowSize};
+use ratatui::backend::Backend;
 use ratatui::buffer::{Buffer, Cell};
-use ratatui::layout::{Position, Rect, Size};
+use ratatui::layout::Rect;
 use ratatui::style;
 use rustc_hash::FxHashSet;
 
