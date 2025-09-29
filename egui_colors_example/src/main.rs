@@ -3,10 +3,11 @@ use eframe::egui::{self, TextureHandle};
 use embedded_graphics_unicodefonts::{
     mono_8x13_atlas, mono_8x13_bold_atlas, mono_8x13_italic_atlas,
 };
-use palette::{convert::FromColorUnclamped, Okhsv, Srgb};
+use palette::{Okhsv, Srgb, convert::FromColorUnclamped};
 use ratatui::prelude::Stylize;
 /// A minimal example of a Ratatui application.
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
+use ratatui::{Frame, Terminal};
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Position, Rect},
@@ -14,7 +15,6 @@ use ratatui::{
     text::Text,
     widgets::Widget,
 };
-use ratatui::{Frame, Terminal};
 static FONT_DATA: &str = include_str!("../../assets/cozette.bdf");
 
 use soft_ratatui::{Bdf, SoftBackend};
@@ -63,9 +63,6 @@ impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // terminal.draw(draw).expect("failed to draw frame");
         self.appik.run(&mut self.terminal);
-        let sizeik = (self.terminal.backend().blink_counter as i32) % 30 + 1;
-
-        // self.terminal.backend_mut().set_font_size(sizeik);
 
         let colorik = egui::ColorImage::from_rgb(
             [
