@@ -4,11 +4,9 @@ use bevy::{
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
 use ratatui::{prelude::*, style::Color, widgets::*};
-use soft_ratatui::embedded_graphics_unicodefonts::{
-    mono_8x13_atlas, mono_8x13_bold_atlas, mono_8x13_italic_atlas,
-};
+use soft_ratatui::Bdf;
 use soft_ratatui::{EmbeddedGraphics, SoftBackend};
-
+static FONT_DATA: &str = include_str!("../../../assets/cozette.bdf");
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
@@ -59,19 +57,10 @@ impl Default for Stuff {
 }
 // Create resource to hold the ratatui terminal
 #[derive(Resource, Deref, DerefMut)]
-struct SoftTerminal(Terminal<SoftBackend<EmbeddedGraphics>>);
+struct SoftTerminal(Terminal<SoftBackend<Bdf>>);
 impl Default for SoftTerminal {
     fn default() -> Self {
-        let font_regular = mono_8x13_atlas();
-        let font_italic = mono_8x13_italic_atlas();
-        let font_bold = mono_8x13_bold_atlas();
-        let backend = SoftBackend::<EmbeddedGraphics>::new(
-            100,
-            50,
-            font_regular,
-            Some(font_bold),
-            Some(font_italic),
-        );
+        let backend = SoftBackend::<Bdf>::new(100, 50, (6, 13), FONT_DATA, None, None);
         //backend.set_font_size(12);
         Self(Terminal::new(backend).unwrap())
     }
