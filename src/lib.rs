@@ -43,18 +43,16 @@
 //!
 //! ## Quick Start
 //!
-//! Add this to your `Cargo.toml`:
 //!
-//! ```toml
-//! [dependencies]
-//! ratatui = "0.26"
-//! soft-ratatui = { version = "0.1", features = ["embedded-graphics"] }
+//! ```bash
+//! cargo add soft_ratatui
+//! cargo add ratatui
 //! ```
 //!
 //! ### Minimal Example
 //!
 //! ```rust
-//! use embedded_graphics_unicodefonts::{
+//! use soft_ratatui::embedded_graphics_unicodefonts::{
 //!     mono_8x13_atlas, mono_8x13_bold_atlas, mono_8x13_italic_atlas,
 //! };
 //! use ratatui::Terminal;
