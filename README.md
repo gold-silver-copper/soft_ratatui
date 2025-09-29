@@ -6,16 +6,15 @@
 [![Downloads](https://img.shields.io/crates/d/soft_ratatui.svg)](https://crates.io/crates/soft_ratatui)
 
 **Software rendering backend for [`ratatui`](https://github.com/ratatui/ratatui). No GPU required. TUI everywhere.**
----
+
 ![](ratbox.avif)
----
+
 
 Fast, portable, no-bloat.
 
 - Optimized for speed, generally faster than running ratatui inside a terminal with crossterm. 120+ fps on normal workloads.
 - Choose your own rendering backend: embedded-graphics, embedded-ttf, cosmic-text, bdf-parser
 - Custom portable pixel rasterizer, outputs RGB/RGBA pixmaps, color-to-alpha support
-
 
 ## Feature Flags
 
@@ -29,14 +28,12 @@ soft_ratatui is highly modular. Enable only the backends and features you need t
 | `embedded-ttf` | [`EmbeddedTTF`] | TrueType font rendering via RustType. Automatically enables `embedded-graphics`. |
 | `cosmic-text` | [`CosmicText`] | Advanced text shaping, layout, and Unicode support using CosmicText engine. |
 
-
 ## Integrations
 
 - [`egui`](https://github.com/emilk/egui) integration provided by [`egui_ratatui`](https://github.com/gold-silver-copper/egui_ratatui). Have a TUI inside your GUI!
 - [`bevy_ratatui`](https://github.com/cxreiff/bevy_ratatui) integration allows you to turn an existing terminal app built with bevy_ratatui into a native or web app. The best way to build a terminal app!!
 - [`bevy`](https://github.com/bevyengine/bevy) game engine examples provided in the repo, so you can create your own game UI or world textures with ratatui
 - WASM compatible, deploy your ratatui application on the web!
-
 
 ## See also
 
@@ -45,14 +42,11 @@ soft_ratatui is highly modular. Enable only the backends and features you need t
 - [`ratatui-wgpu`](https://github.com/Jesterhearts/ratatui-wgpu) - A wgpu based rendering backend for ratatui.
 - [`bevy_ratatui_camera`](https://github.com/cxreiff/bevy_ratatui_camera) - A bevy plugin for rendering your bevy app to the terminal using ratatui.
 
----
-
 ## License
 
 Dual-licensed under **MIT** or **Apache 2.0**.
 Pick whichever suits you.
 
----
 
 ## Status
 
