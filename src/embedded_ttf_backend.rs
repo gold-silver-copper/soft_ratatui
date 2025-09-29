@@ -1,12 +1,12 @@
 //! This module provides the `SoftBackend` implementation for the [`Backend`] trait.
 //! It is used in the integration tests to verify the correctness of the library.
 
+use crate::colors::*;
+use crate::pixmap::RgbPixmap;
+use crate::soft_backend::RasterBackend;
 use embedded_ttf::FontTextStyleBuilder;
 use rustc_hash::FxHashSet;
 use std::io;
-
-use crate::colors::*;
-use crate::pixmap::RgbPixmap;
 
 use embedded_graphics::Drawable;
 
@@ -29,46 +29,37 @@ pub struct EmbeddedTTF {
     pub font_italic: Option<rusttype::Font<'static>>,
     pub font_size: u32,
 }
-
-impl SoftBackend<EmbeddedTTF> {
-    /// Retuns the raw rgb data of the pixmap as a flat array
-    pub fn get_pixmap_data(&self) -> &[u8] {
-        self.rgb_pixmap.data()
-    }
-    /// Retuns the pixmap in rgba format as a flat vector
-    pub fn get_pixmap_data_as_rgba(&self) -> Vec<u8> {
-        self.rgb_pixmap.to_rgba()
-    }
-    /// Returns the width of the pixmap in pixels
-    pub fn get_pixmap_width(&self) -> usize {
-        self.rgb_pixmap.width()
-    }
-    /// Returns the height of the pixmap in pixels
-    pub fn get_pixmap_height(&self) -> usize {
-        self.rgb_pixmap.height()
-    }
-
-    fn draw_cell(&mut self, xik: u16, yik: u16) {
-        let rat_cell = self.buffer.cell(Position::new(xik, yik)).unwrap();
-
+impl RasterBackend for EmbeddedTTF {
+    fn draw_cell(
+        &self,
+        xik: u16,
+        yik: u16,
+        rat_cell: &Cell,
+        always_redraw_list: &mut FxHashSet<(u16, u16)>,
+        blinking_fast: bool,
+        blinking_slow: bool,
+        char_width: usize,
+        char_height: usize,
+        rgb_pixmap: &mut RgbPixmap,
+    ) {
         let mut rat_fg = rat_to_rgb(&rat_cell.fg, true);
         let mut rat_bg = rat_to_rgb(&rat_cell.bg, false);
-        let begin_x = xik as usize * self.char_width;
-        let begin_y = yik as usize * self.char_height;
+        let begin_x = xik as usize * char_width;
+        let begin_y = yik as usize * char_height;
 
-        let mut style_builder = FontTextStyleBuilder::new(self.raster_backend.font_regular.clone())
+        let mut style_builder = FontTextStyleBuilder::new(self.font_regular.clone())
             .font_size(16)
             .text_color(Rgb888::WHITE);
         for modifier in rat_cell.modifier.iter() {
             style_builder = match modifier {
-                style::Modifier::BOLD => match &self.raster_backend.font_bold {
+                style::Modifier::BOLD => match &self.font_bold {
                     None => style_builder,
                     Some(font) => FontTextStyleBuilder::new(font.clone())
                         .font_size(16)
                         .text_color(Rgb888::WHITE),
                 },
 
-                style::Modifier::ITALIC => match &self.raster_backend.font_italic {
+                style::Modifier::ITALIC => match &self.font_italic {
                     None => style_builder,
                     Some(font) => FontTextStyleBuilder::new(font.clone())
                         .font_size(16)
@@ -87,15 +78,15 @@ impl SoftBackend<EmbeddedTTF> {
 
                 style::Modifier::UNDERLINED => style_builder.underline(),
                 style::Modifier::SLOW_BLINK => {
-                    self.always_redraw_list.insert((xik, yik));
-                    if self.blinking_slow {
+                    always_redraw_list.insert((xik, yik));
+                    if blinking_slow {
                         rat_fg = rat_bg;
                     }
                     style_builder
                 }
                 style::Modifier::RAPID_BLINK => {
-                    self.always_redraw_list.insert((xik, yik));
-                    if self.blinking_fast {
+                    always_redraw_list.insert((xik, yik));
+                    if blinking_fast {
                         rat_fg = rat_bg;
                     }
                     style_builder
@@ -118,11 +109,11 @@ impl SoftBackend<EmbeddedTTF> {
             .text_color(Rgb888::new(rat_fg[0], rat_fg[1], rat_fg[2]))
             .background_color(Rgb888::new(rat_bg[0], rat_bg[1], rat_bg[2]));
 
-        for y in 0..self.char_height {
+        for y in 0..char_height {
             let y_pos = begin_y + y;
             let mut x_pos = begin_x;
-            for _ in 0..self.char_width {
-                self.rgb_pixmap.put_pixel(x_pos, y_pos, rat_bg);
+            for _ in 0..char_width {
+                rgb_pixmap.put_pixel(x_pos, y_pos, rat_bg);
                 x_pos += 1;
             }
         }
@@ -132,10 +123,11 @@ impl SoftBackend<EmbeddedTTF> {
             style_builder.build(),
             embedded_graphics::text::Baseline::Top,
         )
-        .draw(&mut self.rgb_pixmap)
+        .draw(rgb_pixmap)
         .unwrap();
     }
-
+}
+impl SoftBackend<EmbeddedTTF> {
     /// Creates a new software backend with the given TrueType font(s).
     ///
     /// (new width height font-size font-regular font-bold font-italic) -> SoftBackend
@@ -218,105 +210,5 @@ impl SoftBackend<EmbeddedTTF> {
         );
 
         self.redraw();
-    }
-
-    /// Returns a reference to the internal buffer of the `SoftBackend`.
-    pub const fn buffer(&self) -> &Buffer {
-        &self.buffer
-    }
-
-    /// Resizes the `SoftBackend` to the specified width and height.
-    pub fn resize(&mut self, width: u16, height: u16) {
-        self.buffer.resize(Rect::new(0, 0, width, height));
-        let rgb_pixmap = RgbPixmap::new(
-            self.char_width as usize * width as usize,
-            self.char_height as usize * height as usize,
-        );
-        self.rgb_pixmap = rgb_pixmap;
-        self.redraw();
-    }
-
-    /// Redraws the pixmap
-    pub fn redraw(&mut self) {
-        self.always_redraw_list = FxHashSet::default();
-        for x in 0..self.buffer.area.width {
-            for y in 0..self.buffer.area.height {
-                self.draw_cell(x, y);
-            }
-        }
-    }
-
-    fn update_blinking(&mut self) {
-        self.blink_counter = (self.blink_counter + 1) % 200;
-
-        self.blinking_fast = matches!(self.blink_counter % 100, 0..=5);
-        self.blinking_slow = matches!(self.blink_counter, 20..=25);
-    }
-}
-
-impl Backend for SoftBackend<EmbeddedTTF> {
-    fn draw<'a, I>(&mut self, content: I) -> io::Result<()>
-    where
-        I: Iterator<Item = (u16, u16, &'a Cell)>,
-    {
-        self.update_blinking();
-        for (x, y, c) in content {
-            self.buffer[(x, y)] = c.clone();
-            self.draw_cell(x, y);
-        }
-        for (x, y) in self.always_redraw_list.clone().iter() {
-            self.draw_cell(*x, *y);
-        }
-
-        Ok(())
-    }
-
-    fn hide_cursor(&mut self) -> io::Result<()> {
-        self.cursor = false;
-
-        Ok(())
-    }
-
-    fn show_cursor(&mut self) -> io::Result<()> {
-        self.cursor = true;
-        Ok(())
-    }
-
-    fn get_cursor_position(&mut self) -> io::Result<Position> {
-        Ok(self.cursor_pos.into())
-    }
-
-    fn set_cursor_position<P: Into<Position>>(&mut self, position: P) -> io::Result<()> {
-        self.cursor_pos = position.into().into();
-        Ok(())
-    }
-
-    fn clear(&mut self) -> io::Result<()> {
-        self.buffer.reset();
-        let clear_cell = Cell::EMPTY;
-        let colorik = rat_to_rgb(&clear_cell.bg, false);
-
-        self.rgb_pixmap.fill([colorik[0], colorik[1], colorik[2]]);
-
-        Ok(())
-    }
-
-    fn size(&self) -> io::Result<Size> {
-        Ok(self.buffer.area.as_size())
-    }
-
-    fn window_size(&mut self) -> io::Result<WindowSize> {
-        let window_pixels = Size {
-            width: self.get_pixmap_width() as u16,
-            height: self.get_pixmap_height() as u16,
-        };
-        Ok(WindowSize {
-            columns_rows: self.buffer.area.as_size(),
-            pixels: window_pixels,
-        })
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
     }
 }
