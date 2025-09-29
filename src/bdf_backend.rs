@@ -1,7 +1,6 @@
 //! This module provides the `SoftBackend` implementation for the [`Backend`] trait.
 //! It is used in the integration tests to verify the correctness of the library.
 
-
 use crate::SoftBackend;
 use crate::colors::*;
 use crate::pixmap::RgbPixmap;
