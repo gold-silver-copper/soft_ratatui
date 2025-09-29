@@ -8,7 +8,7 @@
 /// release.
 ///
 /// [`latest`]: https://github.com/ratatui/ratatui/tree/latest
-use std::{error::Error, iter::once, result};
+use std::iter::once;
 
 use eframe::egui::{self, TextureHandle};
 
