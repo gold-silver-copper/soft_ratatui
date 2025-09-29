@@ -21,6 +21,8 @@ pub use embedded_graphics_unicodefonts;
 #[cfg(feature = "embedded-ttf")]
 pub use embedded_ttf;
 #[cfg(feature = "embedded-ttf")]
+pub use rusttype;
+#[cfg(feature = "embedded-ttf")]
 mod embedded_ttf_backend;
 #[cfg(feature = "embedded-ttf")]
 pub use embedded_ttf_backend::EmbeddedTTF;

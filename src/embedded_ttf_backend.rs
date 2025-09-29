@@ -52,6 +52,8 @@ impl SoftBackend<EmbeddedTTF> {
 
         let mut rat_fg = rat_to_rgb(&rat_cell.fg, true);
         let mut rat_bg = rat_to_rgb(&rat_cell.bg, false);
+        let begin_x = xik as usize * self.char_width;
+        let begin_y = yik as usize * self.char_height;
 
         let mut style_builder = FontTextStyleBuilder::new(self.raster_backend.font_regular.clone())
             .font_size(16)
@@ -74,6 +76,7 @@ impl SoftBackend<EmbeddedTTF> {
                 _ => style_builder,
             }
         }
+
         for modifier in rat_cell.modifier.iter() {
             style_builder = match modifier {
                 style::Modifier::DIM => {
@@ -114,8 +117,14 @@ impl SoftBackend<EmbeddedTTF> {
             .text_color(Rgb888::new(rat_fg[0], rat_fg[1], rat_fg[2]))
             .background_color(Rgb888::new(rat_bg[0], rat_bg[1], rat_bg[2]));
 
-        let begin_x = xik as usize * self.char_width;
-        let begin_y = yik as usize * self.char_height;
+        for y in 0..self.char_height {
+            let y_pos = begin_y + y;
+            let mut x_pos = begin_x;
+            for _ in 0..self.char_width {
+                self.rgb_pixmap.put_pixel(x_pos, y_pos, rat_bg);
+                x_pos += 1;
+            }
+        }
         Text::with_baseline(
             rat_cell.symbol(),
             Point::new(begin_x as i32, begin_y as i32),
