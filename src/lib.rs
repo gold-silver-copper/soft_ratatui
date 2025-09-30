@@ -98,7 +98,7 @@
 //! let rgb_data = backend.get_pixmap_data();
 //!
 //! // Get RGBA data (4 bytes per pixel: R, G, B, A)
-//! let rgba_data = backend.get_pixmap_data_as_rgba(); to_rgba_with_color_as_transparent
+//! let rgba_data = backend.get_pixmap_data_as_rgba();
 //!
 //! // Get RGBA data with one of the colors set to fully transparent
 //! let rgba_data = backend.rgb_pixmap.to_rgba_with_color_as_transparent((255,0,255));
@@ -119,7 +119,7 @@
 
 pub use pixmap::RgbPixmap;
 mod soft_backend;
-pub use soft_backend::SoftBackend;
+pub use soft_backend::{RasterBackend, SoftBackend};
 mod colors;
 mod pixmap;
 
