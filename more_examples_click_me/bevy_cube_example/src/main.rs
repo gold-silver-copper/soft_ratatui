@@ -1,13 +1,11 @@
 //! Shows how to render UI to a texture. Useful for displaying UI in 3D space.
 
 use bevy::{
+    asset::RenderAssetUsages,
+    camera::RenderTarget,
     color::palettes::css::GOLD,
     prelude::*,
-    render::{
-        camera::RenderTarget,
-        render_asset::RenderAssetUsages,
-        render_resource::{Extent3d, TextureDimension, TextureFormat, TextureUsages},
-    },
+    render::render_resource::{Extent3d, TextureDimension, TextureFormat, TextureUsages},
 };
 use embedded_graphics_unicodefonts::{
     mono_8x13_atlas, mono_8x13_bold_atlas, mono_8x13_italic_atlas,
