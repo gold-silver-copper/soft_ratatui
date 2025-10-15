@@ -19,3 +19,5 @@
 /more_examples_click_me/egui_modifier_example/target
 /more_examples_click_me/egui_modifier_example_cosmic/target
 target/
+more_examples_click_me/bevy_cube_colors/Cargo.lock
+more_examples_click_me/bevy_example/Cargo.lock
