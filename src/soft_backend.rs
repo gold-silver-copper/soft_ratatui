@@ -1,14 +1,14 @@
 use crate::pixmap::RgbPixmap;
-use ratatui::buffer::{Buffer, Cell};
+use ratatui_core::buffer::{Buffer, Cell};
 use rustc_hash::FxHashSet;
 
 use core::convert::Infallible;
 
 use crate::colors::*;
 
-use ratatui::backend::{Backend, ClearType, WindowSize};
+use ratatui_core::backend::{Backend, ClearType, WindowSize};
 
-use ratatui::layout::{Position, Rect, Size};
+use ratatui_core::layout::{Position, Rect, Size};
 
 /// SoftBackend is a Software rendering backend for Ratatui. It stores the generated image internally as rgb_pixmap.
 pub struct SoftBackend<R: RasterBackend> {

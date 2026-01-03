@@ -6,10 +6,10 @@ use crate::colors::*;
 use crate::pixmap::RgbPixmap;
 use crate::soft_backend::RasterBackend;
 use copper_bdf_parser::*;
-use ratatui::backend::Backend;
-use ratatui::buffer::{Buffer, Cell};
-use ratatui::layout::Rect;
-use ratatui::style;
+use ratatui_core::backend::Backend;
+use ratatui_core::buffer::{Buffer, Cell};
+use ratatui_core::layout::Rect;
+use ratatui_core::style;
 use rustc_hash::FxHashSet;
 
 /// Uses bdf-parser for rendering from a .bdf (bitmap font), works pretty good

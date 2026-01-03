@@ -14,10 +14,10 @@ use crate::SoftBackend;
 use embedded_graphics::pixelcolor::Rgb888;
 use embedded_graphics::prelude::{Dimensions, Point, RgbColor};
 use embedded_graphics::text::Text;
-use ratatui::backend::Backend;
-use ratatui::buffer::{Buffer, Cell};
-use ratatui::layout::Rect;
-use ratatui::style;
+use ratatui_core::backend::Backend;
+use ratatui_core::buffer::{Buffer, Cell};
+use ratatui_core::layout::Rect;
+use ratatui_core::style;
 
 /// Uses embedded-ttf + embedded-graphics for rendering, generally better than cosmic-text
 pub struct EmbeddedTTF {

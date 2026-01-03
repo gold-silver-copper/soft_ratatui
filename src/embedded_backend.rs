@@ -15,10 +15,10 @@ use embedded_graphics::prelude::{Point, RgbColor};
 use embedded_graphics::text::Text;
 
 use crate::SoftBackend;
-use ratatui::backend::Backend;
-use ratatui::buffer::{Buffer, Cell};
-use ratatui::layout::Rect;
-use ratatui::style;
+use ratatui_core::backend::Backend;
+use ratatui_core::buffer::{Buffer, Cell};
+use ratatui_core::layout::Rect;
+use ratatui_core::style;
 
 /// PREFERRED: uses the embedded-graphics library for rendering, best when paired with embedded-graphics-unicodefonts (enabled by default)
 pub struct EmbeddedGraphics {
