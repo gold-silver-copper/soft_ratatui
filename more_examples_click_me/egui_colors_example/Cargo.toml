@@ -8,7 +8,7 @@ color-eyre = "0.6.4"
 eframe = "0.31.1"
 itertools = "0.14.0"
 palette = "0.7.6"
-ratatui = "0.29.0"
+ratatui = { version = "0.30.0", default-features= false}
 soft_ratatui = { path = "../.." , default-features= false, features = ["bdf-parser"]}
 embedded-graphics = "0.8.1"
 embedded-graphics-unicodefonts = "0.2.0"
