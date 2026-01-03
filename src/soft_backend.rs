@@ -2,11 +2,11 @@ use crate::pixmap::RgbPixmap;
 use ratatui::buffer::{Buffer, Cell};
 use rustc_hash::FxHashSet;
 
-use std::io;
+use core::convert::Infallible;
 
 use crate::colors::*;
 
-use ratatui::backend::{Backend, WindowSize};
+use ratatui::backend::{Backend, ClearType, WindowSize};
 
 use ratatui::layout::{Position, Rect, Size};
 
@@ -41,7 +41,9 @@ pub trait RasterBackend {
 }
 
 impl<R: RasterBackend> Backend for SoftBackend<R> {
-    fn draw<'a, I>(&mut self, content: I) -> io::Result<()>
+    type Error = Infallible;
+
+    fn draw<'a, I>(&mut self, content: I) -> Result<(), Self::Error>
     where
         I: Iterator<Item = (u16, u16, &'a Cell)>,
     {
@@ -78,26 +80,26 @@ impl<R: RasterBackend> Backend for SoftBackend<R> {
         Ok(())
     }
 
-    fn hide_cursor(&mut self) -> io::Result<()> {
+    fn hide_cursor(&mut self) -> Result<(), Self::Error> {
         self.cursor = false;
         Ok(())
     }
 
-    fn show_cursor(&mut self) -> io::Result<()> {
+    fn show_cursor(&mut self) -> Result<(), Self::Error> {
         self.cursor = true;
         Ok(())
     }
 
-    fn get_cursor_position(&mut self) -> io::Result<Position> {
+    fn get_cursor_position(&mut self) -> Result<Position, Self::Error> {
         Ok(self.cursor_pos.into())
     }
 
-    fn set_cursor_position<P: Into<Position>>(&mut self, position: P) -> io::Result<()> {
+    fn set_cursor_position<P: Into<Position>>(&mut self, position: P) -> Result<(), Self::Error> {
         self.cursor_pos = position.into().into();
         Ok(())
     }
 
-    fn clear(&mut self) -> io::Result<()> {
+    fn clear(&mut self) -> Result<(), Self::Error> {
         self.buffer.reset();
         let clear_cell = Cell::EMPTY;
         let colorik = rat_to_rgb(&clear_cell.bg, false);
@@ -105,11 +107,11 @@ impl<R: RasterBackend> Backend for SoftBackend<R> {
         Ok(())
     }
 
-    fn size(&self) -> io::Result<Size> {
+    fn size(&self) -> Result<Size, Self::Error> {
         Ok(self.buffer.area.as_size())
     }
 
-    fn window_size(&mut self) -> io::Result<WindowSize> {
+    fn window_size(&mut self) -> Result<WindowSize, Self::Error> {
         let window_pixels = Size {
             width: self.get_pixmap_width() as u16,
             height: self.get_pixmap_height() as u16,
@@ -120,7 +122,39 @@ impl<R: RasterBackend> Backend for SoftBackend<R> {
         })
     }
 
-    fn flush(&mut self) -> io::Result<()> {
+    fn flush(&mut self) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    fn clear_region(&mut self, clear_type: ClearType) -> Result<(), Self::Error> {
+        let region = match clear_type {
+            ClearType::All => return self.clear(),
+            ClearType::AfterCursor => {
+                let index = self.buffer.index_of(self.cursor_pos.0, self.cursor_pos.1) + 1;
+                &mut self.buffer.content[index..]
+            }
+            ClearType::BeforeCursor => {
+                let index = self.buffer.index_of(self.cursor_pos.0, self.cursor_pos.1);
+                &mut self.buffer.content[..index]
+            }
+            ClearType::CurrentLine => {
+                let line_start_index = self.buffer.index_of(0, self.cursor_pos.1);
+                let line_end_index = self
+                    .buffer
+                    .index_of(self.buffer.area.width - 1, self.cursor_pos.1);
+                &mut self.buffer.content[line_start_index..=line_end_index]
+            }
+            ClearType::UntilNewLine => {
+                let index = self.buffer.index_of(self.cursor_pos.0, self.cursor_pos.1);
+                let line_end_index = self
+                    .buffer
+                    .index_of(self.buffer.area.width - 1, self.cursor_pos.1);
+                &mut self.buffer.content[index..=line_end_index]
+            }
+        };
+        for cell in region {
+            cell.reset();
+        }
         Ok(())
     }
 }
