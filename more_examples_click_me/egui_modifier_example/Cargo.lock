@@ -3576,7 +3576,7 @@ dependencies = [
 
 [[package]]
 name = "soft_ratatui"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "embedded-graphics",
  "embedded-ttf",
