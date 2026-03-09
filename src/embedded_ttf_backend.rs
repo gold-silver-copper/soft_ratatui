@@ -47,21 +47,21 @@ impl RasterBackend for EmbeddedTTF {
         let begin_y = yik as usize * char_height;
 
         let mut style_builder = FontTextStyleBuilder::new(self.font_regular.clone())
-            .font_size(16)
+            .font_size(self.font_size)
             .text_color(Rgb888::WHITE);
         for modifier in rat_cell.modifier.iter() {
             style_builder = match modifier {
                 style::Modifier::BOLD => match &self.font_bold {
                     None => style_builder,
                     Some(font) => FontTextStyleBuilder::new(font.clone())
-                        .font_size(16)
+                        .font_size(self.font_size)
                         .text_color(Rgb888::WHITE),
                 },
 
                 style::Modifier::ITALIC => match &self.font_italic {
                     None => style_builder,
                     Some(font) => FontTextStyleBuilder::new(font.clone())
-                        .font_size(16)
+                        .font_size(self.font_size)
                         .text_color(Rgb888::WHITE),
                 },
                 _ => style_builder,
@@ -203,6 +203,7 @@ impl SoftBackend<EmbeddedTTF> {
 
         self.char_width = char_width;
         self.char_height = char_height;
+        self.raster_backend.font_size = font_size;
         self.rgb_pixmap = RgbPixmap::new(
             self.char_width * self.buffer.area.width as usize,
             self.char_height * self.buffer.area.height as usize,
