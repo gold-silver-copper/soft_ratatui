@@ -1,19 +1,23 @@
 use bevy::{
     asset::RenderAssetUsages,
+    input::keyboard::KeyCode,
     prelude::*,
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
 use ratatui::{prelude::*, style::Color};
-use soft_ratatui::Bdf;
-use soft_ratatui::SoftBackend;
+use soft_ratatui::{Bdf, CursorConfig, CursorStyle, SoftBackend};
 static FONT_DATA: &str = include_str!("../../../assets/cozette.bdf");
+const TERMINAL_WIDTH: u16 = 100;
+const TERMINAL_HEIGHT: u16 = 50;
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .init_resource::<SoftTerminal>()
         .init_resource::<Stuff>()
+        .init_resource::<DemoCursor>()
         .add_systems(Startup, setup)
-        .add_systems(FixedUpdate, show_rand)
+        .add_systems(FixedUpdate, (handle_input, show_rand).chain())
         .run();
 }
 fn setup(
@@ -60,7 +64,14 @@ impl Default for Stuff {
 struct SoftTerminal(Terminal<SoftBackend<Bdf>>);
 impl Default for SoftTerminal {
     fn default() -> Self {
-        let backend = SoftBackend::<Bdf>::new(100, 50, (6, 13), FONT_DATA, None, None);
+        let backend = SoftBackend::<Bdf>::new(
+            TERMINAL_WIDTH,
+            TERMINAL_HEIGHT,
+            (6, 13),
+            FONT_DATA,
+            None,
+            None,
+        );
         //backend.set_font_size(12);
         Self(Terminal::new(backend).unwrap())
     }
@@ -69,17 +80,112 @@ impl Default for SoftTerminal {
 #[derive(Resource)]
 struct MyProcGenImage(Handle<Image>);
 
+#[derive(Resource)]
+struct DemoCursor {
+    x: u16,
+    y: u16,
+    visible: bool,
+    blink: bool,
+    style: CursorStyle,
+}
+
+impl Default for DemoCursor {
+    fn default() -> Self {
+        Self {
+            x: 8,
+            y: 8,
+            visible: true,
+            blink: true,
+            style: CursorStyle::Inverse,
+        }
+    }
+}
+
+impl DemoCursor {
+    fn move_by(&mut self, dx: i16, dy: i16) {
+        let next_x = (i32::from(self.x) + i32::from(dx)).clamp(0, i32::from(TERMINAL_WIDTH - 1));
+        let next_y = (i32::from(self.y) + i32::from(dy)).clamp(0, i32::from(TERMINAL_HEIGHT - 1));
+        self.x = next_x as u16;
+        self.y = next_y as u16;
+    }
+
+    const fn style_name(&self) -> &'static str {
+        match self.style {
+            CursorStyle::Inverse => "Inverse",
+            CursorStyle::Underline => "Underline",
+            CursorStyle::Outline => "Outline",
+            CursorStyle::Japanese => "Japanese",
+        }
+    }
+}
+
+fn handle_input(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut cursor: ResMut<DemoCursor>,
+    mut stuff: ResMut<Stuff>,
+) {
+    let mut dx = 0;
+    let mut dy = 0;
+
+    if keyboard.pressed(KeyCode::ArrowLeft) {
+        dx -= 1;
+    }
+    if keyboard.pressed(KeyCode::ArrowRight) {
+        dx += 1;
+    }
+    if keyboard.pressed(KeyCode::ArrowUp) {
+        dy -= 1;
+    }
+    if keyboard.pressed(KeyCode::ArrowDown) {
+        dy += 1;
+    }
+    if dx != 0 || dy != 0 {
+        cursor.move_by(dx, dy);
+    }
+
+    if keyboard.just_pressed(KeyCode::KeyV) {
+        cursor.visible = !cursor.visible;
+    }
+    if keyboard.just_pressed(KeyCode::KeyB) {
+        cursor.blink = !cursor.blink;
+    }
+    if keyboard.just_pressed(KeyCode::Digit1) {
+        cursor.style = CursorStyle::Inverse;
+    }
+    if keyboard.just_pressed(KeyCode::Digit2) {
+        cursor.style = CursorStyle::Underline;
+    }
+    if keyboard.just_pressed(KeyCode::Digit3) {
+        cursor.style = CursorStyle::Outline;
+    }
+    if keyboard.just_pressed(KeyCode::Digit4) {
+        cursor.style = CursorStyle::Japanese;
+    }
+    if keyboard.just_pressed(KeyCode::BracketLeft) {
+        stuff.myapp.on_left();
+    }
+    if keyboard.just_pressed(KeyCode::BracketRight) {
+        stuff.myapp.on_right();
+    }
+}
+
 // Render to the terminal and to egui , both are immediate mode
 fn show_rand(
     mut softatui: ResMut<SoftTerminal>,
     mut images: ResMut<Assets<Image>>,
     mut stuff: ResMut<Stuff>,
+    cursor: Res<DemoCursor>,
     my_handle: Res<MyProcGenImage>,
 ) {
     stuff.myapp.on_tick();
+    softatui.backend_mut().cursor_config = CursorConfig {
+        style: cursor.style,
+        blink: cursor.blink,
+        ..CursorConfig::default()
+    };
 
     softatui
-        .draw(|frame| render(frame, &mut stuff.myapp))
+        .draw(|frame| render(frame, &mut stuff.myapp, &cursor))
         .unwrap();
 
     let width = softatui.backend().get_pixmap_width() as u32;
@@ -448,7 +554,7 @@ impl<'a> MyApp<'a> {
         self.barchart.insert(0, event);
     }
 }
-pub fn render(frame: &mut Frame, app: &mut MyApp) {
+fn render(frame: &mut Frame, app: &mut MyApp, cursor: &DemoCursor) {
     let chunks = Layout::vertical([Constraint::Length(3), Constraint::Min(0)]).split(frame.area());
     let tabs = app
         .tabs
@@ -461,14 +567,17 @@ pub fn render(frame: &mut Frame, app: &mut MyApp) {
         .select(app.tabs.index);
     frame.render_widget(tabs, chunks[0]);
     match app.tabs.index {
-        0 => draw_first_tab(frame, app, chunks[1]),
+        0 => draw_first_tab(frame, app, cursor, chunks[1]),
         1 => draw_second_tab(frame, app, chunks[1]),
         2 => draw_third_tab(frame, app, chunks[1]),
         _ => {}
     };
+    if cursor.visible {
+        frame.set_cursor_position((cursor.x, cursor.y));
+    }
 }
 
-fn draw_first_tab(frame: &mut Frame, app: &mut MyApp, area: Rect) {
+fn draw_first_tab(frame: &mut Frame, app: &mut MyApp, cursor: &DemoCursor, area: Rect) {
     let chunks = Layout::vertical([
         Constraint::Length(13),
         Constraint::Min(8),
@@ -477,7 +586,7 @@ fn draw_first_tab(frame: &mut Frame, app: &mut MyApp, area: Rect) {
     .split(area);
     draw_gauges(frame, app, chunks[0]);
     draw_charts(frame, app, chunks[1]);
-    draw_text(frame, chunks[2]);
+    draw_text(frame, cursor, chunks[2]);
 }
 
 fn draw_gauges(frame: &mut Frame, app: &mut MyApp, area: Rect) {
@@ -669,7 +778,7 @@ fn draw_charts(frame: &mut Frame, app: &mut MyApp, area: Rect) {
     }
 }
 
-fn draw_text(frame: &mut Frame, area: Rect) {
+fn draw_text(frame: &mut Frame, cursor: &DemoCursor, area: Rect) {
     let text = vec![
         text::Line::from(
             "This is a paragraph with several lines. You can change style your text the way you want",
@@ -699,6 +808,17 @@ fn draw_text(frame: &mut Frame, area: Rect) {
             Span::raw("."),
         ]),
         text::Line::from("One more thing is that it should display unicode characters: 10€"),
+        text::Line::from(vec![
+            Span::styled("Cursor", Style::default().fg(Color::Yellow)),
+            Span::raw(format!(
+                " [{}, {}] {} {}",
+                cursor.x,
+                cursor.y,
+                cursor.style_name(),
+                if cursor.blink { "blink" } else { "steady" }
+            )),
+            Span::raw("  arrows move  [ / ] tabs  1-4 style  b blink  v show"),
+        ]),
     ];
     let block = Block::bordered().title(Span::styled(
         "Footer",

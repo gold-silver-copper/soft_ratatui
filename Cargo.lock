@@ -6368,7 +6368,7 @@ dependencies = [
 
 [[package]]
 name = "soft_ratatui"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "copper-bdf-parser",
  "cosmic-text 0.14.2",

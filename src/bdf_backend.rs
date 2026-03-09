@@ -4,6 +4,7 @@ use crate::SoftBackend;
 use crate::colors::*;
 use crate::pixmap::RgbPixmap;
 use crate::soft_backend::RasterBackend;
+use crate::soft_backend::{BlinkConfig, CursorConfig};
 use copper_bdf_parser::*;
 use ratatui_core::backend::Backend;
 use ratatui_core::buffer::{Buffer, Cell};
@@ -204,6 +205,7 @@ impl SoftBackend<Bdf> {
             buffer: Buffer::empty(Rect::new(0, 0, width, height)),
             cursor: false,
             cursor_pos: (0, 0),
+            cursor_config: CursorConfig::default(),
 
             raster_backend: Bdf {
                 font_regular: bdf_font_regular,
@@ -216,10 +218,10 @@ impl SoftBackend<Bdf> {
             char_width,
             char_height,
 
-            blink_counter: 0,
-            blinking_fast: false,
-            blinking_slow: false,
+            frame_count: 0,
+            blink_config: BlinkConfig::default(),
             always_redraw_list: FxHashSet::default(),
+            rendered_cursor: None,
         };
         _ = return_struct.clear();
         return_struct

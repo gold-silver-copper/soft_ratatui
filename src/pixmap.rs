@@ -81,6 +81,31 @@ impl RgbPixmap {
         }
     }
 
+    /// Fills a rectangular region with the specified RGB color.
+    pub fn fill_rect(&mut self, x: usize, y: usize, width: usize, height: usize, color: [u8; 3]) {
+        let x_end = x.saturating_add(width).min(self.width);
+        let y_end = y.saturating_add(height).min(self.height);
+
+        for py in y..y_end {
+            for px in x..x_end {
+                self.put_pixel(px, py, color);
+            }
+        }
+    }
+
+    /// Inverts the RGB values of all pixels inside a rectangular region.
+    pub fn invert_rect(&mut self, x: usize, y: usize, width: usize, height: usize) {
+        let x_end = x.saturating_add(width).min(self.width);
+        let y_end = y.saturating_add(height).min(self.height);
+
+        for py in y..y_end {
+            for px in x..x_end {
+                let [r, g, b] = self.get_pixel(px, py);
+                self.put_pixel(px, py, [255 - r, 255 - g, 255 - b]);
+            }
+        }
+    }
+
     /// Returns the width of the pixmap in pixels.
     pub fn width(&self) -> usize {
         self.width

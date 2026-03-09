@@ -128,7 +128,9 @@
 
 pub use pixmap::RgbPixmap;
 mod soft_backend;
-pub use soft_backend::{RasterBackend, SoftBackend};
+pub use soft_backend::{
+    BlinkConfig, BlinkTiming, CursorConfig, CursorStyle, RasterBackend, SoftBackend,
+};
 mod colors;
 mod pixmap;
 

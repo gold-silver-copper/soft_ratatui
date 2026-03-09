@@ -3,6 +3,7 @@
 use crate::colors::*;
 use crate::pixmap::RgbPixmap;
 use crate::soft_backend::RasterBackend;
+use crate::soft_backend::{BlinkConfig, CursorConfig};
 use embedded_ttf::FontTextStyleBuilder;
 use rustc_hash::FxHashSet;
 
@@ -175,6 +176,7 @@ impl SoftBackend<EmbeddedTTF> {
             buffer: Buffer::empty(Rect::new(0, 0, width, height)),
             cursor: false,
             cursor_pos: (0, 0),
+            cursor_config: CursorConfig::default(),
             raster_backend: EmbeddedTTF {
                 font_regular,
                 font_bold,
@@ -187,10 +189,10 @@ impl SoftBackend<EmbeddedTTF> {
             char_width,
             char_height,
 
-            blink_counter: 0,
-            blinking_fast: false,
-            blinking_slow: false,
+            frame_count: 0,
+            blink_config: BlinkConfig::default(),
             always_redraw_list: FxHashSet::default(),
+            rendered_cursor: None,
         };
         _ = return_struct.clear();
         return_struct
