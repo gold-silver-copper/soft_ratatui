@@ -81,10 +81,7 @@ fn setup(
     commands.spawn(DirectionalLight::default());
 
     let texture_camera = commands
-        .spawn((
-            Camera2d,
-            RenderTarget::Image(image_handle.clone().into()),
-        ))
+        .spawn((Camera2d, RenderTarget::Image(image_handle.clone().into())))
         .id();
 
     commands

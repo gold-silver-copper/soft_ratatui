@@ -1,5 +1,4 @@
-//! This module provides the `SoftBackend` implementation for the [`Backend`] trait.
-//! It is used in the integration tests to verify the correctness of the library.
+//! Embedded TrueType rasterization backend for [`SoftBackend`].
 
 use crate::colors::*;
 use crate::pixmap::RgbPixmap;
@@ -19,7 +18,7 @@ use ratatui_core::buffer::{Buffer, Cell};
 use ratatui_core::layout::Rect;
 use ratatui_core::style;
 
-/// Uses embedded-ttf + embedded-graphics for rendering, generally better than cosmic-text
+/// Raster backend built on `embedded-ttf` and `rusttype`.
 pub struct EmbeddedTTF {
     pub font_regular: rusttype::Font<'static>,
     /// Bold font.
@@ -143,10 +142,16 @@ impl SoftBackend<EmbeddedTTF> {
     ///
     /// # Examples
     /// ```rust
-    /// use rusttype::Font;
+    /// use soft_ratatui::rusttype::Font;
+    /// use soft_ratatui::{EmbeddedTTF, SoftBackend};
     ///
-    /// let font_regular = Font::try_from_bytes(include_bytes!("../assets/iosevka.ttf")).unwrap();
+    /// let font_regular = Font::try_from_bytes(include_bytes!(concat!(
+    ///     env!("CARGO_MANIFEST_DIR"),
+    ///     "/assets/iosevka.ttf"
+    /// )))
+    /// .unwrap();
     /// let backend = SoftBackend::<EmbeddedTTF>::new(80, 60, 16, font_regular, None, None);
+    /// let _ = backend;
     /// ```
 
     pub fn new(

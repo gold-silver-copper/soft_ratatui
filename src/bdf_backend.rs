@@ -1,5 +1,4 @@
-//! This module provides the `SoftBackend` implementation for the [`Backend`] trait.
-//! It is used in the integration tests to verify the correctness of the library.
+//! BDF rasterization backend for [`SoftBackend`].
 
 use crate::SoftBackend;
 use crate::colors::*;
@@ -12,7 +11,7 @@ use ratatui_core::layout::Rect;
 use ratatui_core::style;
 use rustc_hash::FxHashSet;
 
-/// Uses bdf-parser for rendering from a .bdf (bitmap font), works pretty good
+/// Raster backend for bitmap fonts parsed from BDF data.
 pub struct Bdf {
     font_regular: Font,
     font_italic: Option<Font>,
@@ -172,9 +171,11 @@ impl SoftBackend<Bdf> {
     ///
     /// # Examples
     /// ```rust
-    /// let regular_font = include_str!("../assets/6x13.bdf"); // BDF font data
-    /// let bold_font = include_str!("../assets/6x13_bold.bdf");    // Optional bold BDF font data
-    /// let backend = SoftBackend::<Bdf>::new(80, 24, (8, 16), regular_font, Some(bold_font), None);
+    /// use soft_ratatui::{Bdf, SoftBackend};
+    ///
+    /// let regular_font = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/cozette.bdf"));
+    /// let backend = SoftBackend::<Bdf>::new(80, 24, (8, 16), regular_font, None, None);
+    /// let _ = backend;
     /// ```
     pub fn new(
         width: u16,

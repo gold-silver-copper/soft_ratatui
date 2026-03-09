@@ -1,5 +1,4 @@
-//! This module provides the `SoftBackend` implementation for the [`Backend`] trait.
-//! It is used in the integration tests to verify the correctness of the library.
+//! Cosmic Text rasterization backend for [`SoftBackend`].
 
 use crate::SoftBackend;
 use crate::colors::*;
@@ -17,7 +16,11 @@ use ratatui_core::style::Modifier;
 use cosmic_text::{Buffer as CosmicBuffer, FontSystem, SwashCache};
 use rustc_hash::FxHashSet;
 
-/// Uses cosmic-text for rendering, not recommended as it has anti aliasing issues which are not good for a terminal (also i messed up the offsets i think lol)
+/// Raster backend built on `cosmic-text`.
+///
+/// This backend supports more advanced shaping than the bitmap-oriented
+/// backends, but its anti-aliased output may be less desirable for
+/// terminal-style rendering.
 pub struct CosmicText {
     font_system: FontSystem,
 
@@ -222,8 +225,12 @@ impl SoftBackend<CosmicText> {
     ///
     /// # Examples
     /// ```rust
-    /// static FONT_DATA: &[u8] = include_bytes!("../../assets/iosevka.ttf");
-    /// let backend = SoftBackend::<CosmicText>::new_with_font(20, 20, 16, FONT_DATA);
+    /// use soft_ratatui::{CosmicText, SoftBackend};
+    ///
+    /// static FONT_DATA: &[u8] =
+    ///     include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/iosevka.ttf"));
+    /// let backend = SoftBackend::<CosmicText>::new(20, 20, 16, FONT_DATA);
+    /// let _ = backend;
     /// ```
 
     pub fn new(width: u16, height: u16, font_size: i32, font_data: &[u8]) -> Self {

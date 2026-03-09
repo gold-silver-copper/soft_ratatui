@@ -3,13 +3,13 @@ use bevy::{
     prelude::*,
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
-use ratatui::{prelude::*, style::Color, widgets::*};
+use ratatui::{prelude::*, style::Color};
 use soft_ratatui::Bdf;
-use soft_ratatui::{EmbeddedGraphics, SoftBackend};
+use soft_ratatui::SoftBackend;
 static FONT_DATA: &str = include_str!("../../../assets/cozette.bdf");
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins.set(ImagePlugin::default_nearest())))
+        .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .init_resource::<SoftTerminal>()
         .init_resource::<Stuff>()
         .add_systems(Startup, setup)
@@ -179,7 +179,7 @@ pub struct RandomSignal {
 }
 
 impl RandomSignal {
-    pub fn new(lower: u64, upper: u64) -> Self {
+    pub fn new(_lower: u64, _upper: u64) -> Self {
         Self { counter: 0 }
     }
 }

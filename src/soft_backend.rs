@@ -10,7 +10,11 @@ use ratatui_core::backend::{Backend, ClearType, WindowSize};
 
 use ratatui_core::layout::{Position, Rect, Size};
 
-/// SoftBackend is a Software rendering backend for Ratatui. It stores the generated image internally as rgb_pixmap.
+/// A software-rendering [`Backend`] for Ratatui.
+///
+/// `SoftBackend` rasterizes terminal cells into an internal [`RgbPixmap`], which
+/// can then be consumed by GUI toolkits, game engines, or other non-terminal
+/// renderers.
 pub struct SoftBackend<R: RasterBackend> {
     pub buffer: Buffer,
     pub cursor: bool,
@@ -24,7 +28,7 @@ pub struct SoftBackend<R: RasterBackend> {
     pub always_redraw_list: FxHashSet<(u16, u16)>,
     pub raster_backend: R,
 }
-/// Trait for raster backends (TTF, embedded-graphics, etc.)
+/// Trait implemented by font rasterizers used by [`SoftBackend`].
 pub trait RasterBackend {
     fn draw_cell(
         &mut self,
@@ -180,12 +184,12 @@ impl<R: RasterBackend> SoftBackend<R> {
         self.rgb_pixmap.height()
     }
 
-    /// Returns a reference to the internal buffer of the `SoftBackend`.
+    /// Returns a reference to the current Ratatui cell buffer.
     pub const fn buffer(&self) -> &Buffer {
         &self.buffer
     }
 
-    /// Resizes the `SoftBackend` to the specified width and height.
+    /// Resizes the terminal in character cells and reallocates the backing pixmap.
     pub fn resize(&mut self, width: u16, height: u16) {
         self.buffer.resize(Rect::new(0, 0, width, height));
         let rgb_pixmap = RgbPixmap::new(
@@ -196,7 +200,7 @@ impl<R: RasterBackend> SoftBackend<R> {
         self.redraw();
     }
 
-    /// Redraws the pixmap
+    /// Redraws the entire pixmap from the current cell buffer.
     pub fn redraw(&mut self) {
         self.always_redraw_list = FxHashSet::default();
         for x in 0..self.buffer.area.width {

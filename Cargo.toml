@@ -71,8 +71,8 @@ required-features = ["embedded-ttf"]
 
 
 [package.metadata.docs.rs]
-# Enable all features for documentation
 all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [profile.release]
 
