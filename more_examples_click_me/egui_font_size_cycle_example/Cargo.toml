@@ -1,0 +1,9 @@
+[package]
+name = "egui_font_size_cycle_example"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+eframe = "0.31.1"
+ratatui = "0.30.0"
+soft_ratatui = { path = "../..", default-features = false, features = ["embedded-ttf"] }
