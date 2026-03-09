@@ -1,13 +1,17 @@
 [package]
-name = "egui_example"
-version = "0.1.0"
+name = "soft-ratatui-egui-modifiers-ttf"
 edition = "2021"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
 
 [dependencies]
-color-eyre = "0.6.4"
-eframe = "0.31.1"
-itertools = "0.14.0"
-palette = "0.7.6"
-ratatui = "0.30.0"
-soft_ratatui = { path = "../..", default-features= false, features = ["embedded-ttf"]}
-embedded-graphics-unicodefonts = "0.2.0"
+color-eyre.workspace = true
+eframe.workspace = true
+itertools.workspace = true
+palette.workspace = true
+ratatui.workspace = true
+soft_ratatui = { path = "../..", default-features = false, features = ["embedded-ttf"] }
+embedded-graphics-unicodefonts.workspace = true
