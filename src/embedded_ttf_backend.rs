@@ -1,9 +1,9 @@
-//! This module provides the `SoftBackend` implementation for the [`Backend`] trait.
-//! It is used in the integration tests to verify the correctness of the library.
+//! Embedded TrueType rasterization backend for [`SoftBackend`].
 
 use crate::colors::*;
 use crate::pixmap::RgbPixmap;
 use crate::soft_backend::RasterBackend;
+use crate::soft_backend::{BlinkConfig, CursorConfig};
 use embedded_ttf::FontTextStyleBuilder;
 use rustc_hash::FxHashSet;
 
@@ -19,7 +19,7 @@ use ratatui_core::buffer::{Buffer, Cell};
 use ratatui_core::layout::Rect;
 use ratatui_core::style;
 
-/// Uses embedded-ttf + embedded-graphics for rendering, generally better than cosmic-text
+/// Raster backend built on `embedded-ttf` and `rusttype`.
 pub struct EmbeddedTTF {
     pub font_regular: rusttype::Font<'static>,
     /// Bold font.
@@ -143,10 +143,16 @@ impl SoftBackend<EmbeddedTTF> {
     ///
     /// # Examples
     /// ```rust
-    /// use rusttype::Font;
+    /// use soft_ratatui::rusttype::Font;
+    /// use soft_ratatui::{EmbeddedTTF, SoftBackend};
     ///
-    /// let font_regular = Font::try_from_bytes(include_bytes!("../assets/iosevka.ttf")).unwrap();
+    /// let font_regular = Font::try_from_bytes(include_bytes!(concat!(
+    ///     env!("CARGO_MANIFEST_DIR"),
+    ///     "/assets/iosevka.ttf"
+    /// )))
+    /// .unwrap();
     /// let backend = SoftBackend::<EmbeddedTTF>::new(80, 60, 16, font_regular, None, None);
+    /// let _ = backend;
     /// ```
 
     pub fn new(
@@ -170,6 +176,7 @@ impl SoftBackend<EmbeddedTTF> {
             buffer: Buffer::empty(Rect::new(0, 0, width, height)),
             cursor: false,
             cursor_pos: (0, 0),
+            cursor_config: CursorConfig::default(),
             raster_backend: EmbeddedTTF {
                 font_regular,
                 font_bold,
@@ -182,10 +189,10 @@ impl SoftBackend<EmbeddedTTF> {
             char_width,
             char_height,
 
-            blink_counter: 0,
-            blinking_fast: false,
-            blinking_slow: false,
+            frame_count: 0,
+            blink_config: BlinkConfig::default(),
             always_redraw_list: FxHashSet::default(),
+            rendered_cursor: None,
         };
         _ = return_struct.clear();
         return_struct

@@ -36,7 +36,7 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "Image Viewer",
         options,
-        Box::new(|cc| {
+        Box::new(|_cc| {
             // This gives us image support:
 
             Ok(Box::new(my_app))

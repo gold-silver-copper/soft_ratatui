@@ -1,11 +1,13 @@
 [package]
-name = "bevy_example"
-version = "0.1.0"
+name = "soft-ratatui-bevy-sprite"
 edition = "2024"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
 
 [dependencies]
-bevy = "0.18"
-ratatui = { version = "0.30", default-features = false }
-soft_ratatui = { path = "../.."}
-[target.wasm32-unknown-unknown]
-runner = "wasm-server-runner"
+bevy.workspace = true
+ratatui.workspace = true
+soft_ratatui = { path = "../.." }

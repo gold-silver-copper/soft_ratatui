@@ -6,12 +6,11 @@ use bevy::{
     prelude::*,
     render::render_resource::{Extent3d, TextureDimension, TextureFormat, TextureUsages},
 };
-use color_eyre::Result;
 use embedded_graphics_unicodefonts::{
     mono_8x13_atlas, mono_8x13_bold_atlas, mono_8x13_italic_atlas,
 };
-use itertools::Itertools;
 use palette::{Okhsv, Srgb, convert::FromColorUnclamped};
+use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 use ratatui::{Frame, Terminal};
 use ratatui::{
     buffer::Buffer,
@@ -24,20 +23,15 @@ use ratatui::{
     prelude::Stylize,
     style::{Modifier, Style},
 };
-use ratatui::{
-    text::Line,
-    widgets::{Block, Borders, Paragraph, Wrap},
-};
-use soft_ratatui::{Bdf, EmbeddedGraphics, SoftBackend};
+use soft_ratatui::{EmbeddedGraphics, SoftBackend};
 use std::{
     f32::consts::PI,
-    iter::once,
     time::{Duration, Instant},
 };
 
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins.set(ImagePlugin::default_nearest())))
+        .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .insert_resource(Time::<Fixed>::from_hz(40.0))
         .init_resource::<SoftTerminal>()
         .init_resource::<Stuff>()
@@ -101,10 +95,7 @@ fn setup(
     commands.spawn(DirectionalLight::default());
 
     let texture_camera = commands
-        .spawn((
-            Camera2d,
-            RenderTarget::Image(image_handle.clone().into()),
-        ))
+        .spawn((Camera2d, RenderTarget::Image(image_handle.clone().into())))
         .id();
 
     commands
@@ -268,25 +259,12 @@ fn computer_test(
 
 #[derive(Debug, Default)]
 struct MyApp {
-    /// The current state of the app (running or quit)
-    state: AppState,
-
     /// A widget that displays the current frames per second
     fps_widget: FpsWidget,
 
     /// A widget that displays the full range of RGB colors that can be displayed in the terminal.
     colors_widget: ColorsWidget,
 }
-#[derive(Debug, Default, PartialEq, Eq)]
-enum AppState {
-    /// The app is running
-    #[default]
-    Running,
-
-    /// The user has requested the app to quit
-    Quit,
-}
-
 /// A widget that displays the current frames per second
 #[derive(Debug)]
 struct FpsWidget {
@@ -319,11 +297,7 @@ impl MyApp {
     ///
     /// This is the main event loop for the app.
     pub fn run(&mut self, terminal: &mut Terminal<SoftBackend<EmbeddedGraphics>>) {
-        terminal.draw(|frame| frame.render_widget(self, frame.area()));
-    }
-
-    const fn is_running(&self) -> bool {
-        matches!(self.state, AppState::Running)
+        let _ = terminal.draw(|frame| frame.render_widget(self, frame.area()));
     }
 }
 
@@ -449,55 +423,6 @@ impl ColorsWidget {
     }
 }
 
-fn draw(frame: &mut Frame) {
-    let vertical = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]);
-    let [text_area, main_area] = vertical.areas(frame.area());
-    frame.render_widget(
-        Paragraph::new("Note: not all terminals support all modifiers")
-            .style(Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)),
-        text_area,
-    );
-    let layout = Layout::vertical([Constraint::Length(1); 50])
-        .split(main_area)
-        .iter()
-        .flat_map(|area| {
-            Layout::horizontal([Constraint::Percentage(20); 5])
-                .split(*area)
-                .to_vec()
-        })
-        .collect_vec();
-
-    let colors = [
-        Color::Black,
-        Color::DarkGray,
-        Color::Gray,
-        Color::White,
-        Color::Red,
-    ];
-    let all_modifiers = once(Modifier::empty())
-        .chain(Modifier::all().iter())
-        .collect_vec();
-    let mut index = 0;
-    for bg in &colors {
-        for fg in &colors {
-            for modifier in &all_modifiers {
-                let modifier_name = format!("{modifier:11?}");
-                let padding = (" ").repeat(12 - modifier_name.len());
-                let paragraph = Paragraph::new(Line::from(vec![
-                    modifier_name.fg(*fg).bg(*bg).add_modifier(*modifier),
-                    padding.fg(*fg).bg(*bg).add_modifier(*modifier),
-                    // This is a hack to work around a bug in VHS which is used for rendering the
-                    // examples to gifs. The bug is that the background color of a paragraph seems
-                    // to bleed into the next character.
-                    ".".black().on_black(),
-                ]));
-                frame.render_widget(paragraph, layout[index]);
-                index += 1;
-            }
-        }
-    }
-}
-
 use ratatui::symbols;
 use ratatui::text::{self, Span};
 use ratatui::widgets::ListState;
@@ -586,7 +511,7 @@ pub struct RandomSignal {
 }
 
 impl RandomSignal {
-    pub fn new(lower: u64, upper: u64) -> Self {
+    pub fn new(_lower: u64, _upper: u64) -> Self {
         Self { counter: 0 }
     }
 }

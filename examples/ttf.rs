@@ -1,11 +1,8 @@
-use embedded_graphics_unicodefonts::{
-    mono_8x13_atlas, mono_8x13_bold_atlas, mono_8x13_italic_atlas,
-};
 use ratatui::Terminal;
 /// A minimal example of a Ratatui application.
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 use rusttype::Font;
-use soft_ratatui::{EmbeddedGraphics, EmbeddedTTF, SoftBackend};
+use soft_ratatui::{EmbeddedTTF, SoftBackend};
 
 fn main() {
     let font_regular = Font::try_from_bytes(include_bytes!("../assets/iosevka.ttf")).unwrap();
@@ -13,7 +10,7 @@ fn main() {
     let mut terminal = Terminal::new(backend).unwrap();
     terminal.clear();
 
-    terminal.draw(|frame| {
+    let _ = terminal.draw(|frame| {
         let area = frame.area();
         let textik = format!("Hello soft! The window area is {}", area);
         frame.render_widget(

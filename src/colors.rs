@@ -1,6 +1,9 @@
 use ratatui_core::style::Color as RatColor;
 
-///Converts a Ratatui Color into a rgb [u8;3]
+/// Converts a Ratatui color to an RGB triplet.
+///
+/// `Reset` maps to the crate's default foreground or background fallback color,
+/// depending on `is_a_fg`.
 pub fn rat_to_rgb(rat_col: &RatColor, is_a_fg: bool) -> [u8; 3] {
     match rat_col {
         RatColor::Reset => {
@@ -34,6 +37,13 @@ pub fn rat_to_rgb(rat_col: &RatColor, is_a_fg: bool) -> [u8; 3] {
     }
 }
 
+#[cfg(any(
+    feature = "embedded-graphics",
+    feature = "embedded-ttf",
+    feature = "cosmic-text",
+    feature = "bdf-parser"
+))]
+/// Applies a fixed dimming factor to an RGB color.
 pub fn dim_rgb(color: [u8; 3]) -> [u8; 3] {
     let factor = 77; // 77 ≈ 255 * 0.3
     [
@@ -50,7 +60,8 @@ pub fn dim_rgb(color: [u8; 3]) -> [u8; 3] {
 /// * `fg` - [R, G, B, A] foreground color
 /// * `bg` - [R, G, B, A] background color
 ///
-/// Returns: blended color as [u8; 4]
+#[cfg(feature = "cosmic-text")]
+/// Returns the blended color as `[u8; 3]`.
 pub fn blend_rgba(fg: [u8; 4], bg: [u8; 4]) -> [u8; 3] {
     let fg_a = fg[3] as f32 / 255.0;
     let bg_a = bg[3] as f32 / 255.0;
@@ -68,41 +79,4 @@ pub fn blend_rgba(fg: [u8; 4], bg: [u8; 4]) -> [u8; 3] {
             blend_channel(fg[2], bg[2]),
         ]
     }
-}
-
-pub fn blend_ignore_bg_alpha(fg: [u8; 4], bg: [u8; 3]) -> [u8; 3] {
-    let alpha = fg[3] as f32 / 255.0;
-    let inv_alpha = 1.0 - alpha;
-
-    [
-        (fg[0] as f32 * alpha + bg[0] as f32 * inv_alpha).round() as u8,
-        (fg[1] as f32 * alpha + bg[1] as f32 * inv_alpha).round() as u8,
-        (fg[2] as f32 * alpha + bg[2] as f32 * inv_alpha).round() as u8,
-    ]
-}
-pub fn blend_gamma_corrected(fg: [u8; 4], bg: [u8; 4]) -> [u8; 3] {
-    let fg_a = fg[3] as f32 / 255.0;
-    let bg_a = bg[3] as f32 / 255.0;
-    let out_a = fg_a + bg_a * (1.0 - fg_a);
-
-    if out_a == 0.0 {
-        return [0, 0, 0];
-    }
-
-    // Convert to linear space (approx gamma 2.2)
-    let to_linear = |c: u8| (c as f32 / 255.0).powf(2.2);
-    let from_linear = |c: f32| (c.powf(1.0 / 2.2).clamp(0.0, 1.0) * 255.0).round() as u8;
-
-    let blend_channel = |f: u8, b: u8| {
-        let f_lin = to_linear(f);
-        let b_lin = to_linear(b);
-        let result_lin = (f_lin * fg_a + b_lin * bg_a * (1.0 - fg_a)) / out_a;
-        from_linear(result_lin)
-    };
-
-    [
-        blend_channel(fg[0], bg[0]),
-        blend_channel(fg[1], bg[1]),
-        blend_channel(fg[2], bg[2]),
-    ]
 }

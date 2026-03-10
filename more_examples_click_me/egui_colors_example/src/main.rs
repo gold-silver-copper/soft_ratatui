@@ -1,19 +1,13 @@
-use color_eyre::Result;
 use eframe::egui::{self, TextureHandle};
-use embedded_graphics_unicodefonts::{
-    mono_8x13_atlas, mono_8x13_bold_atlas, mono_8x13_italic_atlas,
-};
-use palette::{Okhsv, Srgb, convert::FromColorUnclamped};
+use palette::{convert::FromColorUnclamped, Okhsv, Srgb};
 use ratatui::prelude::Stylize;
-/// A minimal example of a Ratatui application.
-use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
-use ratatui::{Frame, Terminal};
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Position, Rect},
     style::Color,
     text::Text,
     widgets::Widget,
+    Terminal,
 };
 static FONT_DATA: &str = include_str!("../../../assets/cozette.bdf");
 
@@ -31,7 +25,7 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "Image Viewer",
         options,
-        Box::new(|cc| {
+        Box::new(|_cc| {
             // This gives us image support:
 
             Ok(Box::new(my_app))
@@ -48,7 +42,7 @@ struct MyApp {
 impl MyApp {
     fn new() -> Self {
         let backend = SoftBackend::<Bdf>::new(100, 100, (6, 13), FONT_DATA, None, None);
-        let mut terminal = Terminal::new(backend).unwrap();
+        let terminal = Terminal::new(backend).unwrap();
         let appik = App::default();
 
         Self {
@@ -90,24 +84,11 @@ impl eframe::App for MyApp {
 
 #[derive(Debug, Default)]
 struct App {
-    /// The current state of the app (running or quit)
-    state: AppState,
-
     /// A widget that displays the current frames per second
     fps_widget: FpsWidget,
 
     /// A widget that displays the full range of RGB colors that can be displayed in the terminal.
     colors_widget: ColorsWidget,
-}
-
-#[derive(Debug, Default, PartialEq, Eq)]
-enum AppState {
-    /// The app is running
-    #[default]
-    Running,
-
-    /// The user has requested the app to quit
-    Quit,
 }
 
 /// A widget that displays the current frames per second
@@ -143,11 +124,7 @@ impl App {
     ///
     /// This is the main event loop for the app.
     pub fn run(&mut self, terminal: &mut Terminal<SoftBackend<Bdf>>) {
-        terminal.draw(|frame| frame.render_widget(self, frame.area()));
-    }
-
-    const fn is_running(&self) -> bool {
-        matches!(self.state, AppState::Running)
+        let _ = terminal.draw(|frame| frame.render_widget(self, frame.area()));
     }
 }
 

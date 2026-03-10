@@ -8,7 +8,7 @@ fn main() {
     let mut terminal = Terminal::new(backend).unwrap();
     terminal.clear();
 
-    terminal.draw(|frame| {
+    let _ = terminal.draw(|frame| {
         let area = frame.area();
         let textik = format!("Hello soft! The window area is {}", area);
         frame.render_widget(

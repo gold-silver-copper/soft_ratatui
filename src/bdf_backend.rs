@@ -1,10 +1,10 @@
-//! This module provides the `SoftBackend` implementation for the [`Backend`] trait.
-//! It is used in the integration tests to verify the correctness of the library.
+//! BDF rasterization backend for [`SoftBackend`].
 
 use crate::SoftBackend;
 use crate::colors::*;
 use crate::pixmap::RgbPixmap;
 use crate::soft_backend::RasterBackend;
+use crate::soft_backend::{BlinkConfig, CursorConfig};
 use copper_bdf_parser::*;
 use ratatui_core::backend::Backend;
 use ratatui_core::buffer::{Buffer, Cell};
@@ -12,7 +12,7 @@ use ratatui_core::layout::Rect;
 use ratatui_core::style;
 use rustc_hash::FxHashSet;
 
-/// Uses bdf-parser for rendering from a .bdf (bitmap font), works pretty good
+/// Raster backend for bitmap fonts parsed from BDF data.
 pub struct Bdf {
     font_regular: Font,
     font_italic: Option<Font>,
@@ -172,9 +172,11 @@ impl SoftBackend<Bdf> {
     ///
     /// # Examples
     /// ```rust
-    /// let regular_font = include_str!("../assets/6x13.bdf"); // BDF font data
-    /// let bold_font = include_str!("../assets/6x13_bold.bdf");    // Optional bold BDF font data
-    /// let backend = SoftBackend::<Bdf>::new(80, 24, (8, 16), regular_font, Some(bold_font), None);
+    /// use soft_ratatui::{Bdf, SoftBackend};
+    ///
+    /// let regular_font = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/cozette.bdf"));
+    /// let backend = SoftBackend::<Bdf>::new(80, 24, (8, 16), regular_font, None, None);
+    /// let _ = backend;
     /// ```
     pub fn new(
         width: u16,
@@ -203,6 +205,7 @@ impl SoftBackend<Bdf> {
             buffer: Buffer::empty(Rect::new(0, 0, width, height)),
             cursor: false,
             cursor_pos: (0, 0),
+            cursor_config: CursorConfig::default(),
 
             raster_backend: Bdf {
                 font_regular: bdf_font_regular,
@@ -215,10 +218,10 @@ impl SoftBackend<Bdf> {
             char_width,
             char_height,
 
-            blink_counter: 0,
-            blinking_fast: false,
-            blinking_slow: false,
+            frame_count: 0,
+            blink_config: BlinkConfig::default(),
             always_redraw_list: FxHashSet::default(),
+            rendered_cursor: None,
         };
         _ = return_struct.clear();
         return_struct

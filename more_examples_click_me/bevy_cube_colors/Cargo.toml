@@ -1,15 +1,17 @@
 [package]
-name = "bevy_cube_example"
-version = "0.1.0"
+name = "soft-ratatui-bevy-cube-colors"
 edition = "2024"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
 
 [dependencies]
-bevy = "0.18.0"
-ratatui = { version = "0.30.0", default-features = false }
-itertools = "0.14.0"
-palette = "0.7.6"
-color-eyre = "0.6.4"
-soft_ratatui = { path = "../.." ,features=["bdf-parser"]}
-embedded-graphics-unicodefonts = "0.2.0"
-[target.wasm32-unknown-unknown]
-runner = "wasm-server-runner"
+bevy.workspace = true
+ratatui.workspace = true
+itertools.workspace = true
+palette.workspace = true
+color-eyre.workspace = true
+soft_ratatui = { path = "../..", features = ["bdf-parser"] }
+embedded-graphics-unicodefonts.workspace = true

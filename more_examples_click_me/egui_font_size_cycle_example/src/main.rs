@@ -105,8 +105,7 @@ impl eframe::App for MyApp {
         match self.texture.as_mut() {
             Some(texture) => texture.set(image, Default::default()),
             None => {
-                self.texture =
-                    Some(ctx.load_texture("font-size-cycle", image, Default::default()));
+                self.texture = Some(ctx.load_texture("font-size-cycle", image, Default::default()));
             }
         }
 
@@ -191,10 +190,7 @@ fn draw(frame: &mut Frame, font_size: u32, elapsed_seconds: f32, frame_count: u6
         Line::from("The quick brown fox jumps over the lazy dog 0123456789"),
         Line::from(vec![
             Span::raw("styles: "),
-            Span::styled(
-                "regular",
-                Style::default().fg(Color::White),
-            ),
+            Span::styled("regular", Style::default().fg(Color::White)),
             Span::raw("  "),
             Span::styled(
                 "bold",
@@ -219,10 +215,7 @@ fn draw(frame: &mut Frame, font_size: u32, elapsed_seconds: f32, frame_count: u6
         ]),
         Line::from(vec![
             Span::styled("resize signal ", Style::default().fg(Color::Yellow)),
-            Span::styled(
-                progress_bar(font_size),
-                Style::default().fg(Color::Cyan),
-            ),
+            Span::styled(progress_bar(font_size), Style::default().fg(Color::Cyan)),
         ]),
         Line::from("Every second the backend recalculates cell size and redraws the pixmap."),
     ]))

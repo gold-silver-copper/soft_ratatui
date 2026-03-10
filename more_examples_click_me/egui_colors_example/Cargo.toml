@@ -1,23 +1,18 @@
 [package]
-name = "egui_example"
-version = "0.1.0"
+name = "soft-ratatui-egui-colors"
 edition = "2021"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
 
 [dependencies]
-color-eyre = "0.6.4"
-eframe = "0.31.1"
-itertools = "0.14.0"
-palette = "0.7.6"
-ratatui = { version = "0.30.0", default-features= false}
-soft_ratatui = { path = "../.." , default-features= false, features = ["bdf-parser"]}
-embedded-graphics = "0.8.1"
-embedded-graphics-unicodefonts = "0.2.0"
-[profile.release]
-opt-level = 3
-#lto = true # Enable link-time optimization
-#odegen-units = 1 # Better optimizations, slightly slower compile
-#panic = "abort"   # Smaller binary if you don't need backtraces
-#strip = "symbols" # Remove debug symbols (unless you need them)
-
-# Uncomment this for even smaller output (disable debug info)
-#debug = true
+color-eyre.workspace = true
+eframe.workspace = true
+itertools.workspace = true
+palette.workspace = true
+ratatui.workspace = true
+soft_ratatui = { path = "../..", default-features = false, features = ["bdf-parser"] }
+embedded-graphics.workspace = true
+embedded-graphics-unicodefonts.workspace = true
