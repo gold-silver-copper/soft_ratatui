@@ -7,6 +7,10 @@
 
 **Software rendering backend for [`ratatui`](https://github.com/ratatui/ratatui). No GPU required. TUI everywhere.**
 
+[`rotating_terminal`](https://github.com/gold-silver-copper/rotating_terminal) shows `soft_ratatui` driving a 3D terminal screen in Bevy.
+
+![](https://raw.githubusercontent.com/gold-silver-copper/rotating_terminal/master/rotating_terminal_loop.webp)
+
 ![](new.avif)
 
 
