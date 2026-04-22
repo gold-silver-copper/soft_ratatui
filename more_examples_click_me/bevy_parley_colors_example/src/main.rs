@@ -21,7 +21,18 @@ static FONT: &[u8] = include_bytes!(concat!(
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
+        .add_plugins(
+            DefaultPlugins
+                .set(ImagePlugin::default_nearest())
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        resolution: bevy::window::WindowResolution::default()
+                            .with_scale_factor_override(1.0),
+                        ..default()
+                    }),
+                    ..default()
+                }),
+        )
         .insert_non_send_resource(SoftTerminal::default())
         .insert_resource(ColorsRgbApp::default())
         .add_systems(Startup, setup)

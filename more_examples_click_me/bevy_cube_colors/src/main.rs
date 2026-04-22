@@ -31,7 +31,18 @@ use std::{
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
+        .add_plugins(
+            DefaultPlugins
+                .set(ImagePlugin::default_nearest())
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        resolution: bevy::window::WindowResolution::default()
+                            .with_scale_factor_override(1.0),
+                        ..default()
+                    }),
+                    ..default()
+                }),
+        )
         .insert_resource(Time::<Fixed>::from_hz(40.0))
         .init_resource::<SoftTerminal>()
         .init_resource::<Stuff>()

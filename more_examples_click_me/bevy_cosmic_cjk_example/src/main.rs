@@ -21,7 +21,18 @@ const TEXT: &str = "Cosmic Text CJK demo\n\
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
+        .add_plugins(
+            DefaultPlugins
+                .set(ImagePlugin::default_nearest())
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        resolution: bevy::window::WindowResolution::default()
+                            .with_scale_factor_override(1.0),
+                        ..default()
+                    }),
+                    ..default()
+                }),
+        )
         .insert_resource(SoftTerminal::default())
         .add_systems(Startup, setup)
         .add_systems(Update, render_terminal)

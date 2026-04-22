@@ -14,14 +14,25 @@ static FONT: &[u8] = include_bytes!(concat!(
     "/../../assets/JetBrainsMono-Regular.ttf"
 ));
 const TEXT: &str = "Parley + Vello CJK demo\n\
-你好，世界\n\
-日本語の文章を表示します\n\
-한글도 함께 보여줍니다\n\
-漢字かな交じり文";
+你好，世界 🌏✨\n\
+日本語の文章を表示します 🍣🗾\n\
+한글도 함께 보여줍니다 🇰🇷🌸\n\
+漢字かな交じり文 😀🚀";
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
+        .add_plugins(
+            DefaultPlugins
+                .set(ImagePlugin::default_nearest())
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        resolution: bevy::window::WindowResolution::default()
+                            .with_scale_factor_override(1.0),
+                        ..default()
+                    }),
+                    ..default()
+                }),
+        )
         .insert_non_send_resource(SoftTerminal::default())
         .add_systems(Startup, setup)
         .add_systems(Update, render_terminal)

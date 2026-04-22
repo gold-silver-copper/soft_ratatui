@@ -20,7 +20,18 @@ This example shows whatever the Cozette BDF can render.";
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
+        .add_plugins(
+            DefaultPlugins
+                .set(ImagePlugin::default_nearest())
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        resolution: bevy::window::WindowResolution::default()
+                            .with_scale_factor_override(1.0),
+                        ..default()
+                    }),
+                    ..default()
+                }),
+        )
         .init_resource::<SoftTerminal>()
         .add_systems(Startup, setup)
         .add_systems(Update, render_terminal)

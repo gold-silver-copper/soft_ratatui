@@ -12,7 +12,18 @@ const TERMINAL_HEIGHT: u16 = 50;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
+        .add_plugins(
+            DefaultPlugins
+                .set(ImagePlugin::default_nearest())
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        resolution: bevy::window::WindowResolution::default()
+                            .with_scale_factor_override(1.0),
+                        ..default()
+                    }),
+                    ..default()
+                }),
+        )
         .init_resource::<SoftTerminal>()
         .init_resource::<Stuff>()
         .init_resource::<DemoCursor>()

@@ -20,7 +20,14 @@ use std::f32::consts::PI;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                resolution:
+                    bevy::window::WindowResolution::default().with_scale_factor_override(1.0),
+                ..default()
+            }),
+            ..default()
+        }))
         .init_resource::<SoftTerminal>()
         .add_systems(Startup, setup)
         .add_systems(Update, rotator_system)
