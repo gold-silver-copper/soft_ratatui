@@ -131,6 +131,30 @@ impl RgbPixmap {
             dst.copy_from_slice(&src[..3]);
         }
     }
+
+    /// Alpha-composites an RGBA buffer over the existing pixmap contents.
+    pub fn blend_from_rgba(&mut self, rgba: &[u8]) {
+        debug_assert_eq!(rgba.len(), self.width * self.height * 4);
+        if rgba.len() != self.width * self.height * 4 {
+            return;
+        }
+
+        for (dst, src) in self.data.chunks_exact_mut(3).zip(rgba.chunks_exact(4)) {
+            let alpha = src[3] as u32;
+            if alpha == 0 {
+                continue;
+            }
+            if alpha == 255 {
+                dst.copy_from_slice(&src[..3]);
+                continue;
+            }
+
+            let inv_alpha = 255 - alpha;
+            dst[0] = ((src[0] as u32 * alpha + dst[0] as u32 * inv_alpha + 127) / 255) as u8;
+            dst[1] = ((src[1] as u32 * alpha + dst[1] as u32 * inv_alpha + 127) / 255) as u8;
+            dst[2] = ((src[2] as u32 * alpha + dst[2] as u32 * inv_alpha + 127) / 255) as u8;
+        }
+    }
 }
 #[cfg(any(feature = "embedded-graphics", feature = "embedded-ttf"))]
 impl DrawTarget for RgbPixmap {

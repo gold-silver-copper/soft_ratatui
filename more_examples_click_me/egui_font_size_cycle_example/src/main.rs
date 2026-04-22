@@ -13,9 +13,9 @@ const MIN_FONT_SIZE: u32 = 8;
 const MAX_FONT_SIZE: u32 = 25;
 const INITIAL_FONT_SIZE: u32 = MIN_FONT_SIZE;
 
-static FONT_DATA: &[u8] = include_bytes!("../../../assets/iosevka.ttf");
-static FONT_BOLD_DATA: &[u8] = include_bytes!("../../../assets/iosevka_bold.ttf");
-static FONT_ITALIC_DATA: &[u8] = include_bytes!("../../../assets/iosevka_italic.ttf");
+static FONT_DATA: &[u8] = include_bytes!("../../../assets/JetBrainsMono-Regular.ttf");
+static FONT_BOLD_DATA: &[u8] = include_bytes!("../../../assets/JetBrainsMono-Bold.ttf");
+static FONT_ITALIC_DATA: &[u8] = include_bytes!("../../../assets/JetBrainsMono-Italic.ttf");
 
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {

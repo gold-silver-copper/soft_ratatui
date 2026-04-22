@@ -5,7 +5,8 @@ use rusttype::Font;
 use soft_ratatui::{EmbeddedTTF, SoftBackend};
 
 fn main() {
-    let font_regular = Font::try_from_bytes(include_bytes!("../assets/iosevka.ttf")).unwrap();
+    let font_regular =
+        Font::try_from_bytes(include_bytes!("../assets/JetBrainsMono-Regular.ttf")).unwrap();
     let backend = SoftBackend::<EmbeddedTTF>::new(100, 50, 16, font_regular, None, None);
     let mut terminal = Terminal::new(backend).unwrap();
     terminal.clear();

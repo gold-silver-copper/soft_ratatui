@@ -18,15 +18,19 @@ use soft_ratatui::{ParleyText, SoftBackend};
 
 static FONT: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/../../assets/iosevka.ttf"
+    "/../../assets/JetBrainsMono-Regular.ttf"
 ));
 static FONT_BOLD: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/../../assets/iosevka_bold.ttf"
+    "/../../assets/JetBrainsMono-Bold.ttf"
 ));
 static FONT_ITALIC: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/../../assets/iosevka_italic.ttf"
+    "/../../assets/JetBrainsMono-Italic.ttf"
+));
+static FONT_BOLD_ITALIC: &[u8] = include_bytes!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../assets/JetBrainsMono-BoldItalic.ttf"
 ));
 
 fn main() {
@@ -152,7 +156,7 @@ impl Default for SoftTerminal {
             FONT,
             Some(FONT_BOLD),
             Some(FONT_ITALIC),
-            None,
+            Some(FONT_BOLD_ITALIC),
         );
         Self(Terminal::new(backend).unwrap())
     }

@@ -21,7 +21,7 @@ use ratatui::widgets::Paragraph;
 use ratatui::{Frame, Terminal};
 
 use soft_ratatui::{CosmicText, SoftBackend};
-static FONT_DATA: &[u8] = include_bytes!("../../../assets/iosevka.ttf");
+static FONT_DATA: &[u8] = include_bytes!("../../../assets/JetBrainsMono-Regular.ttf");
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([1500.0, 1000.0]),

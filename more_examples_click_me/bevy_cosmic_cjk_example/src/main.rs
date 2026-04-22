@@ -11,7 +11,7 @@ use soft_ratatui::{CosmicText, SoftBackend};
 
 static FONT: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/../../assets/iosevka.ttf"
+    "/../../assets/JetBrainsMono-Regular.ttf"
 ));
 const TEXT: &str = "Cosmic Text CJK demo\n\
 你好，世界\n\

@@ -37,23 +37,19 @@ struct TextMetrics {
     strikeout_thickness: f32,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-struct LayoutKey {
-    text: Box<str>,
-    bold: bool,
-    italic: bool,
-    underline: bool,
-    strikethrough: bool,
-    font_size_bits: u32,
-    fg_color: [u8; 3],
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum FontVariant {
     Normal,
     Bold,
     Italic,
     BoldItalic,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+struct LayoutKey {
+    text: Box<str>,
+    variant: FontVariant,
+    font_size_bits: u32,
 }
 
 struct GpuState {
@@ -78,12 +74,12 @@ struct ResolvedCellStyle {
 /// Raster backend built on `parley` and `vello`.
 pub struct ParleyText {
     font_context: FontContext,
-    layout_context: LayoutContext<[u8; 4]>,
-    family_stacks: [Arc<[FontFamily<'static>]>; 4],
+    layout_context: LayoutContext<()>,
+    family_stack: Arc<[FontFamily<'static>]>,
     font_size: f32,
     metrics: TextMetrics,
     locale: Option<String>,
-    cache: FxHashMap<LayoutKey, Arc<Layout<[u8; 4]>>>,
+    cache: FxHashMap<LayoutKey, Arc<Layout<()>>>,
     gpu: GpuState,
 }
 
@@ -123,46 +119,42 @@ impl RasterBackend for ParleyText {
                 let begin_y = y as usize * char_height;
                 let pixel_width = char_width * style.display_width;
 
-                self.fill_scene_rect(
-                    &mut scene,
-                    begin_x as f64,
-                    begin_y as f64,
-                    pixel_width as f64,
-                    char_height as f64,
-                    style.bg_color,
-                );
+                rgb_pixmap.fill_rect(begin_x, begin_y, pixel_width, char_height, style.bg_color);
 
                 if !cell.symbol().is_empty() {
                     let layout = self.shape_text(
                         cell.symbol().to_string(),
-                        cell.modifier.contains(Modifier::BOLD),
-                        cell.modifier.contains(Modifier::ITALIC),
-                        cell.modifier.contains(Modifier::UNDERLINED),
-                        cell.modifier.contains(Modifier::CROSSED_OUT),
-                        style.fg_color,
+                        font_variant_from_style(
+                            cell.modifier.contains(Modifier::BOLD),
+                            cell.modifier.contains(Modifier::ITALIC),
+                        ),
                     );
-                    self.paint_layout(
-                        &mut scene,
-                        &layout,
-                        begin_x as f32,
-                        begin_y as f32,
-                    );
+                    self.paint_layout(&mut scene, &layout, begin_x as f32, begin_y as f32, style.fg_color);
                 }
+
+                self.draw_decorations_scene(
+                    &mut scene,
+                    begin_x,
+                    begin_y,
+                    pixel_width,
+                    style.fg_color,
+                    cell,
+                );
             }
         }
 
-        if let Ok(rgba) = self
-            .gpu
-            .render_scene(&scene, width, height, Color::from_rgb8(0, 0, 0))
+        if let Ok(rgba) =
+            self.gpu
+                .render_scene(&scene, width, height, Color::from_rgba8(0, 0, 0, 0))
         {
-            rgb_pixmap.copy_from_rgba(&rgba);
+            rgb_pixmap.blend_from_rgba(&rgba);
         }
     }
 
     fn draw_cell(
         &mut self,
-        xik: u16,
-        yik: u16,
+        x: u16,
+        y: u16,
         rat_cell: &Cell,
         always_redraw_list: &mut FxHashSet<(u16, u16)>,
         blinking_fast: bool,
@@ -172,56 +164,39 @@ impl RasterBackend for ParleyText {
         rgb_pixmap: &mut RgbPixmap,
     ) {
         let style = self.resolve_cell_style(rat_cell, blinking_fast, blinking_slow);
-        let begin_x = xik as usize * char_width;
-        let begin_y = yik as usize * char_height;
+        let begin_x = x as usize * char_width;
+        let begin_y = y as usize * char_height;
         let pixel_width = char_width * style.display_width;
 
         rgb_pixmap.fill_rect(begin_x, begin_y, pixel_width, char_height, style.bg_color);
 
         if rat_cell.modifier.contains(Modifier::SLOW_BLINK) {
-            always_redraw_list.insert((xik, yik));
+            always_redraw_list.insert((x, y));
         }
         if rat_cell.modifier.contains(Modifier::RAPID_BLINK) {
-            always_redraw_list.insert((xik, yik));
+            always_redraw_list.insert((x, y));
         }
 
-        let text_symbol = rat_cell.symbol().to_string();
-        if text_symbol.is_empty() {
-            self.draw_decorations(
-                rgb_pixmap,
-                begin_x,
-                begin_y,
-                pixel_width,
-                style.fg_color,
-                rat_cell,
-            );
+        if rat_cell.symbol().is_empty() {
+            self.draw_decorations(rgb_pixmap, begin_x, begin_y, pixel_width, style.fg_color, rat_cell);
             return;
         }
 
         let layout = self.shape_text(
-            text_symbol.clone(),
-            rat_cell.modifier.contains(Modifier::BOLD),
-            rat_cell.modifier.contains(Modifier::ITALIC),
-            rat_cell.modifier.contains(Modifier::UNDERLINED),
-            rat_cell.modifier.contains(Modifier::CROSSED_OUT),
-            style.fg_color,
+            rat_cell.symbol().to_string(),
+            font_variant_from_style(
+                rat_cell.modifier.contains(Modifier::BOLD),
+                rat_cell.modifier.contains(Modifier::ITALIC),
+            ),
         );
 
-        if let Ok(rgba) = self.render_layout_to_rgba(
-            &layout,
-            pixel_width as u32,
-            char_height as u32,
-            style.bg_color,
-        ) {
-            self.blit_rgba(
-                rgb_pixmap,
-                begin_x,
-                begin_y,
-                pixel_width,
-                char_height,
-                &rgba,
-            );
+        if let Ok(rgba) =
+            self.render_layout_to_rgba(&layout, pixel_width as u32, char_height as u32, style.fg_color)
+        {
+            self.blit_rgba(rgb_pixmap, begin_x, begin_y, pixel_width, char_height, &rgba);
         }
+
+        self.draw_decorations(rgb_pixmap, begin_x, begin_y, pixel_width, style.fg_color, rat_cell);
     }
 }
 
@@ -261,57 +236,26 @@ impl ParleyText {
         }
     }
 
-    fn shape_text(
-        &mut self,
-        text: String,
-        bold: bool,
-        italic: bool,
-        underline: bool,
-        strikethrough: bool,
-        fg_color: [u8; 3],
-    ) -> Arc<Layout<[u8; 4]>> {
+    fn shape_text(&mut self, text: String, variant: FontVariant) -> Arc<Layout<()>> {
         let key = LayoutKey {
             text: text.clone().into_boxed_str(),
-            bold,
-            italic,
-            underline,
-            strikethrough,
+            variant,
             font_size_bits: self.font_size.to_bits(),
-            fg_color,
         };
         if let Some(layout) = self.cache.get(&key) {
             return Arc::clone(layout);
         }
 
-        let variant = font_variant_from_style(bold, italic);
-        let family_stack = Arc::clone(&self.family_stacks[variant.as_index()]);
-
+        let (font_style, font_weight) = font_style(variant);
         let mut builder =
             self.layout_context
                 .ranged_builder(&mut self.font_context, &text, 1.0, true);
-        builder.push_default(FontStack::from(&family_stack[..]));
+        builder.push_default(FontStack::from(&self.family_stack[..]));
         builder.push_default(StyleProperty::FontSize(self.font_size));
-        builder.push_default(StyleProperty::FontStyle(if italic {
-            FontStyle::Italic
-        } else {
-            FontStyle::Normal
-        }));
-        builder.push_default(StyleProperty::FontWeight(if bold {
-            FontWeight::BOLD
-        } else {
-            FontWeight::NORMAL
-        }));
+        builder.push_default(StyleProperty::FontStyle(font_style));
+        builder.push_default(StyleProperty::FontWeight(font_weight));
         builder.push_default(StyleProperty::Locale(self.locale.as_deref()));
         builder.push_default(LineHeight::Absolute(self.metrics.cell_height.max(1.0)));
-        builder.push_default(StyleProperty::Brush([fg_color[0], fg_color[1], fg_color[2], 255]));
-        builder.push_default(StyleProperty::Underline(underline));
-        builder.push_default(StyleProperty::UnderlineBrush(
-            underline.then_some([fg_color[0], fg_color[1], fg_color[2], 255]),
-        ));
-        builder.push_default(StyleProperty::Strikethrough(strikethrough));
-        builder.push_default(StyleProperty::StrikethroughBrush(
-            strikethrough.then_some([fg_color[0], fg_color[1], fg_color[2], 255]),
-        ));
 
         let mut layout = builder.build(&text);
         layout.break_all_lines(None);
@@ -322,128 +266,54 @@ impl ParleyText {
         layout
     }
 
-    fn fill_scene_rect(
-        &self,
-        scene: &mut Scene,
-        x: f64,
-        y: f64,
-        width: f64,
-        height: f64,
-        color: [u8; 3],
-    ) {
-        scene.fill(
-            Fill::NonZero,
-            Affine::IDENTITY,
-            Color::from_rgb8(color[0], color[1], color[2]),
-            None,
-            &KRect::new(x, y, x + width, y + height),
-        );
-    }
-
     fn paint_layout(
         &self,
         scene: &mut Scene,
-        layout: &Layout<[u8; 4]>,
+        layout: &Layout<()>,
         origin_x: f32,
         origin_y: f32,
+        fg_color: [u8; 3],
     ) {
-        let snapped = self.snapped_layout_translation(layout);
-        let transform = Affine::translate((
-            f64::from(origin_x) + snapped.0,
-            f64::from(origin_y) + snapped.1,
-        ));
+        let transform = Affine::translate((origin_x as f64, origin_y as f64));
+        let brush = Brush::Solid(Color::from_rgb8(fg_color[0], fg_color[1], fg_color[2]));
 
         for line in layout.lines() {
             for item in line.items() {
                 let PositionedLayoutItem::GlyphRun(glyph_run) = item else {
                     continue;
                 };
+
                 let run = glyph_run.run();
-                let style = glyph_run.style();
-                let brush = Brush::Solid(Color::from_rgba8(
-                    style.brush[0],
-                    style.brush[1],
-                    style.brush[2],
-                    style.brush[3],
-                ));
-                let mut pen_x = glyph_run.offset();
-                let pen_y = glyph_run.baseline();
+                let mut x = glyph_run.offset();
+                let y = glyph_run.baseline();
+
                 scene
                     .draw_glyphs(run.font())
-                    .font_size(run.font_size())
-                    .hint(true)
-                    .normalized_coords(run.normalized_coords())
                     .brush(&brush)
+                    .hint(false)
                     .transform(transform)
+                    .font_size(run.font_size())
+                    .normalized_coords(run.normalized_coords())
                     .draw(
                         Fill::NonZero,
-                        glyph_run.glyphs().map(|glyph| {
-                            let positioned = Glyph {
-                                id: glyph.id as u32,
-                                x: pen_x + glyph.x,
-                                y: pen_y - glyph.y,
-                            };
-                            pen_x += glyph.advance;
-                            positioned
-                        }),
+                        glyph_run.glyphs().map(|glyph| scene_glyph_from_layout(&mut x, y, glyph)),
                     );
-
-                if let Some(decoration) = &style.underline {
-                    let offset = decoration.offset.unwrap_or(run.metrics().underline_offset);
-                    let size = decoration.size.unwrap_or(run.metrics().underline_size);
-                    self.paint_decoration(scene, glyph_run.offset(), glyph_run.advance(), glyph_run.baseline(), decoration.brush, offset, size, origin_x, origin_y);
-                }
-                if let Some(decoration) = &style.strikethrough {
-                    let offset = decoration
-                        .offset
-                        .unwrap_or(run.metrics().strikethrough_offset);
-                    let size = decoration.size.unwrap_or(run.metrics().strikethrough_size);
-                    self.paint_decoration(scene, glyph_run.offset(), glyph_run.advance(), glyph_run.baseline(), decoration.brush, offset, size, origin_x, origin_y);
-                }
             }
         }
     }
 
     fn render_layout_to_rgba(
         &mut self,
-        layout: &Layout<[u8; 4]>,
+        layout: &Layout<()>,
         width: u32,
         height: u32,
-        bg_color: [u8; 3],
+        fg_color: [u8; 3],
     ) -> Result<Vec<u8>, String> {
         self.gpu.ensure_target(width, height);
-
         let mut scene = Scene::new();
-        self.paint_layout(&mut scene, layout, 0.0, 0.0);
-
-        self.gpu.render_scene(
-            &scene,
-            width,
-            height,
-            Color::from_rgb8(bg_color[0], bg_color[1], bg_color[2]),
-        )
-    }
-
-    fn snapped_layout_translation(&self, layout: &Layout<[u8; 4]>) -> (f64, f64) {
-        let mut baseline = self.metrics.baseline;
-        let mut offset = 0.0;
-
-        if let Some((glyph_offset, glyph_baseline)) = layout.lines().find_map(|line| {
-            line.items().find_map(|item| match item {
-                PositionedLayoutItem::GlyphRun(glyph_run) => {
-                    Some((glyph_run.offset(), glyph_run.baseline()))
-                }
-                _ => None,
-            })
-        }) {
-            offset = glyph_offset;
-            baseline = glyph_baseline;
-        }
-
-        (
-            f64::from(offset.round() - offset),
-            f64::from(baseline.round() - baseline),
-        )
+        self.paint_layout(&mut scene, layout, 0.0, 0.0, fg_color);
+        self.gpu
+            .render_scene(&scene, width, height, Color::from_rgba8(0, 0, 0, 0))
     }
 
     fn blit_rgba(
@@ -467,28 +337,63 @@ impl ParleyText {
         }
     }
 
-    fn paint_decoration(
+    fn fill_scene_rect(
         &self,
         scene: &mut Scene,
-        glyph_offset: f32,
-        glyph_advance: f32,
-        glyph_baseline: f32,
-        brush: [u8; 4],
-        offset: f32,
-        size: f32,
-        origin_x: f32,
-        origin_y: f32,
+        x: f64,
+        y: f64,
+        width: f64,
+        height: f64,
+        color: [u8; 3],
     ) {
-        let y = origin_y + glyph_baseline - offset;
-        let x = origin_x + glyph_offset;
-        self.fill_scene_rect(
-            scene,
-            x as f64,
-            y as f64,
-            glyph_advance as f64,
-            size.max(1.0) as f64,
-            [brush[0], brush[1], brush[2]],
+        scene.fill(
+            Fill::NonZero,
+            Affine::IDENTITY,
+            Color::from_rgb8(color[0], color[1], color[2]),
+            None,
+            &KRect::new(x, y, x + width, y + height),
         );
+    }
+
+    fn draw_decorations_scene(
+        &self,
+        scene: &mut Scene,
+        begin_x: usize,
+        begin_y: usize,
+        pixel_width: usize,
+        color: [u8; 3],
+        rat_cell: &Cell,
+    ) {
+        if rat_cell.modifier.contains(Modifier::UNDERLINED) {
+            let thickness = self.metrics.underline_thickness.max(1.0);
+            let y =
+                ((begin_y as f32 + self.metrics.baseline - self.metrics.underline_position) - thickness / 2.0)
+                    .round()
+                    .min(begin_y as f32 + self.metrics.cell_height - thickness);
+            self.fill_scene_rect(
+                scene,
+                begin_x as f64,
+                y as f64,
+                pixel_width as f64,
+                thickness as f64,
+                color,
+            );
+        }
+        if rat_cell.modifier.contains(Modifier::CROSSED_OUT) {
+            let thickness = self.metrics.strikeout_thickness.max(1.0);
+            let y = ((begin_y as f32 + self.metrics.baseline - self.metrics.strikeout_position)
+                - thickness / 2.0)
+                .round()
+                .min(begin_y as f32 + self.metrics.cell_height - thickness);
+            self.fill_scene_rect(
+                scene,
+                begin_x as f64,
+                y as f64,
+                pixel_width as f64,
+                thickness as f64,
+                color,
+            );
+        }
     }
 
     fn draw_decorations(
@@ -501,64 +406,78 @@ impl ParleyText {
         rat_cell: &Cell,
     ) {
         if rat_cell.modifier.contains(Modifier::UNDERLINED) {
-            let y = begin_y
-                + (self.metrics.underline_position.round() as isize)
-                    .saturating_neg()
-                    .unsigned_abs();
-            let y = y
-                .min(begin_y + self.metrics.cell_height.round() as usize)
-                .saturating_sub(1);
             let thickness = self.metrics.underline_thickness.round().max(1.0) as usize;
+            let y = ((begin_y as f32 + self.metrics.baseline - self.metrics.underline_position)
+                - thickness as f32 / 2.0)
+                .round()
+                .clamp(begin_y as f32, begin_y as f32 + self.metrics.cell_height - thickness as f32)
+                as usize;
             rgb_pixmap.fill_rect(begin_x, y, pixel_width, thickness, color);
         }
         if rat_cell.modifier.contains(Modifier::CROSSED_OUT) {
-            let y = begin_y
-                + (self.metrics.strikeout_position.round() as isize)
-                    .saturating_neg()
-                    .unsigned_abs();
-            let y = y
-                .min(begin_y + self.metrics.cell_height.round() as usize)
-                .saturating_sub(1);
             let thickness = self.metrics.strikeout_thickness.round().max(1.0) as usize;
+            let y = ((begin_y as f32 + self.metrics.baseline - self.metrics.strikeout_position)
+                - thickness as f32 / 2.0)
+                .round()
+                .clamp(begin_y as f32, begin_y as f32 + self.metrics.cell_height - thickness as f32)
+                as usize;
             rgb_pixmap.fill_rect(begin_x, y, pixel_width, thickness, color);
         }
     }
 
     fn measure_metrics(
         font_context: &mut FontContext,
-        layout_context: &mut LayoutContext<[u8; 4]>,
+        layout_context: &mut LayoutContext<()>,
         family_stack: &[FontFamily<'static>],
         font_size: f32,
         locale: Option<&str>,
     ) -> TextMetrics {
-        let sample = "M";
-        let mut builder = layout_context.ranged_builder(font_context, sample, 1.0, true);
-        builder.push_default(FontStack::from(family_stack));
-        builder.push_default(StyleProperty::FontSize(font_size));
-        builder.push_default(StyleProperty::Locale(locale));
+        let mut metrics = TextMetrics::default();
 
-        let mut layout = builder.build(sample);
-        layout.break_all_lines(None);
-        layout.align(None, Alignment::Start, AlignmentOptions::default());
+        for variant in [
+            FontVariant::Normal,
+            FontVariant::Bold,
+            FontVariant::Italic,
+            FontVariant::BoldItalic,
+        ] {
+            let sample = "M";
+            let (font_style, font_weight) = font_style(variant);
+            let mut builder = layout_context.ranged_builder(font_context, sample, 1.0, true);
+            builder.push_default(FontStack::from(family_stack));
+            builder.push_default(StyleProperty::FontSize(font_size));
+            builder.push_default(StyleProperty::FontStyle(font_style));
+            builder.push_default(StyleProperty::FontWeight(font_weight));
+            builder.push_default(StyleProperty::Locale(locale));
 
-        let line = layout.lines().next().expect("sample line");
-        let run_metrics = line
-            .items()
-            .find_map(|item| match item {
-                PositionedLayoutItem::GlyphRun(glyph_run) => Some(*glyph_run.run().metrics()),
-                _ => None,
-            })
-            .unwrap_or_default();
+            let mut layout = builder.build(sample);
+            layout.break_all_lines(None);
+            layout.align(None, Alignment::Start, AlignmentOptions::default());
 
-        TextMetrics {
-            cell_width: layout.full_width().round().max(1.0),
-            cell_height: line.metrics().line_height.round().max(1.0),
-            baseline: line.metrics().baseline,
-            underline_position: run_metrics.underline_offset,
-            underline_thickness: run_metrics.underline_size.max(1.0),
-            strikeout_position: run_metrics.strikethrough_offset,
-            strikeout_thickness: run_metrics.strikethrough_size.max(1.0),
+            let line = layout.lines().next().expect("sample line");
+            let run_metrics = line
+                .items()
+                .find_map(|item| match item {
+                    PositionedLayoutItem::GlyphRun(glyph_run) => Some(*glyph_run.run().metrics()),
+                    _ => None,
+                })
+                .unwrap_or_default();
+
+            metrics.cell_width = metrics.cell_width.max(layout.full_width().floor().max(1.0));
+            metrics.cell_height = metrics
+                .cell_height
+                .max(line.metrics().line_height.floor().max(1.0));
+            metrics.baseline = metrics.baseline.max(line.metrics().baseline);
+            metrics.underline_position = metrics.underline_position.max(run_metrics.underline_offset);
+            metrics.underline_thickness =
+                metrics.underline_thickness.max(run_metrics.underline_size.max(1.0));
+            metrics.strikeout_position =
+                metrics.strikeout_position.max(run_metrics.strikethrough_offset);
+            metrics.strikeout_thickness = metrics
+                .strikeout_thickness
+                .max(run_metrics.strikethrough_size.max(1.0));
         }
+
+        metrics
     }
 }
 
@@ -569,7 +488,7 @@ impl SoftBackend<ParleyText> {
         self.raster_backend.metrics = ParleyText::measure_metrics(
             &mut self.raster_backend.font_context,
             &mut self.raster_backend.layout_context,
-            &self.raster_backend.family_stacks[FontVariant::Normal.as_index()],
+            &self.raster_backend.family_stack,
             self.raster_backend.font_size,
             self.raster_backend.locale.as_deref(),
         );
@@ -599,7 +518,7 @@ impl SoftBackend<ParleyText> {
         font_bold_italic: Option<&[u8]>,
     ) -> Self {
         let mut font_context = FontContext::new();
-        let family_stacks = build_family_stacks(
+        let family_stack = register_fonts_and_build_family_stack(
             &mut font_context,
             font_regular,
             font_bold,
@@ -611,7 +530,7 @@ impl SoftBackend<ParleyText> {
         let metrics = ParleyText::measure_metrics(
             &mut font_context,
             &mut layout_context,
-            &family_stacks[FontVariant::Normal.as_index()],
+            &family_stack,
             font_size as f32,
             locale.as_deref(),
         );
@@ -627,7 +546,7 @@ impl SoftBackend<ParleyText> {
             raster_backend: ParleyText {
                 font_context,
                 layout_context,
-                family_stacks,
+                family_stack,
                 font_size: font_size as f32,
                 metrics,
                 locale,
@@ -815,17 +734,6 @@ fn align_to(value: u32, alignment: u32) -> u32 {
     value.div_ceil(alignment) * alignment
 }
 
-impl FontVariant {
-    const fn as_index(self) -> usize {
-        match self {
-            Self::Normal => 0,
-            Self::Bold => 1,
-            Self::Italic => 2,
-            Self::BoldItalic => 3,
-        }
-    }
-}
-
 fn font_variant_from_style(bold: bool, italic: bool) -> FontVariant {
     match (bold, italic) {
         (true, true) => FontVariant::BoldItalic,
@@ -835,49 +743,38 @@ fn font_variant_from_style(bold: bool, italic: bool) -> FontVariant {
     }
 }
 
-fn build_family_stacks(
+fn font_style(variant: FontVariant) -> (FontStyle, FontWeight) {
+    match variant {
+        FontVariant::Normal => (FontStyle::Normal, FontWeight::NORMAL),
+        FontVariant::Bold => (FontStyle::Normal, FontWeight::BOLD),
+        FontVariant::Italic => (FontStyle::Italic, FontWeight::NORMAL),
+        FontVariant::BoldItalic => (FontStyle::Italic, FontWeight::BOLD),
+    }
+}
+
+fn register_fonts_and_build_family_stack(
     font_context: &mut FontContext,
     font_regular: &[u8],
     font_bold: Option<&[u8]>,
     font_italic: Option<&[u8]>,
     font_bold_italic: Option<&[u8]>,
-) -> [Arc<[FontFamily<'static>]>; 4] {
-    let normal = register_font_and_build_family_stack(font_context, font_regular);
-    let bold = font_bold
-        .map(|data| register_font_and_build_family_stack(font_context, data))
-        .unwrap_or_else(|| Arc::clone(&normal));
-    let italic = font_italic
-        .map(|data| register_font_and_build_family_stack(font_context, data))
-        .unwrap_or_else(|| Arc::clone(&normal));
-    let bold_italic = font_bold_italic
-        .map(|data| register_font_and_build_family_stack(font_context, data))
-        .unwrap_or_else(|| {
-            if font_bold.is_some() && font_italic.is_some() {
-                Arc::clone(&bold)
-            } else if font_bold.is_some() {
-                Arc::clone(&bold)
-            } else if font_italic.is_some() {
-                Arc::clone(&italic)
-            } else {
-                Arc::clone(&normal)
-            }
-        });
-
-    [normal, bold, italic, bold_italic]
-}
-
-fn register_font_and_build_family_stack(
-    font_context: &mut FontContext,
-    font_data: &[u8],
 ) -> Arc<[FontFamily<'static>]> {
     let before = font_context
         .collection
         .family_names()
         .map(str::to_owned)
         .collect::<FxHashSet<_>>();
-    font_context
-        .collection
-        .register_fonts(Blob::new(Arc::new(font_data.to_vec())), None);
+
+    register_font(font_context, font_regular);
+    if let Some(data) = font_bold {
+        register_font(font_context, data);
+    }
+    if let Some(data) = font_italic {
+        register_font(font_context, data);
+    }
+    if let Some(data) = font_bold_italic {
+        register_font(font_context, data);
+    }
 
     let mut families = font_context
         .collection
@@ -886,26 +783,41 @@ fn register_font_and_build_family_stack(
         .map(|family| FontFamily::Named(Cow::Owned(family.to_owned())))
         .collect::<Vec<_>>();
 
-    push_family(
-        &mut families,
-        FontFamily::Generic(parley::GenericFamily::Monospace),
-    );
-    push_family(
-        &mut families,
-        FontFamily::Generic(parley::GenericFamily::SystemUi),
-    );
-    push_family(
-        &mut families,
-        FontFamily::Generic(parley::GenericFamily::Emoji),
-    );
+    if families.is_empty() {
+        families = font_context
+            .collection
+            .family_names()
+            .map(|family| FontFamily::Named(Cow::Owned(family.to_owned())))
+            .collect();
+    }
+
+    push_family(&mut families, FontFamily::Generic(parley::GenericFamily::Monospace));
+    push_family(&mut families, FontFamily::Generic(parley::GenericFamily::SystemUi));
+    push_family(&mut families, FontFamily::Generic(parley::GenericFamily::Emoji));
 
     Arc::from(families)
+}
+
+fn register_font(font_context: &mut FontContext, font_data: &[u8]) {
+    font_context
+        .collection
+        .register_fonts(Blob::new(Arc::new(font_data.to_vec())), None);
 }
 
 fn push_family(families: &mut Vec<FontFamily<'static>>, family: FontFamily<'static>) {
     if !families.contains(&family) {
         families.push(family);
     }
+}
+
+fn scene_glyph_from_layout(cursor_x: &mut f32, baseline: f32, glyph: parley::layout::Glyph) -> Glyph {
+    let positioned = Glyph {
+        id: glyph.id as u32,
+        x: *cursor_x + glyph.x,
+        y: baseline - glyph.y,
+    };
+    *cursor_x += glyph.advance;
+    positioned
 }
 
 fn text_locale() -> Option<String> {
