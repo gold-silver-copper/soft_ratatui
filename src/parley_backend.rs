@@ -119,7 +119,14 @@ impl RasterBackend for ParleyText {
                 let begin_y = y as usize * char_height;
                 let pixel_width = char_width * style.display_width;
 
-                rgb_pixmap.fill_rect(begin_x, begin_y, pixel_width, char_height, style.bg_color);
+                self.fill_scene_rect(
+                    &mut scene,
+                    begin_x as f64,
+                    begin_y as f64,
+                    pixel_width as f64,
+                    char_height as f64,
+                    style.bg_color,
+                );
 
                 if !cell.symbol().is_empty() {
                     let layout = self.shape_text(
@@ -145,9 +152,9 @@ impl RasterBackend for ParleyText {
 
         if let Ok(rgba) =
             self.gpu
-                .render_scene(&scene, width, height, Color::from_rgba8(0, 0, 0, 0))
+                .render_scene(&scene, width, height, Color::from_rgb8(0, 0, 0))
         {
-            rgb_pixmap.blend_from_rgba(&rgba);
+            rgb_pixmap.copy_from_rgba(&rgba);
         }
     }
 
@@ -168,8 +175,6 @@ impl RasterBackend for ParleyText {
         let begin_y = y as usize * char_height;
         let pixel_width = char_width * style.display_width;
 
-        rgb_pixmap.fill_rect(begin_x, begin_y, pixel_width, char_height, style.bg_color);
-
         if rat_cell.modifier.contains(Modifier::SLOW_BLINK) {
             always_redraw_list.insert((x, y));
         }
@@ -177,26 +182,10 @@ impl RasterBackend for ParleyText {
             always_redraw_list.insert((x, y));
         }
 
-        if rat_cell.symbol().is_empty() {
-            self.draw_decorations(rgb_pixmap, begin_x, begin_y, pixel_width, style.fg_color, rat_cell);
-            return;
-        }
-
-        let layout = self.shape_text(
-            rat_cell.symbol().to_string(),
-            font_variant_from_style(
-                rat_cell.modifier.contains(Modifier::BOLD),
-                rat_cell.modifier.contains(Modifier::ITALIC),
-            ),
-        );
-
-        if let Ok(rgba) =
-            self.render_layout_to_rgba(&layout, pixel_width as u32, char_height as u32, style.fg_color)
+        if let Ok(rgba) = self.render_cell_to_rgba(rat_cell, pixel_width as u32, char_height as u32, style)
         {
             self.blit_rgba(rgb_pixmap, begin_x, begin_y, pixel_width, char_height, &rgba);
         }
-
-        self.draw_decorations(rgb_pixmap, begin_x, begin_y, pixel_width, style.fg_color, rat_cell);
     }
 }
 
@@ -302,39 +291,30 @@ impl ParleyText {
         }
     }
 
-    fn render_layout_to_rgba(
+    fn render_cell_to_rgba(
         &mut self,
-        layout: &Layout<()>,
+        rat_cell: &Cell,
         width: u32,
         height: u32,
-        fg_color: [u8; 3],
+        style: ResolvedCellStyle,
     ) -> Result<Vec<u8>, String> {
         self.gpu.ensure_target(width, height);
         let mut scene = Scene::new();
-        self.paint_layout(&mut scene, layout, 0.0, 0.0, fg_color);
-        self.gpu
-            .render_scene(&scene, width, height, Color::from_rgba8(0, 0, 0, 0))
-    }
+        self.fill_scene_rect(&mut scene, 0.0, 0.0, width as f64, height as f64, style.bg_color);
 
-    fn blit_rgba(
-        &self,
-        rgb_pixmap: &mut RgbPixmap,
-        begin_x: usize,
-        begin_y: usize,
-        pixel_width: usize,
-        char_height: usize,
-        rgba: &[u8],
-    ) {
-        for py in 0..char_height {
-            let src_row = &rgba[py * pixel_width * 4..(py + 1) * pixel_width * 4];
-            let dst_offset = ((begin_y + py) * rgb_pixmap.width + begin_x) * 3;
-            for (dst, src) in rgb_pixmap.data[dst_offset..dst_offset + pixel_width * 3]
-                .chunks_exact_mut(3)
-                .zip(src_row.chunks_exact(4))
-            {
-                dst.copy_from_slice(&src[..3]);
-            }
+        if !rat_cell.symbol().is_empty() {
+            let layout = self.shape_text(
+                rat_cell.symbol().to_string(),
+                font_variant_from_style(
+                    rat_cell.modifier.contains(Modifier::BOLD),
+                    rat_cell.modifier.contains(Modifier::ITALIC),
+                ),
+            );
+            self.paint_layout(&mut scene, &layout, 0.0, 0.0, style.fg_color);
         }
+
+        self.draw_decorations_scene(&mut scene, 0, 0, width as usize, style.fg_color, rat_cell);
+        self.gpu.render_scene(&scene, width, height, Color::from_rgb8(0, 0, 0))
     }
 
     fn fill_scene_rect(
@@ -396,32 +376,24 @@ impl ParleyText {
         }
     }
 
-    fn draw_decorations(
+    fn blit_rgba(
         &self,
         rgb_pixmap: &mut RgbPixmap,
         begin_x: usize,
         begin_y: usize,
         pixel_width: usize,
-        color: [u8; 3],
-        rat_cell: &Cell,
+        char_height: usize,
+        rgba: &[u8],
     ) {
-        if rat_cell.modifier.contains(Modifier::UNDERLINED) {
-            let thickness = self.metrics.underline_thickness.round().max(1.0) as usize;
-            let y = ((begin_y as f32 + self.metrics.baseline - self.metrics.underline_position)
-                - thickness as f32 / 2.0)
-                .round()
-                .clamp(begin_y as f32, begin_y as f32 + self.metrics.cell_height - thickness as f32)
-                as usize;
-            rgb_pixmap.fill_rect(begin_x, y, pixel_width, thickness, color);
-        }
-        if rat_cell.modifier.contains(Modifier::CROSSED_OUT) {
-            let thickness = self.metrics.strikeout_thickness.round().max(1.0) as usize;
-            let y = ((begin_y as f32 + self.metrics.baseline - self.metrics.strikeout_position)
-                - thickness as f32 / 2.0)
-                .round()
-                .clamp(begin_y as f32, begin_y as f32 + self.metrics.cell_height - thickness as f32)
-                as usize;
-            rgb_pixmap.fill_rect(begin_x, y, pixel_width, thickness, color);
+        for py in 0..char_height {
+            let src_row = &rgba[py * pixel_width * 4..(py + 1) * pixel_width * 4];
+            let dst_offset = ((begin_y + py) * rgb_pixmap.width + begin_x) * 3;
+            for (dst, src) in rgb_pixmap.data[dst_offset..dst_offset + pixel_width * 3]
+                .chunks_exact_mut(3)
+                .zip(src_row.chunks_exact(4))
+            {
+                dst.copy_from_slice(&src[..3]);
+            }
         }
     }
 
