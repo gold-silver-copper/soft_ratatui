@@ -2,14 +2,16 @@
     feature = "unicodefonts",
     feature = "bdf-parser",
     feature = "embedded-ttf",
-    feature = "cosmic-text"
+    feature = "cosmic-text",
+    feature = "parley-vello"
 ))]
 use ratatui::prelude::Terminal;
 #[cfg(any(
     feature = "unicodefonts",
     feature = "bdf-parser",
     feature = "embedded-ttf",
-    feature = "cosmic-text"
+    feature = "cosmic-text",
+    feature = "parley-vello"
 ))]
 use ratatui::widgets::Paragraph;
 
@@ -17,7 +19,8 @@ use ratatui::widgets::Paragraph;
     feature = "unicodefonts",
     feature = "bdf-parser",
     feature = "embedded-ttf",
-    feature = "cosmic-text"
+    feature = "cosmic-text",
+    feature = "parley-vello"
 ))]
 fn draw_sample<B: ratatui::backend::Backend>(terminal: &mut Terminal<B>) {
     terminal
@@ -91,6 +94,23 @@ fn cosmic_text_backend_renders_a_frame() {
         include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/iosevka.ttf"));
 
     let backend = SoftBackend::<CosmicText>::new(10, 4, 16, FONT_DATA);
+    let mut terminal = Terminal::new(backend).unwrap();
+    let before = terminal.backend().get_pixmap_data().to_vec();
+
+    draw_sample(&mut terminal);
+
+    assert_ne!(before, terminal.backend().get_pixmap_data());
+}
+
+#[cfg(feature = "parley-vello")]
+#[test]
+fn parley_backend_renders_a_frame() {
+    use soft_ratatui::{ParleyText, SoftBackend};
+
+    static FONT_DATA: &[u8] =
+        include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/iosevka.ttf"));
+
+    let backend = SoftBackend::<ParleyText>::new(10, 4, 16, FONT_DATA);
     let mut terminal = Terminal::new(backend).unwrap();
     let before = terminal.backend().get_pixmap_data().to_vec();
 

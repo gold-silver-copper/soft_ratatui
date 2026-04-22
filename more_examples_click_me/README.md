@@ -8,6 +8,8 @@ Run these from `/Users/kisaczka/Desktop/programming/soft_ratatui`:
 
 ```bash
 cargo run -p soft-ratatui-bevy-sprite
+cargo run -p soft-ratatui-bevy-parley-cjk
+cargo run -p soft-ratatui-bevy-bdf-cjk
 cargo run -p soft-ratatui-bevy-cube
 cargo run -p soft-ratatui-bevy-cube-colors
 cargo run -p soft-ratatui-bevy-demo

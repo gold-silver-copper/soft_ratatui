@@ -46,11 +46,16 @@ cosmic-text = { version = "0.14.2", optional = true }
 copper-bdf-parser = {  version = "0.1.1", optional = true }
 embedded-ttf = { version = "0.2.2", optional = true }
 rusttype = { version = "0.9.3", optional = true }
+parley = { version = "0.7.0", optional = true }
+pollster = { version = "0.4.0", optional = true }
+unicode-width = { version = "0.2.0" }
+vello = { version = "0.7.0", optional = true }
 [features]
 default = ["unicodefonts",]
 unicodefonts = ["embedded-graphics","dep:embedded-graphics-unicodefonts"]
 embedded-graphics = ["dep:embedded-graphics"]
 cosmic-text = ["dep:cosmic-text"]
+parley-vello = ["dep:parley", "dep:pollster", "dep:vello"]
 bdf-parser = ["dep:copper-bdf-parser"]
 embedded-ttf = ["dep:embedded-graphics","dep:embedded-ttf","dep:rusttype"]
 
@@ -64,6 +69,10 @@ required-features = ["bdf-parser"]
 name = "cosmic"
 path = "examples/cosmic.rs"
 required-features = ["cosmic-text"]
+[[example]]
+name = "parley"
+path = "examples/parley.rs"
+required-features = ["parley-vello"]
 [[example]]
 name = "ttf"
 path = "examples/ttf.rs"

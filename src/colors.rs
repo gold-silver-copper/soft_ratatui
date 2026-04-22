@@ -41,7 +41,8 @@ pub fn rat_to_rgb(rat_col: &RatColor, is_a_fg: bool) -> [u8; 3] {
     feature = "embedded-graphics",
     feature = "embedded-ttf",
     feature = "cosmic-text",
-    feature = "bdf-parser"
+    feature = "bdf-parser",
+    feature = "parley-vello"
 ))]
 /// Applies a fixed dimming factor to an RGB color.
 pub fn dim_rgb(color: [u8; 3]) -> [u8; 3] {
