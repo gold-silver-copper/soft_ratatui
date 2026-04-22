@@ -9,12 +9,15 @@ Run these from `/Users/kisaczka/Desktop/programming/soft_ratatui`:
 ```bash
 cargo run -p soft-ratatui-bevy-sprite
 cargo run -p soft-ratatui-bevy-parley-cjk
+cargo run -p soft-ratatui-bevy-parley-colors
+cargo run -p soft-ratatui-bevy-parley-modifiers
 cargo run -p soft-ratatui-bevy-cosmic-cjk
 cargo run -p soft-ratatui-bevy-bdf-cjk
 cargo run -p soft-ratatui-bevy-cube
 cargo run -p soft-ratatui-bevy-cube-colors
 cargo run -p soft-ratatui-bevy-demo
 cargo run -p soft-ratatui-egui-colors
+cargo run -p soft-ratatui-egui-parley-colors-rgb
 cargo run -p soft-ratatui-egui-font-size-cycle
 cargo run -p soft-ratatui-egui-modifiers-ttf
 cargo run -p soft-ratatui-egui-modifiers-cosmic

@@ -144,6 +144,38 @@ pub struct SoftBackend<R: RasterBackend> {
 }
 /// Trait implemented by font rasterizers used by [`SoftBackend`].
 pub trait RasterBackend {
+    fn prefers_full_frame(&self) -> bool {
+        false
+    }
+
+    fn draw_frame(
+        &mut self,
+        buffer: &Buffer,
+        always_redraw_list: &mut FxHashSet<(u16, u16)>,
+        blinking_fast: bool,
+        blinking_slow: bool,
+        char_width: usize,
+        char_height: usize,
+        rgb_pixmap: &mut RgbPixmap,
+    ) {
+        for x in 0..buffer.area.width {
+            for y in 0..buffer.area.height {
+                let cell = &buffer[(x, y)];
+                self.draw_cell(
+                    x,
+                    y,
+                    cell,
+                    always_redraw_list,
+                    blinking_fast,
+                    blinking_slow,
+                    char_width,
+                    char_height,
+                    rgb_pixmap,
+                );
+            }
+        }
+    }
+
     fn draw_cell(
         &mut self,
         x: u16,
@@ -168,26 +200,28 @@ impl<R: RasterBackend> Backend for SoftBackend<R> {
         self.update_blinking();
         let blinking_fast = self.fast_blink_hidden();
         let blinking_slow = self.slow_blink_hidden();
+        let full_frame = self.raster_backend.prefers_full_frame();
         for (x, y, c) in content {
             self.buffer[(x, y)] = c.clone();
-            self.raster_backend.draw_cell(
-                x,
-                y,
-                c,
-                &mut self.always_redraw_list,
-                blinking_fast,
-                blinking_slow,
-                self.char_width,
-                self.char_height,
-                &mut self.rgb_pixmap,
-            );
+            if !full_frame {
+                self.raster_backend.draw_cell(
+                    x,
+                    y,
+                    c,
+                    &mut self.always_redraw_list,
+                    blinking_fast,
+                    blinking_slow,
+                    self.char_width,
+                    self.char_height,
+                    &mut self.rgb_pixmap,
+                );
+            }
         }
-        for (x, y) in self.always_redraw_list.clone().iter() {
-            let c = &self.buffer[(*x, *y)];
-            self.raster_backend.draw_cell(
-                *x,
-                *y,
-                c,
+
+        if full_frame {
+            self.always_redraw_list.clear();
+            self.raster_backend.draw_frame(
+                &self.buffer,
                 &mut self.always_redraw_list,
                 blinking_fast,
                 blinking_slow,
@@ -195,6 +229,21 @@ impl<R: RasterBackend> Backend for SoftBackend<R> {
                 self.char_height,
                 &mut self.rgb_pixmap,
             );
+        } else {
+            for (x, y) in self.always_redraw_list.clone().iter() {
+                let c = &self.buffer[(*x, *y)];
+                self.raster_backend.draw_cell(
+                    *x,
+                    *y,
+                    c,
+                    &mut self.always_redraw_list,
+                    blinking_fast,
+                    blinking_slow,
+                    self.char_width,
+                    self.char_height,
+                    &mut self.rgb_pixmap,
+                );
+            }
         }
 
         Ok(())
@@ -325,22 +374,15 @@ impl<R: RasterBackend> SoftBackend<R> {
         self.always_redraw_list = FxHashSet::default();
         let blinking_fast = self.fast_blink_hidden();
         let blinking_slow = self.slow_blink_hidden();
-        for x in 0..self.buffer.area.width {
-            for y in 0..self.buffer.area.height {
-                let c = &self.buffer[(x, y)];
-                self.raster_backend.draw_cell(
-                    x,
-                    y,
-                    c,
-                    &mut self.always_redraw_list,
-                    blinking_fast,
-                    blinking_slow,
-                    self.char_width,
-                    self.char_height,
-                    &mut self.rgb_pixmap,
-                );
-            }
-        }
+        self.raster_backend.draw_frame(
+            &self.buffer,
+            &mut self.always_redraw_list,
+            blinking_fast,
+            blinking_slow,
+            self.char_width,
+            self.char_height,
+            &mut self.rgb_pixmap,
+        );
         self.rendered_cursor = None;
         self.sync_cursor_overlay();
     }

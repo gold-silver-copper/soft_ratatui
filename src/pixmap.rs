@@ -119,6 +119,18 @@ impl RgbPixmap {
     pub fn data(&self) -> &[u8] {
         &self.data
     }
+
+    /// Replaces the pixmap contents from an RGBA buffer, discarding alpha.
+    pub fn copy_from_rgba(&mut self, rgba: &[u8]) {
+        debug_assert_eq!(rgba.len(), self.width * self.height * 4);
+        if rgba.len() != self.width * self.height * 4 {
+            return;
+        }
+
+        for (dst, src) in self.data.chunks_exact_mut(3).zip(rgba.chunks_exact(4)) {
+            dst.copy_from_slice(&src[..3]);
+        }
+    }
 }
 #[cfg(any(feature = "embedded-graphics", feature = "embedded-ttf"))]
 impl DrawTarget for RgbPixmap {

@@ -6495,6 +6495,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "soft-ratatui-bevy-parley-colors"
+version = "0.2.1"
+dependencies = [
+ "bevy",
+ "palette",
+ "ratatui",
+ "soft_ratatui",
+]
+
+[[package]]
+name = "soft-ratatui-bevy-parley-modifiers"
+version = "0.2.1"
+dependencies = [
+ "bevy",
+ "itertools 0.14.0",
+ "ratatui",
+ "soft_ratatui",
+]
+
+[[package]]
 name = "soft-ratatui-bevy-sprite"
 version = "0.2.1"
 dependencies = [
@@ -6547,6 +6567,16 @@ dependencies = [
  "eframe",
  "embedded-graphics-unicodefonts",
  "itertools 0.14.0",
+ "palette",
+ "ratatui",
+ "soft_ratatui",
+]
+
+[[package]]
+name = "soft-ratatui-egui-parley-colors-rgb"
+version = "0.2.1"
+dependencies = [
+ "eframe",
  "palette",
  "ratatui",
  "soft_ratatui",
