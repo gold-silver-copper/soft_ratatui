@@ -30,6 +30,7 @@ use vello::{AaConfig, AaSupport, Glyph, Renderer, RendererOptions, Scene};
 struct TextMetrics {
     cell_width: f32,
     cell_height: f32,
+    baseline: f32,
     underline_position: f32,
     underline_thickness: f32,
     strikeout_position: f32,
@@ -134,7 +135,6 @@ impl RasterBackend for ParleyText {
             text_symbol.clone(),
             rat_cell.modifier.contains(Modifier::BOLD),
             rat_cell.modifier.contains(Modifier::ITALIC),
-            char_height as f32,
         );
 
         if let Ok(rgba) = self.render_layout_to_rgba(
@@ -169,13 +169,7 @@ impl RasterBackend for ParleyText {
 }
 
 impl ParleyText {
-    fn shape_text(
-        &mut self,
-        text: String,
-        bold: bool,
-        italic: bool,
-        line_height: f32,
-    ) -> Arc<Layout<[u8; 4]>> {
+    fn shape_text(&mut self, text: String, bold: bool, italic: bool) -> Arc<Layout<[u8; 4]>> {
         let key = LayoutKey {
             text: text.clone().into_boxed_str(),
             bold,
@@ -202,7 +196,7 @@ impl ParleyText {
             FontWeight::NORMAL
         }));
         builder.push_default(StyleProperty::Locale(self.locale.as_deref()));
-        builder.push_default(LineHeight::Absolute(line_height.max(1.0)));
+        builder.push_default(LineHeight::Absolute(self.metrics.cell_height.max(1.0)));
 
         let mut layout = builder.build(&text);
         layout.break_all_lines(None);
@@ -225,6 +219,7 @@ impl ParleyText {
 
         let mut scene = Scene::new();
         let brush = Brush::Solid(Color::from_rgb8(fg_color[0], fg_color[1], fg_color[2]));
+        let transform = Affine::translate(self.snapped_layout_translation(layout));
         for line in layout.lines() {
             for item in line.items() {
                 let PositionedLayoutItem::GlyphRun(glyph_run) = item else {
@@ -237,9 +232,10 @@ impl ParleyText {
                 scene
                     .draw_glyphs(run.font())
                     .font_size(run.font_size())
+                    .hint(true)
                     .normalized_coords(&normalized_coords)
                     .brush(&brush)
-                    .transform(Affine::IDENTITY)
+                    .transform(transform)
                     .draw(
                         Fill::NonZero,
                         glyph_run.glyphs().map(|glyph| {
@@ -260,6 +256,28 @@ impl ParleyText {
             width,
             height,
             Color::from_rgb8(bg_color[0], bg_color[1], bg_color[2]),
+        )
+    }
+
+    fn snapped_layout_translation(&self, layout: &Layout<[u8; 4]>) -> (f64, f64) {
+        let mut baseline = self.metrics.baseline;
+        let mut offset = 0.0;
+
+        if let Some((glyph_offset, glyph_baseline)) = layout.lines().find_map(|line| {
+            line.items().find_map(|item| match item {
+                PositionedLayoutItem::GlyphRun(glyph_run) => {
+                    Some((glyph_run.offset(), glyph_run.baseline()))
+                }
+                _ => None,
+            })
+        }) {
+            offset = glyph_offset;
+            baseline = glyph_baseline;
+        }
+
+        (
+            f64::from(offset.round() - offset),
+            f64::from(baseline.round() - baseline),
         )
     }
 
@@ -325,6 +343,7 @@ impl ParleyText {
         TextMetrics {
             cell_width: layout.full_width().round().max(1.0),
             cell_height: line.metrics().line_height.round().max(1.0),
+            baseline: line.metrics().baseline,
             underline_position: run_metrics.underline_offset,
             underline_thickness: run_metrics.underline_size.max(1.0),
             strikeout_position: run_metrics.strikethrough_offset,
@@ -420,7 +439,7 @@ impl GpuState {
             &device,
             RendererOptions {
                 use_cpu: false,
-                antialiasing_support: AaSupport::area_only(),
+                antialiasing_support: AaSupport::all(),
                 #[cfg(target_os = "macos")]
                 num_init_threads: NonZeroUsize::new(1),
                 #[cfg(not(target_os = "macos"))]
@@ -475,7 +494,7 @@ impl GpuState {
                     base_color: bg,
                     width,
                     height,
-                    antialiasing_method: AaConfig::Area,
+                    antialiasing_method: AaConfig::Msaa8,
                 },
             )
             .map_err(|err| format!("render_to_texture failed: {err}"))?;
