@@ -7,12 +7,12 @@ use bevy::{
 };
 use itertools::Itertools;
 use ratatui::{
+    Frame,
     layout::{Constraint, Layout},
     prelude::{Color, Stylize, Terminal},
     style::{Modifier, Style},
     text::Line,
     widgets::Paragraph,
-    Frame,
 };
 use soft_ratatui::{ParleyText, SoftBackend};
 
@@ -74,7 +74,9 @@ fn render_terminal(
     mut images: ResMut<Assets<Image>>,
     image_handle: Res<SoftTerminalImage>,
 ) {
-    soft_terminal.draw(draw).expect("failed to render ratatui frame");
+    soft_terminal
+        .draw(draw)
+        .expect("failed to render ratatui frame");
 
     let width = soft_terminal.backend().get_pixmap_width() as u32;
     let height = soft_terminal.backend().get_pixmap_height() as u32;
@@ -100,8 +102,11 @@ fn draw(frame: &mut Frame) {
     let vertical = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]);
     let [text_area, main_area] = vertical.areas(frame.area());
     frame.render_widget(
-        Paragraph::new("Parley backend modifier grid including underline")
-            .style(Style::default().fg(Color::LightRed).add_modifier(Modifier::BOLD)),
+        Paragraph::new("Parley backend modifier grid including underline").style(
+            Style::default()
+                .fg(Color::LightRed)
+                .add_modifier(Modifier::BOLD),
+        ),
         text_area,
     );
 

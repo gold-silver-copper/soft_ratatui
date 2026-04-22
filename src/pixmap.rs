@@ -131,7 +131,6 @@ impl RgbPixmap {
             dst.copy_from_slice(&src[..3]);
         }
     }
-
 }
 #[cfg(any(feature = "embedded-graphics", feature = "embedded-ttf"))]
 impl DrawTarget for RgbPixmap {
