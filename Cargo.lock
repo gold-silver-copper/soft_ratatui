@@ -6444,6 +6444,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "soft-ratatui-bevy-cosmic-cjk"
+version = "0.1.4"
+dependencies = [
+ "bevy",
+ "ratatui",
+ "soft_ratatui",
+]
+
+[[package]]
 name = "soft-ratatui-bevy-cube"
 version = "0.1.4"
 dependencies = [

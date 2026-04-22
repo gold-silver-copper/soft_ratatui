@@ -1,0 +1,13 @@
+[package]
+name = "soft-ratatui-bevy-cosmic-cjk"
+edition = "2024"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+bevy.workspace = true
+ratatui.workspace = true
+soft_ratatui = { path = "../..", default-features = false, features = ["cosmic-text"] }
