@@ -168,7 +168,7 @@ impl RasterBackend for ParleyText {
                 let begin_y = y as usize * char_height;
                 let pixel_width = char_width * style.display_width;
 
-                if !cell.symbol().is_empty() {
+                if Self::should_shape_text(cell) {
                     let layout = self.shape_cell_text(
                         cell.symbol(),
                         font_variant_from_style(
@@ -251,6 +251,12 @@ impl RasterBackend for ParleyText {
 }
 
 impl ParleyText {
+    fn should_shape_text(cell: &Cell) -> bool {
+        cell.symbol()
+            .chars()
+            .any(|character| !character.is_whitespace())
+    }
+
     fn cell_owner_style(
         &self,
         buffer: &Buffer,
@@ -449,7 +455,7 @@ impl ParleyText {
             style.bg_color,
         );
 
-        if !rat_cell.symbol().is_empty() {
+        if Self::should_shape_text(rat_cell) {
             let layout = self.shape_cell_text(
                 rat_cell.symbol(),
                 font_variant_from_style(

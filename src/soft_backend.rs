@@ -332,6 +332,21 @@ impl<R: RasterBackend> Backend for SoftBackend<R> {
 }
 
 impl<R: RasterBackend> SoftBackend<R> {
+    fn repaint_full_frame(&mut self) {
+        self.always_redraw_list = FxHashSet::default();
+        let blinking_fast = self.fast_blink_hidden();
+        let blinking_slow = self.slow_blink_hidden();
+        self.raster_backend.draw_frame(
+            &self.buffer,
+            &mut self.always_redraw_list,
+            blinking_fast,
+            blinking_slow,
+            self.char_width,
+            self.char_height,
+            &mut self.rgb_pixmap,
+        );
+    }
+
     /// Returns the raw RGB data of the pixmap as a flat array.
     pub fn get_pixmap_data(&self) -> &[u8] {
         self.rgb_pixmap.data()
@@ -371,18 +386,7 @@ impl<R: RasterBackend> SoftBackend<R> {
 
     /// Redraws the entire pixmap from the current cell buffer.
     pub fn redraw(&mut self) {
-        self.always_redraw_list = FxHashSet::default();
-        let blinking_fast = self.fast_blink_hidden();
-        let blinking_slow = self.slow_blink_hidden();
-        self.raster_backend.draw_frame(
-            &self.buffer,
-            &mut self.always_redraw_list,
-            blinking_fast,
-            blinking_slow,
-            self.char_width,
-            self.char_height,
-            &mut self.rgb_pixmap,
-        );
+        self.repaint_full_frame();
         self.rendered_cursor = None;
         self.sync_cursor_overlay();
     }
@@ -405,7 +409,11 @@ impl<R: RasterBackend> SoftBackend<R> {
         if let Some((x, y)) = self.rendered_cursor.take()
             && self.position_in_bounds((x, y))
         {
-            self.redraw_cell(x, y);
+            if self.raster_backend.prefers_full_frame() {
+                self.repaint_full_frame();
+            } else {
+                self.redraw_cell(x, y);
+            }
         }
     }
 
