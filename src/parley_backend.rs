@@ -134,7 +134,8 @@ impl RasterBackend for ParleyText {
         for y in 0..buffer.area.height {
             for x in 0..buffer.area.width {
                 let cell = &buffer[(x, y)];
-                let style = self.resolve_cell_style(cell, blinking_fast, blinking_slow);
+                let style =
+                    self.resolve_buffer_cell_style(buffer, x, y, blinking_fast, blinking_slow);
                 if cell.modifier.contains(Modifier::SLOW_BLINK)
                     || cell.modifier.contains(Modifier::RAPID_BLINK)
                 {
@@ -161,7 +162,8 @@ impl RasterBackend for ParleyText {
             let mut strikeout_run = None;
             for x in 0..buffer.area.width {
                 let cell = &buffer[(x, y)];
-                let style = self.resolve_cell_style(cell, blinking_fast, blinking_slow);
+                let style =
+                    self.resolve_buffer_cell_style(buffer, x, y, blinking_fast, blinking_slow);
                 let begin_x = x as usize * char_width;
                 let begin_y = y as usize * char_height;
                 let pixel_width = char_width * style.display_width;
@@ -249,6 +251,47 @@ impl RasterBackend for ParleyText {
 }
 
 impl ParleyText {
+    fn cell_owner_style(
+        &self,
+        buffer: &Buffer,
+        x: u16,
+        y: u16,
+        blinking_fast: bool,
+        blinking_slow: bool,
+    ) -> Option<ResolvedCellStyle> {
+        if x == 0 {
+            return None;
+        }
+
+        let previous = &buffer[(x - 1, y)];
+        (UnicodeWidthStr::width(previous.symbol()) > 1)
+            .then(|| self.resolve_cell_style(previous, blinking_fast, blinking_slow))
+    }
+
+    fn resolve_buffer_cell_style(
+        &self,
+        buffer: &Buffer,
+        x: u16,
+        y: u16,
+        blinking_fast: bool,
+        blinking_slow: bool,
+    ) -> ResolvedCellStyle {
+        let cell = &buffer[(x, y)];
+        let mut style = self.resolve_cell_style(cell, blinking_fast, blinking_slow);
+
+        if cell.symbol() == " "
+            && matches!(cell.bg, ratatui_core::style::Color::Reset)
+            && let Some(owner_style) =
+                self.cell_owner_style(buffer, x, y, blinking_fast, blinking_slow)
+        {
+            style.fg_color = owner_style.fg_color;
+            style.bg_color = owner_style.bg_color;
+            style.display_width = 1;
+        }
+
+        style
+    }
+
     fn resolve_cell_style(
         &self,
         rat_cell: &Cell,
