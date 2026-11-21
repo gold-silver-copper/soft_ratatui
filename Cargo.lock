@@ -6597,6 +6597,7 @@ dependencies = [
  "ratatui-core",
  "rustc-hash 2.1.1",
  "rusttype",
+ "swash",
  "unicode-width 0.2.2",
  "vello",
 ]

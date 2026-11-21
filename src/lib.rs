@@ -29,6 +29,7 @@
 //! - **`embedded-ttf`**: Enables [`EmbeddedTTF`] backend for TrueType fonts (automatically activates [embedded-graphics]) ([embedded-ttf])
 //! - **`cosmic-text`**: Enables [`CosmicText`] backend for advanced text shaping ([cosmic-text])
 //! - **`parley-vello`**: Enables [`ParleyText`] backend for GPU text shaping/rasterization with Parley and Vello
+//! - **`parley-swash`**: Enables [`ParleySwash`] backend for Parley shaping with CPU glyph rasterization via Swash
 //! - **`embedded-graphics`**: Enables [`EmbeddedGraphics`] backend
 //!
 //! ## Performance
@@ -44,6 +45,7 @@
 //! | [`Bdf`] | `bdf-parser` | Bitmap Distribution Format fonts |
 //! | [`CosmicText`] | `cosmic-text` | Advanced text shaping and layout |
 //! | [`ParleyText`] | `parley-vello` | Parley shaping with Vello GPU rasterization |
+//! | [`ParleySwash`] | `parley-swash` | Parley shaping with direct CPU glyph rasterization |
 //!
 //! ## Quick Start
 //!
@@ -154,6 +156,9 @@ pub use embedded_ttf;
 #[cfg(feature = "parley-vello")]
 #[cfg_attr(docsrs, doc(cfg(feature = "parley-vello")))]
 pub use parley_backend::ParleyText;
+#[cfg(feature = "parley-swash")]
+#[cfg_attr(docsrs, doc(cfg(feature = "parley-swash")))]
+pub use parley_swash_backend::ParleySwash;
 #[cfg(feature = "embedded-ttf")]
 #[cfg_attr(docsrs, doc(cfg(feature = "embedded-ttf")))]
 pub use rusttype;
@@ -166,6 +171,8 @@ pub use embedded_ttf_backend::EmbeddedTTF;
 mod cosmic_backend;
 #[cfg(feature = "parley-vello")]
 mod parley_backend;
+#[cfg(feature = "parley-swash")]
+mod parley_swash_backend;
 #[cfg(feature = "bdf-parser")]
 #[cfg_attr(docsrs, doc(cfg(feature = "bdf-parser")))]
 pub use bdf_backend::Bdf;

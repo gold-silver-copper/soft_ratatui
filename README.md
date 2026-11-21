@@ -31,6 +31,7 @@ soft_ratatui is highly modular. Enable only the backends and features you need t
 | `bdf-parser` | [`Bdf`] | Bitmap Distribution Format font support. |
 | `embedded-ttf` | [`EmbeddedTTF`] | TrueType font rendering via RustType. Automatically enables `embedded-graphics`. |
 | `cosmic-text` | [`CosmicText`] | Advanced text shaping, layout, and Unicode support using CosmicText engine. |
+| `parley-swash` | [`ParleySwash`] | Parley shaping with direct CPU glyph rasterization through Swash, without Vello. |
 
 ## Minimal example
 
